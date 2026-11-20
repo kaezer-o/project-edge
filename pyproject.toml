@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "project-edge"
+version = "0.5.0"
+description = "A broker-neutral Forex strategy research and validation engine"
+requires-python = ">=3.11,<3.15"
+dependencies = [
+    "numpy>=1.26,<3",
+    "pandas>=2.2,<3",
+]
+
+[project.optional-dependencies]
+reports = ["matplotlib>=3.8"]
+parquet = ["pyarrow>=15"]
+dukascopy = ["boto3>=1.34"]
+test = ["pytest>=8"]
+
+[project.scripts]
+edge = "edge.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
