@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 from pathlib import Path
 
 import numpy as np
@@ -117,12 +118,50 @@ def _validation_check(
         frame, program, execution=execution, risk=risk,
         pip_size=pip_size, price_basis=price_basis,
     )
+    cost_stress = []
+    for multiplier in (1.5, 2.0):
+        stressed_execution = replace(
+            execution,
+            spread_pips=execution.spread_pips * multiplier,
+            slippage_pips_per_side=execution.slippage_pips_per_side * multiplier,
+            commission_round_trip_pips=execution.commission_round_trip_pips * multiplier,
+            swap_long_pips_per_rollover=(
+                execution.swap_long_pips_per_rollover * multiplier
+                if execution.swap_long_pips_per_rollover < 0
+                else execution.swap_long_pips_per_rollover
+            ),
+            swap_short_pips_per_rollover=(
+                execution.swap_short_pips_per_rollover * multiplier
+                if execution.swap_short_pips_per_rollover < 0
+                else execution.swap_short_pips_per_rollover
+            ),
+        )
+        stressed_frame = frame.copy()
+        if "spread_pips" in stressed_frame.columns:
+            stressed_frame["spread_pips"] = stressed_frame["spread_pips"].astype(float) * multiplier
+        stressed_metrics, _ = _evaluate(
+            stressed_frame, program, execution=stressed_execution, risk=risk,
+            pip_size=pip_size, price_basis=price_basis,
+        )
+        expectancy = stressed_metrics.get("expectancy_r")
+        profit_factor = stressed_metrics.get("profit_factor")
+        cost_stress.append({
+            "cost_multiplier": multiplier,
+            "metrics": stressed_metrics,
+            "pass": bool(
+                expectancy is not None and float(expectancy) > 0
+                and profit_factor is not None and float(profit_factor) > 1.0
+            ),
+        })
     passed_windows = sum(bool(row["passed"]) for row in windows)
+    stress_pass = bool(cost_stress and cost_stress[0]["pass"])
     return {
         "metrics": full_metrics,
         "windows": windows,
         "passed_windows": passed_windows,
-        "pass": bool(passed_windows >= 2 and len(windows) == 3),
+        "cost_stress": cost_stress,
+        "one_and_half_x_cost_pass": stress_pass,
+        "pass": bool(passed_windows >= 2 and len(windows) == 3 and stress_pass),
     }
 
 
