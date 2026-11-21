@@ -77,7 +77,7 @@ def _behaviour_descriptor(
             descriptor.extend((0.0, 0.0, 0.0))
             continue
         segment = signal.iloc[positions]
-        metrics, trades = _evaluate(
+        metrics, _ = _evaluate(
             frame.iloc[positions],
             program,
             execution=execution,
@@ -95,7 +95,7 @@ def _behaviour_descriptor(
 
 
 def _run_signature(
-    train: pd.DataFrame,
+    source_data: pd.DataFrame,
     *,
     symbol: str,
     timeframe: str,
@@ -108,9 +108,9 @@ def _run_signature(
     seed: int,
     min_train_trades: int,
 ) -> str:
-    columns = [column for column in ("open", "high", "low", "close") if column in train]
+    columns = [column for column in ("open", "high", "low", "close") if column in source_data]
     digest = hashlib.sha256()
-    digest.update(pd.util.hash_pandas_object(train[columns], index=True).values.tobytes())
+    digest.update(pd.util.hash_pandas_object(source_data[columns], index=True).values.tobytes())
     payload = {
         "symbol": symbol,
         "timeframe": timeframe,
@@ -159,7 +159,7 @@ def run_island_program_research(
         raw_frame, timeframe=timeframe, source_timeframe=source_timeframe
     )
     signature = _run_signature(
-        train,
+        pd.concat((train, validation, test)),
         symbol=symbol,
         timeframe=timeframe,
         source_timeframe=source_timeframe,
