@@ -169,7 +169,11 @@ def _training_fitness(
     )
     aggregate_score = _fitness(aggregate_metrics, program, min_train_trades)
     positions = np.array_split(np.arange(len(frame)), 3)
-    minimum_window_trades = max(3, int(np.ceil(min_train_trades / 6)))
+    # Require the total minimum trade budget to be distributed across all
+    # three chronological training eras, with a floor of five per era.
+    minimum_window_trades = max(
+        5, int(np.ceil(min_train_trades / len(positions)))
+    )
     window_rows = []
     window_scores = []
     for index, window_positions in enumerate(positions, start=1):
