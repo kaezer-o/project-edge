@@ -129,3 +129,65 @@ def test_crossover_rejects_different_root_types():
             Expr("gt", (Expr("feature", value="close"), Expr("const", value=0.0))),
             rng,
         )
+
+
+
+def _walk(expr):
+    yield expr
+    for child in expr.args:
+        yield from _walk(child)
+
+
+def test_generated_rules_avoid_constant_only_and_raw_price_thresholds():
+    rng = np.random.default_rng(20261121)
+
+    for _ in range(250):
+        expr = random_expression("bool", FEATURES, rng, max_depth=5)
+        validate_expr(expr, expected="bool")
+
+        for node in _walk(expr):
+            if node.op not in {"gt", "lt", "cross_above", "cross_below"}:
+                continue
+            left, right = node.args
+            left_features = {
+                child.value for child in _walk(left) if child.op == "feature"
+            }
+            right_features = {
+                child.value for child in _walk(right) if child.op == "feature"
+            }
+            assert left_features or right_features
+
+            if left.op == "const":
+                assert right_features
+                assert any(
+                    str(name).startswith("rsi_")
+                    or str(name).endswith("_atr")
+                    or str(name) == "ema_gap_atr"
+                    for name in right_features
+                )
+                if any(str(name).startswith("rsi_") for name in right_features):
+                    assert 20.0 <= float(left.value) <= 80.0
+                else:
+                    assert -2.0 <= float(left.value) <= 2.0
+
+            if right.op == "const":
+                assert left_features
+                assert any(
+                    str(name).startswith("rsi_")
+                    or str(name).endswith("_atr")
+                    or str(name) == "ema_gap_atr"
+                    for name in left_features
+                )
+                if any(str(name).startswith("rsi_") for name in left_features):
+                    assert 20.0 <= float(right.value) <= 80.0
+                else:
+                    assert -2.0 <= float(right.value) <= 2.0
+
+
+def test_numeric_generator_uses_market_features_not_free_floating_constants():
+    rng = np.random.default_rng(11)
+    for _ in range(100):
+        expr = random_expression("number", FEATURES, rng, max_depth=5)
+        nodes = list(_walk(expr))
+        assert any(node.op == "feature" for node in nodes)
+        assert all(node.op != "const" for node in nodes)
