@@ -5,6 +5,8 @@ import pandas as pd
 
 from edge.config import ExecutionConfig, RiskConfig
 from edge.island_evolution import IslandEvolutionConfig
+import edge.island_program_research as island_program_research
+from edge.program import Expr, StrategyProgram
 from edge.island_program_research import run_island_program_research
 
 
@@ -110,3 +112,42 @@ def test_island_program_resume_rejects_changed_configuration(tmp_path):
         run_island_program_research(
             **{**kwargs, "config": changed}, generations=2, resume=True
         )
+
+
+
+def test_behaviour_descriptor_uses_comparable_rate_scales(monkeypatch):
+    frame = pd.DataFrame(
+        {"open": np.ones(90),
+         "high": np.ones(90), "low": np.ones(90), "close": np.ones(90)},
+        index=pd.date_range("2024-01-01", periods=90, freq="h", tz="UTC"),
+    )
+    program = StrategyProgram(
+        long_entry=Expr("gt", (Expr("feature", value="close"), Expr("feature", value="open"))),
+        short_entry=Expr("lt", (Expr("feature", value="close"), Expr("feature", value="open"))),
+    )
+    signals = pd.Series(0, index=frame.index, dtype="int8")
+    signals.iloc[:10] = 1
+    signals.iloc[30:40] = -1
+    monkeypatch.setattr(island_program_research, "evaluate_program", lambda _program, _frame: signals)
+    entries = pd.DatetimeIndex([frame.index[5], frame.index[35], frame.index[65]])
+    monkeypatch.setattr(
+        island_program_research,
+        "_evaluate",
+        lambda *_args, **_kwargs: ({"trades": 3}, pd.DataFrame({"entry_time": entries})),
+    )
+
+    descriptor = island_program_research._behaviour_descriptor(
+        frame,
+        program,
+        execution=ExecutionConfig(),
+        risk=RiskConfig(),
+        pip_size=0.0001,
+        price_basis="mid",
+    )
+
+    assert len(descriptor) == 9
+    assert descriptor[0] == 10 / 30
+    assert descriptor[4] == 10 / 30
+    assert descriptor[2] == 1 / 30
+    assert descriptor[5] == 1 / 30
+    assert max(descriptor) <= 1.0
