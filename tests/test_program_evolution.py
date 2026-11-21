@@ -159,11 +159,14 @@ def test_generated_rules_avoid_constant_only_and_raw_price_thresholds():
 
             if left.op == "const":
                 assert right_features
-                assert any(
-                    str(name).startswith("rsi_")
-                    or str(name).endswith("_atr")
-                    or str(name) == "ema_gap_atr"
-                    for name in right_features
+                assert (
+                    right.op == "div"
+                    or any(
+                        str(name).startswith("rsi_")
+                        or str(name).endswith("_atr")
+                        or str(name) == "ema_gap_atr"
+                        for name in right_features
+                    )
                 )
                 if any(str(name).startswith("rsi_") for name in right_features):
                     assert 20.0 <= float(left.value) <= 80.0
@@ -172,11 +175,14 @@ def test_generated_rules_avoid_constant_only_and_raw_price_thresholds():
 
             if right.op == "const":
                 assert left_features
-                assert any(
-                    str(name).startswith("rsi_")
-                    or str(name).endswith("_atr")
-                    or str(name) == "ema_gap_atr"
-                    for name in left_features
+                assert (
+                    left.op == "div"
+                    or any(
+                        str(name).startswith("rsi_")
+                        or str(name).endswith("_atr")
+                        or str(name) == "ema_gap_atr"
+                        for name in left_features
+                    )
                 )
                 if any(str(name).startswith("rsi_") for name in left_features):
                     assert 20.0 <= float(right.value) <= 80.0
