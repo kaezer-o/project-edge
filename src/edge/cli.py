@@ -19,6 +19,8 @@ from .evolution import EvolutionSettings
 from .source_comparison import compare_ohlc_csv_files
 from .evolutionary_research import run_evolutionary_research
 from .program_research import run_program_research
+from .island_evolution import IslandEvolutionConfig
+from .island_program_research import run_island_program_research
 from .frozen_replay import replay_frozen_candidate
 from .quote_data import aggregate_tick_csv
 
@@ -270,6 +272,35 @@ def _parser() -> argparse.ArgumentParser:
     evolve_program.add_argument("--final-test", action="store_true", help="run the untouched final chronological holdout after validation passes")
     evolve_program.add_argument("--output", default="results/program-evolution")
 
+    evolve_islands = subparsers.add_parser(
+        "evolve-program-islands",
+        help="run resumable multi-island evolution of expression-tree strategies",
+    )
+    evolve_islands.add_argument("--input", required=True, help="source OHLC CSV")
+    evolve_islands.add_argument("--symbol", default="EURUSD")
+    evolve_islands.add_argument("--source-timeframe", default="M1", choices=SUPPORTED_TIMEFRAMES)
+    evolve_islands.add_argument("--timeframe", default="H4", choices=SUPPORTED_TIMEFRAMES)
+    evolve_islands.add_argument("--pip-size", type=float, default=0.0001)
+    evolve_islands.add_argument("--price-basis", choices=["mid", "bid"], default="bid")
+    _add_execution_cost_arguments(evolve_islands)
+    evolve_islands.add_argument("--starting-balance", type=float, default=10_000.0)
+    evolve_islands.add_argument("--risk-per-trade", type=float, default=0.0025)
+    evolve_islands.add_argument("--max-daily-loss", type=float, default=0.01)
+    evolve_islands.add_argument("--max-trades-per-day", type=int, default=4)
+    evolve_islands.add_argument("--islands", type=int, default=4)
+    evolve_islands.add_argument("--population-per-island", type=int, default=32)
+    evolve_islands.add_argument("--generations", type=int, default=100)
+    evolve_islands.add_argument("--migration-interval", type=int, default=10)
+    evolve_islands.add_argument("--migrants-per-island", type=int, default=2)
+    evolve_islands.add_argument("--novelty-weight", type=float, default=0.25)
+    evolve_islands.add_argument("--seed", type=int, default=2026)
+    evolve_islands.add_argument("--min-train-trades", type=int, default=30)
+    evolve_islands.add_argument("--min-validation-trades", type=int, default=30)
+    evolve_islands.add_argument("--checkpoint", default="results/island-training/checkpoint.json")
+    evolve_islands.add_argument("--resume", action="store_true")
+    evolve_islands.add_argument("--final-test", action="store_true", help="evaluate the final holdout only after validation passes")
+    evolve_islands.add_argument("--output", default="results/island-training")
+
     return parser
 
 
@@ -346,6 +377,54 @@ def main() -> None:
             "category_counts": counts,
             "output": str(output_path.resolve()),
             "synthetic_bars_created": False,
+        }, indent=2))
+        return
+
+    if args.command == "evolve-program-islands":
+        frame = CSVOHLCProvider(args.input).load(args.symbol, args.source_timeframe)
+        validate_source_interval(frame, args.source_timeframe)
+        execution = _execution_config_from_args(args)
+        risk = RiskConfig(
+            starting_balance=args.starting_balance,
+            risk_per_trade=args.risk_per_trade,
+            max_daily_loss=args.max_daily_loss,
+            max_trades_per_day=args.max_trades_per_day,
+        )
+        config = IslandEvolutionConfig(
+            islands=args.islands,
+            population_per_island=args.population_per_island,
+            migration_interval=args.migration_interval,
+            migrants_per_island=args.migrants_per_island,
+            novelty_weight=args.novelty_weight,
+        )
+        report = run_island_program_research(
+            frame,
+            timeframe=args.timeframe,
+            source_timeframe=args.source_timeframe,
+            symbol=args.symbol,
+            execution=execution,
+            risk=risk,
+            pip_size=args.pip_size,
+            price_basis=args.price_basis,
+            generations=args.generations,
+            seed=args.seed,
+            min_train_trades=args.min_train_trades,
+            min_validation_trades=args.min_validation_trades,
+            checkpoint_path=args.checkpoint,
+            output_dir=args.output,
+            config=config,
+            resume=args.resume,
+            run_final_test=args.final_test,
+        )
+        print(json.dumps({
+            "status": report["status"],
+            "generation": report["runtime"]["generation"],
+            "total_population": report["runtime"]["total_population"],
+            "candidate_count": report["candidate_count"],
+            "validated_candidate_count": report["validated_candidate_count"],
+            "report": str((Path(args.output) / "island_program_evolution_report.json").resolve()),
+            "checkpoint": str(Path(args.checkpoint).resolve()),
+            "final_test_run": report["final_test"] is not None,
         }, indent=2))
         return
 
