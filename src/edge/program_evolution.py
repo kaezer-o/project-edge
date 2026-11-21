@@ -84,6 +84,12 @@ def random_expression(
             threshold = float(rng.choice((20, 30, 40, 50, 60, 70, 80)))
             return Expr(op, (feature, Expr("const", value=threshold)))
 
+        # Existing ATR-normalized features can use dimensionless thresholds.
+        if ratio_features and rng.random() < 0.20:
+            feature = Expr("feature", value=str(rng.choice(ratio_features)))
+            threshold = float(rng.uniform(-2.0, 2.0))
+            return Expr(op, (feature, Expr("const", value=threshold)))
+
         # Price differences normalized by ATR are dimensionless, so bounded
         # scalar thresholds have a stable interpretation across price levels.
         if len(price_features) >= 2 and atr_features and rng.random() < 0.25:
