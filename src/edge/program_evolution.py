@@ -139,7 +139,10 @@ def random_expression(
     terminal = Expr("feature", value=feature_names[0])
     if expected == "number":
         return terminal
-    fallback = Expr("gt", (terminal, Expr("const", value=0.0)))
+    fallback = Expr(
+        "gt",
+        (terminal, Expr("lag", (terminal,), value=1)),
+    )
     validate_expr(fallback, expected="bool")
     return fallback
 
