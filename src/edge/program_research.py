@@ -10,7 +10,7 @@ import pandas as pd
 from .backtest import BacktestSettings, run_backtest
 from .config import ExecutionConfig, RiskConfig, TIMEFRAME_SECONDS
 from .data import annotate_gaps, resample_ohlc
-from .features import add_features
+from .features import FEATURE_COLUMNS, add_features
 from .metrics import calculate_metrics
 from .program import Expr, StrategyProgram, evaluate_program
 from .program_evolution import (
@@ -205,11 +205,12 @@ def run_program_research(
     train = featured.iloc[:train_end].copy()
     validation = featured.iloc[train_end:validation_end].copy()
     test = featured.iloc[validation_end:].copy()
-    excluded = {"open", "high", "low", "close", "spread_pips", "tick_count",
-                "ask_open", "ask_high", "ask_low", "ask_close"}
+    # Only market indicators belong in the strategy search space.
+    # Gap flags, segment IDs, timestamps, and execution metadata describe
+    # the dataset; they are not tradable market signals.
     features = tuple(
-        column for column in train.columns
-        if column not in excluded
+        column for column in FEATURE_COLUMNS
+        if column in train.columns
         and pd.api.types.is_numeric_dtype(train[column])
         and train[column].notna().any()
     )
