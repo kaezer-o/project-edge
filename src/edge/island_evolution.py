@@ -225,7 +225,10 @@ def run_island_evolution(
             ],
         })
 
-        if generation < generations:
+        # Always prepare the next population, even at the requested stopping
+        # generation. This makes a checkpoint at generation N resumable to N+K
+        # with exactly the same RNG trajectory as one uninterrupted run.
+        if generation <= generations:
             next_islands: list[list[Genome]] = []
             for rows, rng in zip(evaluated_islands, rngs):
                 ranked = sorted(
