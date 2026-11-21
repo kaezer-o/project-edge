@@ -139,6 +139,24 @@ def _candidate_rejection_reasons(
     if not np.isfinite(drawdown) or drawdown > research.max_drawdown_filter:
         reasons.append("validation_drawdown_exceeded")
 
+    bootstrap = robustness.get("expectancy_block_bootstrap")
+    bootstrap_lower = (
+        bootstrap.get("ci_90_low")
+        if isinstance(bootstrap, dict)
+        else None
+    )
+    try:
+        bootstrap_lower = float(bootstrap_lower)
+    except (TypeError, ValueError):
+        bootstrap_lower = None
+
+    if bootstrap_lower is None or not np.isfinite(bootstrap_lower):
+        reasons.append(
+            "validation_expectancy_confidence_interval_unavailable"
+        )
+    elif bootstrap_lower <= 0:
+        reasons.append("validation_expectancy_confidence_below_zero")
+
     windows = robustness.get("chronological_validation_windows", [])
     if not (
         len(windows) == 3
@@ -724,7 +742,7 @@ def research_ecological_timeframe(
             "winner": None,
             "final_test": None,
             "final_test_skipped": True,
-            "reason": "No survivor passed the validation and execution-cost gates.",
+            "reason": "No survivor passed the validation-confidence, chronological-window and execution-cost gates.",
         }
 
     eligible.sort(key=lambda item: item[0], reverse=True)
@@ -927,8 +945,15 @@ def run_ecological_research(
         },
         "validation_design": {
             "candidate_selection": (
-                "Training Pareto survivors followed by base validation, "
-                "three chronological validation windows and 1.5x cost stress"
+                "Training Pareto survivors followed by base validation, a "
+                "positive validation bootstrap lower bound, three chronological "
+                "validation windows and 1.5x cost stress"
+            ),
+            "validation_expectancy_confidence_gate": (
+                "Require ci_90_low > 0 from the 500-repetition moving-block "
+                "bootstrap with 5-trade blocks; reject unavailable intervals. "
+                "This descriptive interval does not correct candidate-selection "
+                "bias or multiple testing."
             ),
             "final_test_run": bool(run_final_test),
             "final_test_policy": "One evaluation after candidate selection",

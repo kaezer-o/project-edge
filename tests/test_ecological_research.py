@@ -195,7 +195,10 @@ def test_validation_pool_prioritizes_qualified_training_samples():
 
 def test_candidate_eligibility_requires_all_three_windows():
     from edge.config import ResearchConfig
-    from edge.ecological_research import _candidate_passes_validation
+    from edge.ecological_research import (
+        _candidate_passes_validation,
+        _candidate_rejection_reasons,
+    )
 
     research = ResearchConfig()
 
@@ -230,6 +233,7 @@ def test_candidate_eligibility_requires_all_three_windows():
 
     robustness = {
         "chronological_validation_windows": windows,
+        "expectancy_block_bootstrap": {"ci_90_low": 0.01},
         "one_and_half_x_cost_pass": True,
     }
 
@@ -237,6 +241,23 @@ def test_candidate_eligibility_requires_all_three_windows():
         training, validation, robustness, research
     )
 
+    bootstrap = robustness["expectancy_block_bootstrap"]
+    bootstrap["ci_90_low"] = 0.0
+    assert not _candidate_passes_validation(
+        training, validation, robustness, research
+    )
+    assert "validation_expectancy_confidence_below_zero" in (
+        _candidate_rejection_reasons(
+            training, validation, robustness, research
+        )
+    )
+
+    bootstrap["ci_90_low"] = -0.001
+    assert not _candidate_passes_validation(
+        training, validation, robustness, research
+    )
+
+    bootstrap["ci_90_low"] = 0.01
     training["expectancy_r"] = -0.01
 
     assert not _candidate_passes_validation(
@@ -250,6 +271,46 @@ def test_candidate_eligibility_requires_all_three_windows():
     assert not _candidate_passes_validation(
         training, validation, robustness, research
     )
+
+
+def test_candidate_rejection_requires_available_validation_bootstrap_interval():
+    from edge.config import ResearchConfig
+    from edge.ecological_research import _candidate_rejection_reasons
+
+    research = ResearchConfig()
+    training = {"trades": 1000, "expectancy_r": 0.04}
+    validation = {
+        "trades": 1000,
+        "expectancy_r": 0.04,
+        "profit_factor": 1.25,
+        "max_realized_drawdown_pct": 0.01,
+    }
+    robustness = {
+        "chronological_validation_windows": [
+            {"enough_trades": True, "pass": True},
+            {"enough_trades": True, "pass": True},
+            {"enough_trades": True, "pass": True},
+        ],
+        "one_and_half_x_cost_pass": True,
+    }
+
+    unavailable_intervals = (
+        None,
+        {},
+        {"ci_90_low": None},
+        {"ci_90_low": float("nan")},
+        {"ci_90_low": float("inf")},
+    )
+
+    for interval in unavailable_intervals:
+        robustness["expectancy_block_bootstrap"] = interval
+        reasons = _candidate_rejection_reasons(
+            training, validation, robustness, research
+        )
+        assert (
+            "validation_expectancy_confidence_interval_unavailable"
+            in reasons
+        )
 
 
 def test_candidate_ranking_prefers_consistent_validation_performance():
@@ -543,6 +604,7 @@ def test_candidate_rejection_reasons_identify_failed_gates():
             {"enough_trades": True, "pass": True},
             {"enough_trades": True, "pass": True},
         ],
+        "expectancy_block_bootstrap": {"ci_90_low": 0.01},
         "one_and_half_x_cost_pass": True,
     }
 
