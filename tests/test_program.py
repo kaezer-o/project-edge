@@ -167,3 +167,25 @@ def test_crossovers_require_current_and_previous_observations():
     )
 
     assert crossing.isna().tolist() == [True, True, False, True, True]
+
+
+
+@pytest.mark.parametrize(
+    ("operation", "expected"),
+    [
+        ("min", [1.0, np.nan, 2.0]),
+        ("max", [3.0, np.nan, 4.0]),
+    ],
+)
+def test_min_and_max_propagate_missing_operands(operation, expected):
+    frame = pd.DataFrame({
+        "left": [1.0, np.nan, 4.0],
+        "right": [3.0, 2.0, 2.0],
+    })
+    result = evaluate_expr(
+        Expr(operation, (feature("left"), feature("right"))),
+        frame,
+    )
+
+    assert result.iloc[[0, 2]].tolist() == [expected[0], expected[2]]
+    assert pd.isna(result.iloc[1])
