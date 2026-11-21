@@ -87,5 +87,22 @@ to validation or final-test outcomes.
   fingerprints and pairwise trade-overlap similarity remain future work.
 - **M6 partial:** the new command supports generation budgets, checkpoints and
   resume. Duration limits and graceful signal handling are not implemented.
+
+### Running the island trainer
+
+Start a new run:
+
+```powershell
+edge evolve-program-islands --input data\EURUSD_M1.csv --symbol EURUSD --source-timeframe M1 --timeframe H4 --islands 4 --population-per-island 32 --generations 100 --checkpoint results\island-training\checkpoint.json --output results\island-training
+```
+
+Resume the same run and extend its total target to 200 generations:
+
+```powershell
+edge evolve-program-islands --input data\EURUSD_M1.csv --symbol EURUSD --source-timeframe M1 --timeframe H4 --islands 4 --population-per-island 32 --generations 200 --checkpoint results\island-training\checkpoint.json --output results\island-training --resume
+```
+
+The generation argument is the total target, not an additional-generation count.
+Do not add `--final-test` during development.
 - No GPU speedup is claimed. Profiling and CPU/GPU parity work are still
   required before a CUDA evaluator can be considered.
