@@ -7,6 +7,7 @@ from edge.config import ExecutionConfig, RiskConfig
 from edge.program_research import (
     _combine_training_fitness,
     _diverse_ranked,
+    _minimum_window_trades,
     _program_structure,
     run_program_research,
 )
@@ -122,3 +123,10 @@ def test_diverse_ranking_limits_threshold_only_variants():
 
     assert len(selected) == 2
     assert _program_structure(selected[0][1]) != _program_structure(selected[1][1])
+
+
+
+def test_training_minimum_trades_are_distributed_across_windows():
+    assert _minimum_window_trades(30, 3) == 10
+    assert _minimum_window_trades(15, 3) == 5
+    assert _minimum_window_trades(1, 3) == 5
