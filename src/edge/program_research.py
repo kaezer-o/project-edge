@@ -378,9 +378,6 @@ def run_program_research(
             )
             evaluated.append((score, program, metrics, training_robustness))
         evaluated.sort(key=lambda item: item[0], reverse=True)
-        diverse_generation = _diverse_ranked(
-            evaluated, len(evaluated), max_per_structure=1
-        )
         generation_rows.append({
             "generation": generation + 1,
             "best_training_fitness": float(evaluated[0][0]),
@@ -505,6 +502,25 @@ def run_program_research(
             "seed": seed,
             "generation_history": generation_rows,
             "selection": "aggregate plus three chronological training-era fitness scores; validation never feeds back into evolution; structural diversity cap applied to elites, parents, and validation shortlist",
+            "training_robustness": {
+                "chronological_windows": 3,
+                "minimum_trades_per_window": max(
+                    3, int(np.ceil(min_train_trades / 6))
+                ),
+                "fitness_formula": (
+                    "0.35 * aggregate + 0.45 * median(window_scores) "
+                    "+ 0.20 * worst(window_scores) - 0.10 * std(window_scores)"
+                ),
+                "window_scores_scaled_to_full_training_sample": True,
+                "validation_used_during_evolution": False,
+            },
+            "structural_diversity": {
+                "thresholds_and_risk_parameters_ignored_in_structure_key": True,
+                "max_per_structure_in_elite_pool": 1,
+                "max_per_structure_in_parent_pool": 1,
+                "max_per_structure_in_validation_shortlist": 1,
+                "random_immigrant_probability": 0.20,
+            },
         },
         "execution_assumptions": {
             "price_basis": price_basis,
