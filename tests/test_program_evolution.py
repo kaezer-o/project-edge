@@ -82,7 +82,7 @@ def test_crossover_exchanges_only_type_compatible_subtrees(expected):
 def test_program_mutation_keeps_program_valid():
     rng = np.random.default_rng(8)
     program = StrategyProgram(
-        long_entry=Expr("gt", (Expr("feature", value="close"), Expr("const", value=1.0))),
+        long_entry=Expr("gt", (Expr("feature", value="ema_gap_atr"), Expr("const", value=0.5))),
         short_entry=Expr("lt", (Expr("feature", value="rsi_14"), Expr("const", value=30.0))),
     )
 
@@ -98,15 +98,15 @@ def test_program_mutation_keeps_program_valid():
 def test_program_crossover_combines_valid_trees_and_risk_parameters():
     rng = np.random.default_rng(18)
     first = StrategyProgram(
-        long_entry=Expr("gt", (Expr("feature", value="close"), Expr("const", value=1.0))),
+        long_entry=Expr("gt", (Expr("feature", value="ema_gap_atr"), Expr("const", value=0.5))),
         short_entry=Expr("lt", (Expr("feature", value="rsi_14"), Expr("const", value=30.0))),
         stop_atr=1.0,
         reward_risk=1.5,
         max_holding_bars=40,
     )
     second = StrategyProgram(
-        long_entry=Expr("cross_above", (Expr("feature", value="ema_gap_atr"), Expr("const", value=0.0))),
-        short_entry=Expr("cross_below", (Expr("feature", value="ema_gap_atr"), Expr("const", value=0.0))),
+        long_entry=Expr("cross_above", (Expr("feature", value="ema_gap_atr"), Expr("const", value=0.25))),
+        short_entry=Expr("cross_below", (Expr("feature", value="ema_gap_atr"), Expr("const", value=-0.25))),
         stop_atr=2.0,
         reward_risk=3.0,
         max_holding_bars=80,
