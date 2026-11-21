@@ -206,17 +206,33 @@ def evaluate_expr(expr: Expr, frame: pd.DataFrame) -> pd.Series:
             elif op == "rolling_std":
                 result = values[0].rolling(int(node.value), min_periods=int(node.value)).std(ddof=0)
             elif op == "gt":
-                result = values[0] > values[1]
+                result = (values[0] > values[1]).astype("boolean")
+                result = result.mask(values[0].isna() | values[1].isna(), pd.NA)
             elif op == "lt":
-                result = values[0] < values[1]
+                result = (values[0] < values[1]).astype("boolean")
+                result = result.mask(values[0].isna() | values[1].isna(), pd.NA)
             elif op == "cross_above":
-                result = (values[0] > values[1]) & (values[0].shift(1) <= values[1].shift(1))
+                current = (values[0] > values[1]).astype("boolean")
+                previous = (values[0].shift(1) <= values[1].shift(1)).astype("boolean")
+                result = current & previous
+                invalid = (
+                    values[0].isna() | values[1].isna()
+                    | values[0].shift(1).isna() | values[1].shift(1).isna()
+                )
+                result = result.mask(invalid, pd.NA)
             elif op == "cross_below":
-                result = (values[0] < values[1]) & (values[0].shift(1) >= values[1].shift(1))
+                current = (values[0] < values[1]).astype("boolean")
+                previous = (values[0].shift(1) >= values[1].shift(1)).astype("boolean")
+                result = current & previous
+                invalid = (
+                    values[0].isna() | values[1].isna()
+                    | values[0].shift(1).isna() | values[1].shift(1).isna()
+                )
+                result = result.mask(invalid, pd.NA)
             elif op == "and":
-                result = values[0].fillna(False).astype(bool) & values[1].fillna(False).astype(bool)
+                result = values[0].astype("boolean") & values[1].astype("boolean")
             elif op == "or":
-                result = values[0].fillna(False).astype(bool) | values[1].fillna(False).astype(bool)
+                result = values[0].astype("boolean") | values[1].astype("boolean")
             elif op == "not":
                 result = ~values[0].astype("boolean")
             else:
