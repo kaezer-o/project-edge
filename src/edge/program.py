@@ -102,7 +102,7 @@ class StrategyProgram:
 
 
 def _feature_dimension(name: str) -> str:
-    """Return the physical/semantic dimension of a strategy feature."""
+    """Return a semantic scale category for a strategy feature."""
     if name.startswith("edge_"):
         raise ValueError(
             f"Operational metadata is not a strategy feature: {name}"
@@ -110,9 +110,11 @@ def _feature_dimension(name: str) -> str:
     if (
         name.startswith("ema_")
         or name.startswith("donchian_")
-        or name.startswith("atr_")
+        or name in {"open", "high", "low", "close"}
     ):
-        return "price"
+        return "price_level"
+    if name.startswith("atr_"):
+        return "price_distance"
     if name.startswith("rsi_"):
         return "oscillator"
     if name.endswith("_atr") or name in {"ema_gap_atr", "price_change_atr"}:
@@ -121,7 +123,7 @@ def _feature_dimension(name: str) -> str:
 
 
 def _expr_dimension(expr: Expr) -> str | None:
-    """Infer units; None represents a dimensionless numeric constant."""
+    """Infer semantic scale; None represents a scalar constant."""
     if expr.op == "const":
         return None
     if expr.op == "feature":
@@ -131,11 +133,27 @@ def _expr_dimension(expr: Expr) -> str | None:
         return dimensions[0]
     if expr.op in {"add", "sub", "min", "max"}:
         left, right = dimensions
-        if left is not None and right is not None and left != right:
-            raise ValueError(
-                f"{expr.op} requires compatible feature units: {left} vs {right}"
-            )
-        return left if left is not None else right
+        if left is None:
+            return right
+        if right is None:
+            return left
+        if left == right:
+            if expr.op == "sub" and left == "price_level":
+                return "price_distance"
+            return left
+        if expr.op == "add" and {left, right} == {
+            "price_level", "price_distance"
+        }:
+            return "price_level"
+        if (
+            expr.op == "sub"
+            and left == "price_level"
+            and right == "price_distance"
+        ):
+            return "price_level"
+        raise ValueError(
+            f"{expr.op} requires compatible feature units: {left} vs {right}"
+        )
     if expr.op == "mul":
         left, right = dimensions
         if left is not None and right is not None:
@@ -147,7 +165,7 @@ def _expr_dimension(expr: Expr) -> str | None:
         left, right = dimensions
         if right is None:
             return left
-        if left == right:
+        if left is not None and left == right:
             return "ratio"
         raise ValueError(
             f"div requires a constant denominator or matching units: {left} / {right}"
@@ -155,8 +173,27 @@ def _expr_dimension(expr: Expr) -> str | None:
     return None
 
 
+def _expr_has_feature(expr: Expr) -> bool:
+    if expr.op == "feature":
+        return True
+    return any(_expr_has_feature(child) for child in expr.args)
+
+
 def _require_compatible_comparison(expr: Expr) -> None:
     left, right = (_expr_dimension(child) for child in expr.args)
+    if not any(_expr_has_feature(child) for child in expr.args):
+        raise ValueError(
+            f"{expr.op} requires at least one market feature; constant-only rules never vary"
+        )
+    raw_scale = {"price_level", "price_distance"}
+    if left is None and right in raw_scale:
+        raise ValueError(
+            "Scalar thresholds cannot be compared with raw price values; normalize by ATR first"
+        )
+    if right is None and left in raw_scale:
+        raise ValueError(
+            "Scalar thresholds cannot be compared with raw price values; normalize by ATR first"
+        )
     if left is not None and right is not None and left != right:
         raise ValueError(
             f"{expr.op} requires compatible feature units: {left} vs {right}"
