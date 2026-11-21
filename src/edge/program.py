@@ -101,6 +101,68 @@ class StrategyProgram:
         return hashlib.sha256(encoded).hexdigest()[:20]
 
 
+def _feature_dimension(name: str) -> str:
+    """Return the physical/semantic dimension of a strategy feature."""
+    if name.startswith("edge_"):
+        raise ValueError(
+            f"Operational metadata is not a strategy feature: {name}"
+        )
+    if (
+        name.startswith("ema_")
+        or name.startswith("donchian_")
+        or name.startswith("atr_")
+    ):
+        return "price"
+    if name.startswith("rsi_"):
+        return "oscillator"
+    if name.endswith("_atr") or name in {"ema_gap_atr", "price_change_atr"}:
+        return "ratio"
+    return "generic"
+
+
+def _expr_dimension(expr: Expr) -> str | None:
+    """Infer units; None represents a dimensionless numeric constant."""
+    if expr.op == "const":
+        return None
+    if expr.op == "feature":
+        return _feature_dimension(str(expr.value))
+    dimensions = [_expr_dimension(child) for child in expr.args]
+    if expr.op in {"abs", "lag", "rolling_mean", "rolling_std"}:
+        return dimensions[0]
+    if expr.op in {"add", "sub", "min", "max"}:
+        left, right = dimensions
+        if left is not None and right is not None and left != right:
+            raise ValueError(
+                f"{expr.op} requires compatible feature units: {left} vs {right}"
+            )
+        return left if left is not None else right
+    if expr.op == "mul":
+        left, right = dimensions
+        if left is not None and right is not None:
+            raise ValueError(
+                "mul requires at least one dimensionless constant operand"
+            )
+        return left if left is not None else right
+    if expr.op == "div":
+        left, right = dimensions
+        if right is None:
+            return left
+        if left == right:
+            return "ratio"
+        raise ValueError(
+            f"div requires a constant denominator or matching units: {left} / {right}"
+        )
+    return None
+
+
+def _require_compatible_comparison(expr: Expr) -> None:
+    left, right = (_expr_dimension(child) for child in expr.args)
+    if left is not None and right is not None and left != right:
+        raise ValueError(
+            f"{expr.op} requires compatible feature units: {left} vs {right}"
+        )
+
+
 def _expr_type(expr: Expr, *, depth: int, count: list[int]) -> str:
     if depth > 12:
         raise ValueError("Expression exceeds maximum depth of 12")
@@ -124,6 +186,7 @@ def _expr_type(expr: Expr, *, depth: int, count: list[int]) -> str:
     if expr.op == "feature":
         if not isinstance(expr.value, str) or not expr.value.strip():
             raise ValueError("feature requires a non-empty column name")
+        _feature_dimension(expr.value)
         return "number"
 
     if expr.op in WINDOW_OPS:
@@ -140,10 +203,12 @@ def _expr_type(expr: Expr, *, depth: int, count: list[int]) -> str:
                    "lag", "rolling_mean", "rolling_std"}:
         if any(kind != "number" for kind in child_types):
             raise ValueError(f"{expr.op} accepts numeric arguments only")
+        _expr_dimension(expr)
         return "number"
     if expr.op in {"gt", "lt", "cross_above", "cross_below"}:
         if child_types != ["number", "number"]:
             raise ValueError(f"{expr.op} requires two numeric arguments")
+        _require_compatible_comparison(expr)
         return "bool"
     if expr.op in {"and", "or"}:
         if child_types != ["bool", "bool"]:
