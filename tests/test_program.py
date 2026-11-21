@@ -132,3 +132,17 @@ def test_program_requires_chronological_index():
 
     with pytest.raises(ValueError, match="chronological"):
         evaluate_program(program, frame)
+
+
+def test_logical_not_does_not_turn_missing_features_into_entries():
+    frame = pd.DataFrame({"x": [np.nan, -1.0, 1.0]})
+    not_positive = Expr(
+        "not",
+        (Expr("gt", (feature("x"), const(0.0))),),
+    )
+    program = StrategyProgram(
+        long_entry=not_positive,
+        short_entry=Expr("lt", (feature("x"), const(-2.0))),
+    )
+
+    assert evaluate_program(program, frame).tolist() == [0, 1, 0]
