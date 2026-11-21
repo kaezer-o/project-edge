@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 import hashlib
 import json
 import math
 from typing import Any
 
-import numpy as np
 import pandas as pd
 
 
@@ -196,9 +195,9 @@ def evaluate_expr(expr: Expr, frame: pd.DataFrame) -> pd.Series:
             elif op == "abs":
                 result = values[0].abs()
             elif op == "min":
-                result = pd.concat(values, axis=1).min(axis=1)
+                result = pd.concat(values, axis=1).min(axis=1, skipna=False)
             elif op == "max":
-                result = pd.concat(values, axis=1).max(axis=1)
+                result = pd.concat(values, axis=1).max(axis=1, skipna=False)
             elif op == "lag":
                 result = values[0].shift(int(node.value))
             elif op == "rolling_mean":
