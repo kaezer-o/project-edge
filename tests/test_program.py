@@ -104,6 +104,25 @@ def test_invalid_or_unsafe_expressions_are_rejected(expr):
         validate_expr(expr)
 
 
+@pytest.mark.parametrize(
+    "expr",
+    [
+        Expr("gt", (feature("ema_50"), feature("rsi_14"))),
+        Expr("cross_above", (feature("ema_20"), feature("edge_weekend_before"))),
+        Expr("add", (feature("ema_20"), feature("rsi_14"))),
+        Expr("mul", (feature("ema_20"), feature("atr_14"))),
+    ],
+)
+def test_incompatible_feature_units_are_rejected(expr):
+    with pytest.raises(ValueError):
+        validate_expr(expr, expected="bool" if expr.op in {"gt", "cross_above"} else "number")
+
+
+def test_price_indicators_can_be_compared_and_combined():
+    valid = Expr("gt", (feature("ema_20"), feature("donchian_high_20")))
+    validate_expr(valid, expected="bool")
+
+
 def test_boolean_expression_cannot_be_used_as_numeric_child():
     invalid = Expr("add", (Expr("gt", (feature("x"), const(0))), const(1)))
 
