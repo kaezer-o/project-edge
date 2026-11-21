@@ -81,7 +81,7 @@ def _behaviour_descriptor(
     trade_times = (
         pd.DatetimeIndex(trades["entry_time"])
         if not trades.empty and "entry_time" in trades
-        else pd.DatetimeIndex([])
+        else pd.DatetimeIndex([], tz=frame.index.tz)
     )
     chunks = np.array_split(np.arange(len(frame)), 3)
     descriptor: list[float] = []
