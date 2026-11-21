@@ -218,7 +218,7 @@ def evaluate_expr(expr: Expr, frame: pd.DataFrame) -> pd.Series:
             elif op == "or":
                 result = values[0].fillna(False).astype(bool) | values[1].fillna(False).astype(bool)
             elif op == "not":
-                result = ~values[0].fillna(False).astype(bool)
+                result = ~values[0].astype("boolean")
             else:
                 raise ValueError(f"Unsupported expression operation: {op}")
         cache[key] = result
