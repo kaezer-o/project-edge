@@ -10,7 +10,7 @@ from .program import (
 )
 
 
-NUMERIC_GENERATORS = ("add", "sub", "mul", "div", "min", "max")
+NUMERIC_GENERATORS = ("add", "sub", "div", "min", "max")
 WINDOW_GENERATORS = ("lag", "rolling_mean", "rolling_std")
 BOOLEAN_GENERATORS = ("gt", "lt", "cross_above", "cross_below")
 LOGICAL_GENERATORS = ("and", "or", "not")
@@ -20,9 +20,9 @@ def _terminal_number(
     rng: np.random.Generator,
     features: tuple[str, ...],
 ) -> Expr:
-    if rng.random() < 0.8:
-        return Expr("feature", value=str(rng.choice(features)))
-    return Expr("const", value=float(rng.uniform(-2.0, 2.0)))
+    # Free-floating constants have no reliable scale across forex indicators.
+    # Constants are introduced only by the scale-aware comparison templates.
+    return Expr("feature", value=str(rng.choice(features)))
 
 
 def random_expression(
@@ -60,10 +60,60 @@ def random_expression(
             )
         return Expr("abs", (numeric(depth + 1),))
 
+    rsi_features = tuple(name for name in feature_names if name.startswith("rsi_"))
+    ratio_features = tuple(
+        name for name in feature_names
+        if name.endswith("_atr") or name in {"ema_gap_atr", "price_change_atr"}
+    )
+    price_features = tuple(
+        name for name in feature_names
+        if (
+            name.startswith("ema_")
+            or name.startswith("donchian_")
+            or name in {"open", "high", "low", "close"}
+        )
+    )
+    atr_features = tuple(name for name in feature_names if name.startswith("atr_"))
+
+    def comparison_atom(depth: int) -> Expr:
+        op = str(rng.choice(BOOLEAN_GENERATORS))
+
+        # RSI thresholds use the indicator's native 0-100 scale.
+        if rsi_features and rng.random() < 0.25:
+            feature = Expr("feature", value=str(rng.choice(rsi_features)))
+            threshold = float(rng.choice((20, 30, 40, 50, 60, 70, 80)))
+            return Expr(op, (feature, Expr("const", value=threshold)))
+
+        # Price differences normalized by ATR are dimensionless, so bounded
+        # scalar thresholds have a stable interpretation across price levels.
+        if len(price_features) >= 2 and atr_features and rng.random() < 0.25:
+            left_name = str(rng.choice(price_features))
+            right_options = tuple(name for name in price_features if name != left_name)
+            if right_options:
+                right_name = str(rng.choice(right_options))
+                difference = Expr(
+                    "sub",
+                    (
+                        Expr("feature", value=left_name),
+                        Expr("feature", value=right_name),
+                    ),
+                )
+                normalized = Expr(
+                    "div",
+                    (difference, Expr("feature", value=str(rng.choice(atr_features)))),
+                )
+                threshold = float(rng.uniform(-2.0, 2.0))
+                return Expr(op, (normalized, Expr("const", value=threshold)))
+
+        left = numeric(depth + 1)
+        right = numeric(depth + 1)
+        if left == right:
+            right = Expr("lag", (right,), value=1)
+        return Expr(op, (left, right))
+
     def boolean(depth: int) -> Expr:
         if depth >= max_depth or rng.random() < 0.35:
-            op = str(rng.choice(BOOLEAN_GENERATORS))
-            return Expr(op, (numeric(depth + 1), numeric(depth + 1)))
+            return comparison_atom(depth)
         op = str(rng.choice(LOGICAL_GENERATORS))
         if op == "not":
             return Expr(op, (boolean(depth + 1),))
