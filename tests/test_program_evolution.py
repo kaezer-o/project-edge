@@ -27,6 +27,26 @@ def test_random_expression_generates_valid_typed_trees(expected):
         _assert_typed_and_bounded(expr, expected)
 
 
+def test_generator_excludes_metadata_and_respects_feature_units():
+    rng = np.random.default_rng(2026)
+    features = (
+        "ema_10", "ema_50", "atr_14", "rsi_14",
+        "edge_weekend_before", "edge_segment_id",
+    )
+
+    for _ in range(100):
+        expr = random_expression("bool", features, rng, max_depth=5)
+        validate_expr(expr, expected="bool")
+
+        def collect_features(node):
+            values = [node.value] if node.op == "feature" else []
+            for child in node.args:
+                values.extend(collect_features(child))
+            return values
+
+        assert all(not str(name).startswith("edge_") for name in collect_features(expr))
+
+
 def test_random_expression_requires_features_and_valid_depth():
     rng = np.random.default_rng(2)
 
