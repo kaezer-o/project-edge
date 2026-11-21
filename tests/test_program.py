@@ -45,7 +45,7 @@ def test_cross_above_uses_current_and_previous_closed_rows():
     frame = pd.DataFrame({"x": [0.0, 1.0, 0.0, 2.0]})
     expr = Expr("cross_above", (feature("x"), const(0.5)))
 
-    assert evaluate_expr(expr, frame).tolist() == [False, True, False, True]
+    assert evaluate_expr(expr, frame).fillna(False).tolist() == [False, True, False, True]
 
 
 def test_lag_and_rolling_mean_are_causal():
@@ -146,3 +146,24 @@ def test_logical_not_does_not_turn_missing_features_into_entries():
     )
 
     assert evaluate_program(program, frame).tolist() == [0, 1, 0]
+
+
+
+def test_comparisons_preserve_missing_values_for_boolean_composition():
+    frame = pd.DataFrame({"x": [np.nan, -1.0, 1.0]})
+    comparison = evaluate_expr(
+        Expr("gt", (feature("x"), const(0.0))),
+        frame,
+    )
+
+    assert comparison.isna().tolist() == [True, False, False]
+
+
+def test_crossovers_require_current_and_previous_observations():
+    frame = pd.DataFrame({"x": [np.nan, -1.0, 1.0, np.nan, 2.0]})
+    crossing = evaluate_expr(
+        Expr("cross_above", (feature("x"), const(0.0))),
+        frame,
+    )
+
+    assert crossing.isna().tolist() == [True, True, False, True, True]
