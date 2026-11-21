@@ -27,10 +27,11 @@ to validation or final-test outcomes.
    - Keep migration and replacement deterministic under a fixed seed.
 
 3. **Behavioural diversity**
-   - Record signal/position fingerprints and trade-event summaries.
-   - Measure overlap or similarity between candidates.
-   - Penalize duplicate behaviour during parent selection and archive admission.
-   - Retain structurally different and behaviourally different candidates.
+   - The first integrated descriptor records long-signal frequency, short-signal
+     frequency and executed-trade frequency in each of three training eras.
+   - Each island maintains a bounded nearest-neighbour novelty archive.
+   - This is a coarse behavioural descriptor, not yet a full signal/position
+     fingerprint or pairwise trade-overlap model.
 
 4. **Search grammar**
    - Expand strategy primitives by family: trend, mean reversion, breakout,
@@ -73,13 +74,19 @@ to validation or final-test outcomes.
 ## Current status
 
 - **M1 complete:** atomic, checksummed checkpoints with strict run signatures.
-- **M2 runtime foundation added:** independent island populations, per-island
+- **M1 complete:** atomic, checksummed checkpoints with strict run signatures.
+- **M2 complete at runtime level:** independent island populations, per-island
   random streams, rank-based fitness/novelty selection, bounded novelty
-  archives, ring migration and generation-boundary resume.
-- The island runtime is callback-driven and is not yet wired into
-  edge evolve-program; the existing strategy evaluator remains CPU-only.
-- The runtime's evaluator interface receives genomes only. The caller must
-  construct it around training data only; validation and final-test partitions
-  must remain outside the callback.
+  archives, ring migration and deterministic generation-boundary resume.
+- **M2 integration added:** `edge evolve-program-islands` connects typed
+  StrategyProgram genomes to the existing CPU backtester. Its evaluator closes
+  over training data only; validation is used only after evolution to rank the
+  final shortlist. The final holdout remains disabled unless explicitly
+  requested with `--final-test`.
+- **M3 initial implementation:** novelty descriptors use long/short signal
+  rates and executed-trade rates across three training eras. Full signal
+  fingerprints and pairwise trade-overlap similarity remain future work.
+- **M6 partial:** the new command supports generation budgets, checkpoints and
+  resume. Duration limits and graceful signal handling are not implemented.
 - No GPU speedup is claimed. Profiling and CPU/GPU parity work are still
   required before a CUDA evaluator can be considered.
