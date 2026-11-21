@@ -85,6 +85,15 @@ def _fitness(
     )
 
 
+def _minimum_window_trades(total_minimum: int, window_count: int) -> int:
+    """Distribute the total training trade minimum across chronological windows."""
+    if total_minimum < 1:
+        raise ValueError("total_minimum must be at least one")
+    if window_count < 1:
+        raise ValueError("window_count must be at least one")
+    return max(5, int(np.ceil(total_minimum / window_count)))
+
+
 def _combine_training_fitness(
     aggregate_score: float,
     window_scores: list[float],
@@ -171,8 +180,8 @@ def _training_fitness(
     positions = np.array_split(np.arange(len(frame)), 3)
     # Require the total minimum trade budget to be distributed across all
     # three chronological training eras, with a floor of five per era.
-    minimum_window_trades = max(
-        5, int(np.ceil(min_train_trades / len(positions)))
+    minimum_window_trades = _minimum_window_trades(
+        min_train_trades, len(positions)
     )
     window_rows = []
     window_scores = []
