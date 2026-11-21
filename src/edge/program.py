@@ -131,8 +131,16 @@ def _expr_dimension(expr: Expr) -> str | None:
     if expr.op == "feature":
         return _feature_dimension(str(expr.value))
     dimensions = [_expr_dimension(child) for child in expr.args]
-    if expr.op in {"abs", "lag", "rolling_mean", "rolling_std"}:
+    if expr.op in {"abs", "lag", "rolling_mean"}:
         return dimensions[0]
+    if expr.op == "rolling_std":
+        # Dispersion of a price level is a price distance, not another
+        # absolute price level. Other indicator scales retain their units.
+        return (
+            "price_distance"
+            if dimensions[0] == "price_level"
+            else dimensions[0]
+        )
     if expr.op in {"add", "sub", "min", "max"}:
         left, right = dimensions
         if left is None:
