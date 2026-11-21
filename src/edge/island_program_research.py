@@ -70,6 +70,19 @@ def _behaviour_descriptor(
 ) -> list[float]:
     """Describe actual directional signals and executed trades in three eras."""
     signal = evaluate_program(program, frame)
+    _, trades = _evaluate(
+        frame,
+        program,
+        execution=execution,
+        risk=risk,
+        pip_size=pip_size,
+        price_basis=price_basis,
+    )
+    trade_times = (
+        pd.DatetimeIndex(trades["entry_time"])
+        if not trades.empty and "entry_time" in trades
+        else pd.DatetimeIndex([])
+    )
     chunks = np.array_split(np.arange(len(frame)), 3)
     descriptor: list[float] = []
     for positions in chunks:
@@ -77,19 +90,14 @@ def _behaviour_descriptor(
             descriptor.extend((0.0, 0.0, 0.0))
             continue
         segment = signal.iloc[positions]
-        metrics, _ = _evaluate(
-            frame.iloc[positions],
-            program,
-            execution=execution,
-            risk=risk,
-            pip_size=pip_size,
-            price_basis=price_basis,
-        )
+        start_time = frame.index[int(positions[0])]
+        end_time = frame.index[int(positions[-1])]
+        trade_count = int(((trade_times >= start_time) & (trade_times <= end_time)).sum())
         bars = float(len(positions))
         descriptor.extend((
             float((segment == 1).mean()),
             float((segment == -1).mean()),
-            float(int(metrics.get("trades") or 0) / bars * 1000.0),
+            float(trade_count / bars * 1000.0),
         ))
     return descriptor
 
