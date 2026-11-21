@@ -33,7 +33,10 @@ def random_expression(
     max_depth: int = 4,
 ) -> Expr:
     """Create a bounded, type-correct expression without executable code."""
-    feature_names = tuple(sorted({str(name) for name in features if str(name).strip()}))
+    feature_names = tuple(sorted({
+        str(name) for name in features
+        if str(name).strip() and not str(name).startswith("edge_")
+    }))
     if expected not in {"number", "bool"}:
         raise ValueError("expected must be 'number' or 'bool'")
     if not feature_names:
@@ -66,9 +69,23 @@ def random_expression(
             return Expr(op, (boolean(depth + 1),))
         return Expr(op, (boolean(depth + 1), boolean(depth + 1)))
 
-    result = numeric(1) if expected == "number" else boolean(1)
-    validate_expr(result, expected=expected)
-    return result
+    # Random trees are retried when their feature units are incompatible.
+    # This keeps the search space valid without weakening expression checks.
+    for _ in range(128):
+        result = numeric(1) if expected == "number" else boolean(1)
+        try:
+            validate_expr(result, expected=expected)
+        except ValueError:
+            continue
+        return result
+
+    # Guaranteed-valid fallback; the normal path should almost always succeed.
+    terminal = Expr("feature", value=feature_names[0])
+    if expected == "number":
+        return terminal
+    fallback = Expr("gt", (terminal, Expr("const", value=0.0)))
+    validate_expr(fallback, expected="bool")
+    return fallback
 
 
 def _node_type(node: Expr) -> str:
