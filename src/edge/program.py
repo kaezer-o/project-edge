@@ -165,7 +165,8 @@ def validate_expr(expr: Expr, *, expected: str = "number") -> None:
 
 def evaluate_expr(expr: Expr, frame: pd.DataFrame) -> pd.Series:
     """Evaluate an expression causally over a chronological feature frame."""
-    validate_expr(expr)
+    expected = "bool" if expr.op in BOOLEAN_OPS else "number"
+    validate_expr(expr, expected=expected)
     cache: dict[int, pd.Series] = {}
 
     def evaluate(node: Expr) -> pd.Series:
