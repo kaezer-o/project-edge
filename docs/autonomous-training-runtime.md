@@ -27,8 +27,10 @@ to validation or final-test outcomes.
    - Keep migration and replacement deterministic under a fixed seed.
 
 3. **Behavioural diversity**
-   - The first integrated descriptor records long-signal frequency, short-signal
-     frequency and executed-trade frequency in each of three training eras.
+   - The integrated descriptor records long-signal frequency, short-signal
+     frequency and executed-trade frequency per bar in each of three training
+     eras. All components use comparable 0–1 rate scales; the descriptor
+     version is part of the checkpoint signature.
    - Each island maintains a bounded nearest-neighbour novelty archive.
    - This is a coarse behavioural descriptor, not yet a full signal/position
      fingerprint or pairwise trade-overlap model.
@@ -82,8 +84,8 @@ to validation or final-test outcomes.
   over training data only; validation is used only after evolution to rank the
   final shortlist. The final holdout remains disabled unless explicitly
   requested with `--final-test`.
-- **M3 initial implementation:** novelty descriptors use long/short signal
-  rates and executed-trade rates across three training eras. Full signal
+- **M3 initial implementation:** novelty descriptors use normalized long/short
+  signal rates and executed-trade rates across three training eras. Full signal
   fingerprints and pairwise trade-overlap similarity remain future work.
 - **M6 partial:** the new command supports generation budgets, checkpoints and
   resume. Duration limits and graceful signal handling are not implemented.
