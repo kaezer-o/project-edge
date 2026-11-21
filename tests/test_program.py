@@ -208,3 +208,59 @@ def test_min_and_max_propagate_missing_operands(operation, expected):
 
     assert result.iloc[[0, 2]].tolist() == [expected[0], expected[2]]
     assert pd.isna(result.iloc[1])
+
+
+
+def test_raw_price_levels_and_volatility_distances_are_distinct():
+    with pytest.raises(ValueError, match="compatible feature units"):
+        validate_expr(
+            Expr("gt", (feature("ema_20"), feature("atr_14"))),
+            expected="bool",
+        )
+
+    valid = Expr(
+        "gt",
+        (
+            Expr(
+                "sub",
+                (feature("ema_10"), feature("ema_50")),
+            ),
+            feature("atr_14"),
+        ),
+    )
+    validate_expr(valid, expected="bool")
+
+
+def test_raw_price_and_atr_features_reject_unscaled_scalar_thresholds():
+    for name in ("ema_20", "atr_14", "donchian_high_20"):
+        with pytest.raises(ValueError, match="normalize by ATR"):
+            validate_expr(
+                Expr("gt", (feature(name), const(1.0))),
+                expected="bool",
+            )
+
+
+def test_oscillator_thresholds_and_atr_normalized_price_thresholds_are_valid():
+    validate_expr(
+        Expr("lt", (feature("rsi_14"), const(30.0))),
+        expected="bool",
+    )
+    normalized_gap = Expr(
+        "div",
+        (
+            Expr("sub", (feature("ema_10"), feature("ema_50"))),
+            feature("atr_14"),
+        ),
+    )
+    validate_expr(
+        Expr("gt", (normalized_gap, const(0.5))),
+        expected="bool",
+    )
+
+
+def test_constant_only_comparisons_are_rejected():
+    with pytest.raises(ValueError, match="at least one market feature"):
+        validate_expr(
+            Expr("cross_below", (const(-1.0), const(0.5))),
+            expected="bool",
+        )
