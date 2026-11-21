@@ -110,6 +110,8 @@ def _expr_type(expr: Expr, *, depth: int, count: list[int]) -> str:
         raise ValueError("Expression exceeds maximum size of 128 nodes")
     if expr.op not in ARITY:
         raise ValueError(f"Unsupported expression operation: {expr.op}")
+    if expr.op not in ({"const", "feature"} | WINDOW_OPS) and expr.value is not None:
+        raise ValueError(f"Operation {expr.op} does not accept a value")
     if len(expr.args) != ARITY[expr.op]:
         raise ValueError(f"Operation {expr.op} requires {ARITY[expr.op]} arguments")
 
