@@ -72,6 +72,14 @@ to validation or final-test outcomes.
 
 ## Current status
 
-M1 begins with the checkpoint persistence module. The existing strategy
-evaluator remains CPU-only until profiling and numerical parity work are
-complete. No GPU speedup is claimed at this stage.
+- **M1 complete:** atomic, checksummed checkpoints with strict run signatures.
+- **M2 runtime foundation added:** independent island populations, per-island
+  random streams, rank-based fitness/novelty selection, bounded novelty
+  archives, ring migration and generation-boundary resume.
+- The island runtime is callback-driven and is not yet wired into
+  edge evolve-program; the existing strategy evaluator remains CPU-only.
+- The runtime's evaluator interface receives genomes only. The caller must
+  construct it around training data only; validation and final-test partitions
+  must remain outside the callback.
+- No GPU speedup is claimed. Profiling and CPU/GPU parity work are still
+  required before a CUDA evaluator can be considered.
