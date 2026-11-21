@@ -107,6 +107,10 @@ def _feature_dimension(name: str) -> str:
         raise ValueError(
             f"Operational metadata is not a strategy feature: {name}"
         )
+    # Check normalized-feature suffixes before broad EMA/price prefixes:
+    # e.g. ema_gap_atr is a ratio, not an EMA price level.
+    if name.endswith("_atr") or name in {"ema_gap_atr", "price_change_atr"}:
+        return "ratio"
     if (
         name.startswith("ema_")
         or name.startswith("donchian_")
@@ -117,8 +121,6 @@ def _feature_dimension(name: str) -> str:
         return "price_distance"
     if name.startswith("rsi_"):
         return "oscillator"
-    if name.endswith("_atr") or name in {"ema_gap_atr", "price_change_atr"}:
-        return "ratio"
     return "generic"
 
 
