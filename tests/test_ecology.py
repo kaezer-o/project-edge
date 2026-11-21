@@ -2441,3 +2441,29 @@ def test_temporal_habitat_performance_handles_zero_trades():
         assert period.outcomes[0].habitat_id == "range"
         assert period.outcomes[0].trade_count == 0
         assert period.outcomes[0].expectancy_r is None
+
+def test_confidence_adjusted_expectancy_controls_fitness_objective():
+    fitness = OrganismFitness(
+        organism_id="confidence-test",
+        expectancy_r=0.15,
+        confidence_adjusted_expectancy_r=-0.02,
+        max_drawdown_pct=0.03,
+        complexity=3,
+        novelty_score=0.7,
+    )
+
+    assert fitness.expectancy_r == pytest.approx(0.15)
+    assert fitness.selection_expectancy_r == pytest.approx(-0.02)
+    assert fitness.objectives()[0] == pytest.approx(-0.02)
+
+
+def test_confidence_adjusted_expectancy_rejects_non_finite_values():
+    with pytest.raises(ValueError, match="Confidence-adjusted expectancy must be finite"):
+        OrganismFitness(
+            organism_id="invalid-confidence",
+            expectancy_r=0.15,
+            confidence_adjusted_expectancy_r=float("nan"),
+            max_drawdown_pct=0.03,
+            complexity=3,
+            novelty_score=0.7,
+        )

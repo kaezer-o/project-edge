@@ -29,6 +29,7 @@ from .evolution import (
     random_genome,
 )
 from .evolutionary_research import _run_genome
+from .validation import block_bootstrap_expectancy
 
 
 @dataclass(frozen=True)
@@ -230,6 +231,22 @@ def evaluate_ecological_population(
             else 1.0
         )
 
+        bootstrap = block_bootstrap_expectancy(
+            evaluation.trades,
+            repetitions=500,
+            block_length=5,
+            seed=2026 ^ int(organism.organism_id[:8], 16),
+        )
+        bootstrap_lower = bootstrap.get("ci_90_low")
+
+        # Do not award positive fitness to samples too small for a
+        # meaningful bootstrap interval.
+        confidence_adjusted_expectancy = (
+            min(expectancy_value, 0.0)
+            if bootstrap_lower is None
+            else float(bootstrap_lower)
+        )
+
         habitat_performance = measure_habitat_performance(
             evaluation.trades,
             habitat_frame,
@@ -244,6 +261,7 @@ def evaluate_ecological_population(
         fitness[organism.organism_id] = OrganismFitness(
             organism_id=organism.organism_id,
             expectancy_r=expectancy_value,
+            confidence_adjusted_expectancy_r=confidence_adjusted_expectancy,
             max_drawdown_pct=drawdown_value,
             complexity=complexity,
             novelty_score=float(novelty[index]),

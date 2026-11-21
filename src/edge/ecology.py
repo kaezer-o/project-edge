@@ -687,6 +687,7 @@ class OrganismFitness:
     temporal_persistence_score: float = 0.0
     temporal_habitat_persistence: tuple[TemporalHabitatPersistence, ...] = ()
     trade_count: int = 0
+    confidence_adjusted_expectancy_r: float | None = None
 
     def __post_init__(self) -> None:
         if not self.organism_id:
@@ -699,6 +700,14 @@ class OrganismFitness:
         )
         if not all(np.isfinite(value) for value in numeric):
             raise ValueError("Fitness measurements must be finite")
+
+        if (
+            self.confidence_adjusted_expectancy_r is not None
+            and not np.isfinite(self.confidence_adjusted_expectancy_r)
+        ):
+            raise ValueError(
+                "Confidence-adjusted expectancy must be finite"
+            )
 
         if self.max_drawdown_pct < 0:
             raise ValueError("Drawdown cannot be negative")
@@ -730,6 +739,12 @@ class OrganismFitness:
             raise ValueError(
                 "Temporal persistence score must be between 0 and 1"
             )
+
+    @property
+    def selection_expectancy_r(self) -> float:
+        if self.confidence_adjusted_expectancy_r is not None:
+            return float(self.confidence_adjusted_expectancy_r)
+        return float(self.expectancy_r)
 
     def adaptability_score(self, minimum_trades: int = 5) -> float:
         """Fraction of sufficiently sampled habitats with positive expectancy."""
@@ -772,7 +787,7 @@ class OrganismFitness:
           7. Temporal persistence: maximize
         """
         return (
-            float(self.expectancy_r),
+            self.selection_expectancy_r,
             -float(self.max_drawdown_pct),
             self.adaptability_score(minimum_habitat_trades),
             self.niche_performance_score(minimum_habitat_trades),
@@ -1031,7 +1046,7 @@ def select_ecological_survivors(
         record = fitness[identifier]
         return (
             record.trade_count < minimum_total_trades,
-            record.expectancy_r <= 0,
+            record.selection_expectancy_r <= 0,
             selection_key(identifier),
         )
 
@@ -1051,36 +1066,17 @@ def select_ecological_survivors(
         key=champion_key
     )
 
-    species_quota = max(1, target_capacity // 2)
+    # Preserve every species when capacity allows. When species
+    # outnumber capacity, reserve half the slots for species champions.
+    if len(species) <= target_capacity:
+        species_quota = len(species)
+    else:
+        species_quota = max(1, target_capacity // 2)
+    species_quota = min(target_capacity, species_quota)
     species_champion_ids = tuple(champions[:species_quota])
 
     selected = list(species_champion_ids)
     selected_set = set(selected)
-
-
-    # Give profitable, unrepresented species priority in global competition.
-    represented_species = {
-        membership[identifier]
-        for identifier in selected
-    }
-
-    remaining_species_champions = [
-        identifier
-        for identifier in champions
-        if membership[identifier] not in represented_species
-    ]
-
-    global_competition_ids = []
-
-    for identifier in remaining_species_champions:
-        if len(selected) >= target_capacity:
-            break
-
-        if identifier not in selected_set:
-            selected.append(identifier)
-            selected_set.add(identifier)
-            global_competition_ids.append(identifier)
-            represented_species.add(membership[identifier])
 
     # Identify robust representatives of profitable habitats.
     habitat_champions: dict[str, tuple[str, float]] = {}
@@ -1088,7 +1084,7 @@ def select_ecological_survivors(
     for identifier, record in fitness.items():
         if (
             record.trade_count < minimum_total_trades
-            or record.expectancy_r <= 0
+            or record.selection_expectancy_r <= 0
         ):
             continue
 
@@ -1137,33 +1133,58 @@ def select_ecological_survivors(
         key=lambda item: (-item[1], selection_key(item[0])),
     )
 
+    # Reserve habitat slots only when every species can already
+    # be represented and survivor capacity remains.
+    habitat_quota = (
+        max(1, target_capacity // 4)
+        if len(species) < target_capacity
+        else 0
+    )
     habitat_champion_ids = []
 
     for identifier, _ in ordered_habitat_champions:
-        if len(selected) >= target_capacity:
+        if (
+            len(habitat_champion_ids) >= habitat_quota
+            or len(selected) >= target_capacity
+        ):
             break
 
-        if identifier not in selected_set:
-            selected.append(identifier)
-            selected_set.add(identifier)
-            habitat_champion_ids.append(identifier)
+        if identifier in selected_set:
+            continue
 
+        selected.append(identifier)
+        selected_set.add(identifier)
+        habitat_champion_ids.append(identifier)
 
-    # Prefer profitable organisms globally. If none are available,
-    # negative-expectancy organisms remain eligible as evolutionary fallback.
-    global_order = sorted(
-        organisms,
-        key=champion_key,
-    )
+    # Remaining positions go to the strongest organisms globally.
+    # Prefer an organism from a species not yet represented.
+    global_competition_ids = []
+    remaining = set(organisms) - selected_set
 
-    for identifier in global_order:
-        if len(selected) >= target_capacity:
-            break
+    while len(selected) < target_capacity and remaining:
+        represented_species = {
+            organisms[identifier].species_id
+            for identifier in selected
+        }
 
-        if identifier not in selected_set:
-            selected.append(identifier)
-            selected_set.add(identifier)
-            global_competition_ids.append(identifier)
+        unrepresented_candidates = [
+            identifier
+            for identifier in remaining
+            if organisms[identifier].species_id not in represented_species
+        ]
+
+        candidates = (
+            unrepresented_candidates
+            if unrepresented_candidates
+            else list(remaining)
+        )
+        identifier = min(candidates, key=champion_key)
+
+        selected.append(identifier)
+        selected_set.add(identifier)
+        remaining.remove(identifier)
+        global_competition_ids.append(identifier)
+
     surviving_organisms = tuple(
         org for org in population.organisms
         if org.organism_id in selected_set

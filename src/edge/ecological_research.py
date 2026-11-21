@@ -617,6 +617,7 @@ def research_ecological_timeframe(
             "species_id": organism.species_id,
             "genome": organism.genome.to_dict(),
             "training_metrics": training_metrics,
+            "training_confidence_adjusted_expectancy_r": ecological_run.final_evaluation.fitness[organism_id].confidence_adjusted_expectancy_r,
             "training_temporal_persistence": ecological_run.final_evaluation
                 .fitness[organism_id].temporal_persistence_score,
             "validation_metrics": validation_metrics,
@@ -652,6 +653,7 @@ def research_ecological_timeframe(
             "genome": organism.genome.to_dict(),
             "fitness": {
                 "expectancy_r": fitness.expectancy_r,
+                "confidence_adjusted_expectancy_r": fitness.confidence_adjusted_expectancy_r,
                 "trade_count": fitness.trade_count,
                 "max_drawdown_pct": fitness.max_drawdown_pct,
                 "complexity": fitness.complexity,
