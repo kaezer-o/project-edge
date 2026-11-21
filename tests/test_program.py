@@ -278,3 +278,31 @@ def test_ema_gap_atr_is_classified_as_normalized_ratio():
         ),
         expected="bool",
     )
+
+
+
+def test_rolling_std_of_price_level_has_price_distance_units():
+    dispersion = Expr(
+        "rolling_std",
+        (feature("ema_50"),),
+        value=20,
+    )
+
+    valid = Expr("lt", (dispersion, feature("atr_14")))
+    validate_expr(valid, expected="bool")
+
+    invalid = Expr("lt", (dispersion, feature("ema_50")))
+    with pytest.raises(ValueError, match="compatible feature units"):
+        validate_expr(invalid, expected="bool")
+
+
+def test_rolling_mean_of_price_level_remains_price_level():
+    average = Expr(
+        "rolling_mean",
+        (feature("ema_50"),),
+        value=20,
+    )
+    validate_expr(
+        Expr("gt", (average, feature("ema_200"))),
+        expected="bool",
+    )
