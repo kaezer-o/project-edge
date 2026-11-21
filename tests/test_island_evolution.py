@@ -3,6 +3,7 @@ import pytest
 
 from edge.island_evolution import (
     IslandEvolutionConfig,
+    _rank,
     run_island_evolution,
 )
 
@@ -141,3 +142,12 @@ def test_evaluator_rejects_non_finite_behaviour(tmp_path):
             reproduce=reproducer, config=config, seed=1, generations=1,
             checkpoint_path=tmp_path / "bad.json", run_signature="bad",
         )
+
+
+def test_rank_assigns_equal_fitness_equal_selection_rank():
+    ranks = _rank(np.array([1.0, 1.0, 2.0, 3.0]))
+
+    assert ranks[0] == ranks[1]
+    assert ranks[0] == 1.0 / 6.0
+    assert ranks[2] == 2.0 / 3.0
+    assert ranks[3] == 1.0
