@@ -59,7 +59,13 @@ def _evaluate(
     return calculate_metrics(trades, equity), trades
 
 
-def _fitness(metrics: dict[str, object], program: StrategyProgram, min_trades: int) -> float:
+def _fitness(
+    metrics: dict[str, object],
+    program: StrategyProgram,
+    min_trades: int,
+    *,
+    sample_multiplier: int = 1,
+) -> float:
     count = int(metrics.get("trades") or 0)
     expectancy = metrics.get("expectancy_r")
     drawdown = metrics.get("max_realized_drawdown_pct")
@@ -73,10 +79,141 @@ def _fitness(metrics: dict[str, object], program: StrategyProgram, min_trades: i
     # Training fitness is a ranking signal only; it is not evidence of robustness.
     pf_bonus = min(float(profit_factor or 0.0), 3.0) * 0.02
     return (
-        expectancy * np.sqrt(count) / (1.0 + 4.0 * drawdown)
+        expectancy * np.sqrt(count * sample_multiplier) / (1.0 + 4.0 * drawdown)
         + pf_bonus
         - 0.0015 * _program_complexity(program)
     )
+
+
+def _combine_training_fitness(
+    aggregate_score: float,
+    window_scores: list[float],
+) -> float:
+    """Reward training performance that persists across chronological regimes."""
+    scores = np.asarray(window_scores, dtype=float)
+    if (
+        len(scores) != 3
+        or not np.isfinite(scores).all()
+        or (scores <= -1e8).any()
+        or not np.isfinite(aggregate_score)
+        or aggregate_score <= -1e8
+    ):
+        return -1e9
+    return float(
+        0.35 * aggregate_score
+        + 0.45 * np.median(scores)
+        + 0.20 * np.min(scores)
+        - 0.10 * np.std(scores)
+    )
+
+
+def _expression_structure(expr: Expr) -> tuple[object, ...]:
+    """Return a threshold-independent expression structure for diversity control."""
+    if expr.op == "const":
+        value: object = "scalar"
+    elif expr.op == "feature":
+        value = expr.value
+    elif expr.op in {"lag", "rolling_mean", "rolling_std"}:
+        value = expr.value
+    else:
+        value = None
+    return (
+        expr.op,
+        value,
+        tuple(_expression_structure(child) for child in expr.args),
+    )
+
+
+def _program_structure(program: StrategyProgram) -> tuple[object, ...]:
+    """Identify a rule family independently of numeric thresholds and risk genes."""
+    return (
+        _expression_structure(program.long_entry),
+        _expression_structure(program.short_entry),
+    )
+
+
+def _diverse_ranked(
+    evaluated: list[tuple[float, StrategyProgram, dict[str, object], dict[str, object]]],
+    limit: int,
+    *,
+    max_per_structure: int = 1,
+) -> list[tuple[float, StrategyProgram, dict[str, object], dict[str, object]]]:
+    """Keep high-scoring programs while limiting near-identical rule structures."""
+    selected = []
+    counts: dict[tuple[object, ...], int] = {}
+    for row in sorted(evaluated, key=lambda item: item[0], reverse=True):
+        structure = _program_structure(row[1])
+        if counts.get(structure, 0) >= max_per_structure:
+            continue
+        selected.append(row)
+        counts[structure] = counts.get(structure, 0) + 1
+        if len(selected) >= limit:
+            break
+    return selected
+
+
+def _training_fitness(
+    frame: pd.DataFrame,
+    program: StrategyProgram,
+    *,
+    execution: ExecutionConfig,
+    risk: RiskConfig,
+    pip_size: float,
+    price_basis: str,
+    min_train_trades: int,
+) -> tuple[float, dict[str, object], dict[str, object]]:
+    """Score aggregate training results and three unseen-within-training eras."""
+    aggregate_metrics, _ = _evaluate(
+        frame, program, execution=execution, risk=risk,
+        pip_size=pip_size, price_basis=price_basis,
+    )
+    aggregate_score = _fitness(aggregate_metrics, program, min_train_trades)
+    positions = np.array_split(np.arange(len(frame)), 3)
+    minimum_window_trades = max(3, int(np.ceil(min_train_trades / 6)))
+    window_rows = []
+    window_scores = []
+    for index, window_positions in enumerate(positions, start=1):
+        window = frame.iloc[window_positions]
+        metrics, _ = _evaluate(
+            window, program, execution=execution, risk=risk,
+            pip_size=pip_size, price_basis=price_basis,
+        )
+        score = _fitness(
+            metrics,
+            program,
+            minimum_window_trades,
+            sample_multiplier=len(positions),
+        )
+        window_scores.append(score)
+        window_rows.append({
+            "window": index,
+            "start_utc": window.index.min().isoformat() if len(window) else None,
+            "end_utc": window.index.max().isoformat() if len(window) else None,
+            "metrics": metrics,
+            "fitness": float(score),
+            "eligible": bool(score > -1e8),
+        })
+    robust_score = _combine_training_fitness(aggregate_score, window_scores)
+    report = {
+        "aggregate_fitness": float(aggregate_score),
+        "window_fitness": [float(value) for value in window_scores],
+        "median_window_fitness": (
+            float(np.median(window_scores))
+            if all(value > -1e8 for value in window_scores) else None
+        ),
+        "worst_window_fitness": (
+            float(np.min(window_scores))
+            if all(value > -1e8 for value in window_scores) else None
+        ),
+        "window_fitness_std": (
+            float(np.std(window_scores))
+            if all(value > -1e8 for value in window_scores) else None
+        ),
+        "minimum_window_trades": minimum_window_trades,
+        "all_windows_eligible": bool(all(value > -1e8 for value in window_scores)),
+        "windows": window_rows,
+    }
+    return robust_score, aggregate_metrics, report
 
 
 def _validation_check(
@@ -227,54 +364,93 @@ def run_program_research(
             population.append(candidate)
 
     generation_rows: list[dict[str, object]] = []
-    evaluated: list[tuple[float, StrategyProgram, dict[str, object]]] = []
+    evaluated: list[
+        tuple[float, StrategyProgram, dict[str, object], dict[str, object]]
+    ] = []
     elite_count = max(2, min(4, population_size // 4))
     for generation in range(generations):
         evaluated = []
         for program in population:
-            metrics, trades = _evaluate(
+            score, metrics, training_robustness = _training_fitness(
                 train, program, execution=execution, risk=risk,
                 pip_size=pip_size, price_basis=price_basis,
+                min_train_trades=min_train_trades,
             )
-            score = _fitness(metrics, program, min_train_trades)
-            evaluated.append((score, program, metrics))
+            evaluated.append((score, program, metrics, training_robustness))
         evaluated.sort(key=lambda item: item[0], reverse=True)
+        diverse_generation = _diverse_ranked(
+            evaluated, len(evaluated), max_per_structure=1
+        )
         generation_rows.append({
             "generation": generation + 1,
             "best_training_fitness": float(evaluated[0][0]),
+            "best_aggregate_training_fitness": float(
+                evaluated[0][3]["aggregate_fitness"]
+            ),
             "median_training_fitness": float(np.median([row[0] for row in evaluated])),
             "unique_programs": len({row[1].fingerprint() for row in evaluated}),
+            "unique_rule_structures": len({
+                _program_structure(row[1]) for row in evaluated
+            }),
             "best_training_metrics": evaluated[0][2],
+            "best_training_robustness": evaluated[0][3],
         })
         if generation == generations - 1:
             break
 
-        next_population = [row[1] for row in evaluated[:elite_count]]
+        elite_rows = _diverse_ranked(
+            evaluated, elite_count, max_per_structure=1
+        )
+        next_population = [row[1] for row in elite_rows]
         next_seen = {program.fingerprint() for program in next_population}
+        parent_pool = _diverse_ranked(
+            evaluated, max(elite_count, population_size // 2),
+            max_per_structure=1,
+        )
+        if not parent_pool:
+            parent_pool = evaluated[:max(1, elite_count)]
+
+        def select_parent() -> StrategyProgram:
+            tournament_size = min(3, len(parent_pool))
+            indices = rng.choice(len(parent_pool), size=tournament_size, replace=False)
+            winner_row = max(
+                (parent_pool[int(index)] for index in indices),
+                key=lambda row: row[0],
+            )
+            return winner_row[1]
+
         while len(next_population) < population_size:
-            if rng.random() < 0.12:
+            if rng.random() < 0.20:
                 child = _random_program(features, rng)
             else:
-                parent_a = evaluated[int(rng.integers(0, max(elite_count, population_size // 2)))][1]
+                parent_a = select_parent()
                 if rng.random() < 0.55:
-                    parent_b = evaluated[int(rng.integers(0, max(elite_count, population_size // 2)))][1]
+                    parent_b = select_parent()
                     child = crossover_programs(parent_a, parent_b, rng)
                 else:
                     child = mutate_program(parent_a, features, rng)
             fingerprint = child.fingerprint()
-            if fingerprint in next_seen:
+            attempts = 0
+            while fingerprint in next_seen and attempts < 8:
                 child = _random_program(features, rng)
+                fingerprint = child.fingerprint()
+                attempts += 1
+            if fingerprint in next_seen:
+                child = mutate_program(select_parent(), features, rng)
                 fingerprint = child.fingerprint()
             if fingerprint not in next_seen:
                 next_seen.add(fingerprint)
                 next_population.append(child)
         population = next_population
 
-    # Only the training-ranked shortlist is exposed to validation.
-    shortlist = evaluated[:min(10, len(evaluated))]
+    # A threshold-independent structural cap prevents near-identical variants
+    # from occupying the entire validation shortlist.
+    shortlist = _diverse_ranked(
+        evaluated, min(10, len(evaluated)), max_per_structure=1
+    )
     candidate_reports = []
     accepted: list[tuple[float, StrategyProgram, dict[str, object]]] = []
-    for score, program, train_metrics in shortlist:
+    for score, program, train_metrics, training_robustness in shortlist:
         validation_result = _validation_check(
             validation, program, execution=execution, risk=risk,
             pip_size=pip_size, price_basis=price_basis,
@@ -284,7 +460,11 @@ def run_program_research(
             "program": program.to_dict(),
             "fingerprint": program.fingerprint(),
             "training_fitness": float(score),
+            "aggregate_training_fitness": float(
+                training_robustness["aggregate_fitness"]
+            ),
             "training_metrics": train_metrics,
+            "training_robustness": training_robustness,
             "validation": validation_result,
         }
         candidate_reports.append(row)
@@ -324,7 +504,7 @@ def run_program_research(
             "generations": generations,
             "seed": seed,
             "generation_history": generation_rows,
-            "selection": "training fitness only; validation never feeds back into evolution",
+            "selection": "aggregate plus three chronological training-era fitness scores; validation never feeds back into evolution; structural diversity cap applied to elites, parents, and validation shortlist",
         },
         "execution_assumptions": {
             "price_basis": price_basis,
