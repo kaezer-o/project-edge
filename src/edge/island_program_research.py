@@ -115,10 +115,10 @@ def _run_signature(
     config: IslandEvolutionConfig,
     seed: int,
     min_train_trades: int,
+    min_validation_trades: int,
 ) -> str:
-    columns = [column for column in ("open", "high", "low", "close") if column in source_data]
     digest = hashlib.sha256()
-    digest.update(pd.util.hash_pandas_object(source_data[columns], index=True).values.tobytes())
+    digest.update(pd.util.hash_pandas_object(source_data, index=True).values.tobytes())
     payload = {
         "symbol": symbol,
         "timeframe": timeframe,
@@ -131,6 +131,7 @@ def _run_signature(
         "island_config": config.__dict__,
         "seed": seed,
         "min_train_trades": min_train_trades,
+        "min_validation_trades": min_validation_trades,
         "fitness_version": 1,
     }
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
@@ -178,6 +179,7 @@ def run_island_program_research(
         config=config,
         seed=seed,
         min_train_trades=min_train_trades,
+        min_validation_trades=min_validation_trades,
     )
 
     def evaluate(genome: dict[str, object]) -> tuple[float, list[float]]:
