@@ -264,3 +264,17 @@ def test_constant_only_comparisons_are_rejected():
             Expr("cross_below", (const(-1.0), const(0.5))),
             expected="bool",
         )
+
+
+
+def test_ema_gap_atr_is_classified_as_normalized_ratio():
+    validate_expr(
+        Expr(
+            "gt",
+            (
+                feature("ema_gap_atr"),
+                const(0.5),
+            ),
+        ),
+        expected="bool",
+    )
