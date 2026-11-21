@@ -97,7 +97,7 @@ def _behaviour_descriptor(
         descriptor.extend((
             float((segment == 1).mean()),
             float((segment == -1).mean()),
-            float(trade_count / bars * 1000.0),
+            float(trade_count / bars),
         ))
     return descriptor
 
@@ -132,7 +132,7 @@ def _run_signature(
         "seed": seed,
         "min_train_trades": min_train_trades,
         "min_validation_trades": min_validation_trades,
-        "fitness_version": 1,
+        "fitness_version": 2,
     }
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
     return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
