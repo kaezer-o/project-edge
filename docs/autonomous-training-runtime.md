@@ -74,7 +74,6 @@ to validation or final-test outcomes.
 ## Current status
 
 - **M1 complete:** atomic, checksummed checkpoints with strict run signatures.
-- **M1 complete:** atomic, checksummed checkpoints with strict run signatures.
 - **M2 complete at runtime level:** independent island populations, per-island
   random streams, rank-based fitness/novelty selection, bounded novelty
   archives, ring migration and deterministic generation-boundary resume.
