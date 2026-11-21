@@ -1,13 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import replace
-import math
-
 import numpy as np
 
 from .program import (
-    BOOLEAN_OPS,
-    NUMERIC_OPS,
     Expr,
     StrategyProgram,
     validate_expr,
@@ -172,7 +168,9 @@ def crossover_expressions(
 ) -> Expr:
     """Exchange a randomly chosen, type-compatible subtree from the second parent."""
     expected = _node_type(first)
-    validate_expr(second, expected=_node_type(second))
+    if _node_type(second) != expected:
+        raise ValueError("Crossover parents must have the same root type")
+    validate_expr(second, expected=expected)
     first_nodes = _nodes_with_paths(first)
     second_nodes = [
         item for item in _nodes_with_paths(second) if item[2] == expected
