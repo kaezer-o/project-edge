@@ -75,8 +75,16 @@ def _rank(values: np.ndarray) -> np.ndarray:
     if len(values) <= 1:
         return np.ones(len(values), dtype=float)
     order = np.argsort(values, kind="stable")
+    sorted_values = values[order]
     ranks = np.empty(len(values), dtype=float)
-    ranks[order] = np.arange(len(values), dtype=float) / (len(values) - 1)
+    start = 0
+    while start < len(values):
+        end = start + 1
+        while end < len(values) and sorted_values[end] == sorted_values[start]:
+            end += 1
+        average_rank = (start + end - 1) / 2.0
+        ranks[order[start:end]] = average_rank / (len(values) - 1)
+        start = end
     return ranks
 
 
@@ -164,7 +172,6 @@ def run_island_evolution(
 
     while generation < generations:
         evaluated_islands: list[list[dict[str, object]]] = []
-        island_descriptors: list[list[list[float]]] = []
         island_novelty: list[np.ndarray] = []
         generation_best = -float("inf")
         generation_best_genome: Genome | None = None
@@ -198,7 +205,6 @@ def run_island_evolution(
                 for index, genome in enumerate(population)
             ]
             evaluated_islands.append(rows)
-            island_descriptors.append(descriptors)
             island_novelty.append(novelty)
             best_index = int(np.argmax(fitness))
             if fitness[best_index] > generation_best:
@@ -228,52 +234,51 @@ def run_island_evolution(
         # Always prepare the next population, even at the requested stopping
         # generation. This makes a checkpoint at generation N resumable to N+K
         # with exactly the same RNG trajectory as one uninterrupted run.
-        if generation <= generations:
-            next_islands: list[list[Genome]] = []
-            for rows, rng in zip(evaluated_islands, rngs):
-                ranked = sorted(
-                    rows, key=lambda row: float(row["selection_score"]), reverse=True
+        next_islands: list[list[Genome]] = []
+        for rows, rng in zip(evaluated_islands, rngs):
+            ranked = sorted(
+                rows, key=lambda row: float(row["selection_score"]), reverse=True
+            )
+            elites = sorted(
+                rows, key=lambda row: float(row["fitness"]), reverse=True
+            )[:config.elite_count]
+            next_population = [_json_copy(row["genome"]) for row in elites]
+
+            def select_parent() -> Genome:
+                count = min(config.tournament_size, len(ranked))
+                indices = rng.choice(len(ranked), size=count, replace=False)
+                winner = max(
+                    (ranked[int(index)] for index in indices),
+                    key=lambda row: float(row["selection_score"]),
                 )
-                elites = sorted(
-                    rows, key=lambda row: float(row["fitness"]), reverse=True
-                )[:config.elite_count]
-                next_population = [_json_copy(row["genome"]) for row in elites]
+                return _json_copy(winner["genome"])
 
-                def select_parent() -> Genome:
-                    count = min(config.tournament_size, len(ranked))
-                    indices = rng.choice(len(ranked), size=count, replace=False)
-                    winner = max(
-                        (ranked[int(index)] for index in indices),
-                        key=lambda row: float(row["selection_score"]),
-                    )
-                    return _json_copy(winner["genome"])
+            while len(next_population) < config.population_per_island:
+                child = reproduce(select_parent(), select_parent(), rng)
+                if not isinstance(child, dict):
+                    raise ValueError("reproduce must return a genome dictionary")
+                next_population.append(_json_copy(child))
+            next_islands.append(next_population)
 
-                while len(next_population) < config.population_per_island:
-                    child = reproduce(select_parent(), select_parent(), rng)
-                    if not isinstance(child, dict):
-                        raise ValueError("reproduce must return a genome dictionary")
-                    next_population.append(_json_copy(child))
-                next_islands.append(next_population)
-
-            if generation % config.migration_interval == 0:
-                migrants = []
-                for rows in evaluated_islands:
-                    novel_rows = sorted(
-                        rows, key=lambda row: float(row["novelty"]), reverse=True
-                    )
-                    migrants.append([
-                        _json_copy(row["genome"])
-                        for row in novel_rows[:config.migrants_per_island]
-                    ])
-                for target_index, target_population in enumerate(next_islands):
-                    incoming = migrants[(target_index - 1) % config.islands]
-                    replace_count = min(
-                        len(incoming),
-                        config.population_per_island - config.elite_count,
-                    )
-                    if replace_count:
-                        target_population[-replace_count:] = incoming[:replace_count]
-            islands = next_islands
+        if generation % config.migration_interval == 0:
+            migrants = []
+            for rows in evaluated_islands:
+                novel_rows = sorted(
+                    rows, key=lambda row: float(row["novelty"]), reverse=True
+                )
+                migrants.append([
+                    _json_copy(row["genome"])
+                    for row in novel_rows[:config.migrants_per_island]
+                ])
+            for target_index, target_population in enumerate(next_islands):
+                incoming = migrants[(target_index - 1) % config.islands]
+                replace_count = min(
+                    len(incoming),
+                    config.population_per_island - config.elite_count,
+                )
+                if replace_count:
+                    target_population[-replace_count:] = incoming[:replace_count]
+        islands = next_islands
 
         save_training_checkpoint(
             checkpoint,
