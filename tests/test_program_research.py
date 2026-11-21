@@ -4,7 +4,12 @@ import numpy as np
 import pandas as pd
 
 from edge.config import ExecutionConfig, RiskConfig
-from edge.program_research import run_program_research
+from edge.program_research import (
+    _combine_training_fitness,
+    _diverse_ranked,
+    _program_structure,
+    run_program_research,
+)
 
 
 def _market_frame(rows: int = 1500) -> pd.DataFrame:
@@ -47,6 +52,8 @@ def test_program_research_runs_evolution_and_writes_reproducible_report(tmp_path
     assert saved["engine"] == "open_ended_expression_program_evolution"
     assert saved["evolution"]["population_size"] == 8
     assert len(saved["evolution"]["generation_history"]) == 2
+    assert "best_training_robustness" in saved["evolution"]["generation_history"][0]
+    assert "unique_rule_structures" in saved["evolution"]["generation_history"][0]
     assert saved["candidate_count"] > 0
     assert saved["data"]["train_bars"] == 900
     assert saved["data"]["validation_bars"] == 300
@@ -75,3 +82,43 @@ def test_program_research_rejects_target_timeframe_below_source(tmp_path):
             generations=2,
             output_dir=tmp_path,
         )
+
+
+
+def test_training_robust_fitness_penalizes_weak_regimes():
+    consistent = _combine_training_fitness(2.0, [2.0, 2.0, 2.0])
+    concentrated = _combine_training_fitness(3.0, [3.0, 2.0, -1.0])
+    insufficient = _combine_training_fitness(3.0, [3.0, 2.0, -1e9])
+
+    assert consistent > concentrated
+    assert insufficient == -1e9
+
+
+def test_diverse_ranking_limits_threshold_only_variants():
+    from edge.program import Expr, StrategyProgram
+
+    def program(threshold, feature="ema_gap_atr"):
+        return StrategyProgram(
+            long_entry=Expr(
+                "gt",
+                (Expr("feature", value=feature), Expr("const", value=threshold)),
+            ),
+            short_entry=Expr(
+                "lt",
+                (Expr("feature", value="rsi_14"), Expr("const", value=30.0)),
+            ),
+        )
+
+    first = program(0.5)
+    threshold_variant = program(1.0)
+    different_structure = program(0.5, feature="price_change_atr")
+    rows = [
+        (3.0, first, {}, {}),
+        (2.0, threshold_variant, {}, {}),
+        (1.0, different_structure, {}, {}),
+    ]
+
+    selected = _diverse_ranked(rows, 3, max_per_structure=1)
+
+    assert len(selected) == 2
+    assert _program_structure(selected[0][1]) != _program_structure(selected[1][1])
