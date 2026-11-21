@@ -193,6 +193,73 @@ def test_validation_pool_prioritizes_qualified_training_samples():
     assert qualified_key < under_sampled_key
 
 
+
+def test_training_confirmation_selects_exactly_one_top_training_ranked_candidate():
+    from edge.ecology import OrganismFitness
+    from edge.ecological_research import (
+        _training_ranked_confirmation_candidate_ids,
+    )
+
+    fitness = {
+        "lower-rank": OrganismFitness(
+            organism_id="lower-rank",
+            expectancy_r=0.4,
+            confidence_adjusted_expectancy_r=0.2,
+            max_drawdown_pct=0.02,
+            complexity=4,
+            novelty_score=0.3,
+            trade_count=200,
+        ),
+        "top-rank-low-crowding": OrganismFitness(
+            organism_id="top-rank-low-crowding",
+            expectancy_r=0.5,
+            confidence_adjusted_expectancy_r=0.3,
+            max_drawdown_pct=0.02,
+            complexity=4,
+            novelty_score=0.3,
+            trade_count=200,
+        ),
+        "top-rank-high-crowding": OrganismFitness(
+            organism_id="top-rank-high-crowding",
+            expectancy_r=0.1,
+            confidence_adjusted_expectancy_r=-0.1,
+            max_drawdown_pct=0.02,
+            complexity=4,
+            novelty_score=0.3,
+            trade_count=200,
+        ),
+    }
+
+    selected = _training_ranked_confirmation_candidate_ids(
+        list(fitness),
+        fitness,
+        {
+            "lower-rank": 1,
+            "top-rank-low-crowding": 0,
+            "top-rank-high-crowding": 0,
+        },
+        {
+            "lower-rank": 100.0,
+            "top-rank-low-crowding": 0.5,
+            "top-rank-high-crowding": 2.0,
+        },
+        validation_pool_limit=24,
+        minimum_train_trades=30,
+    )
+
+    assert selected == ("top-rank-high-crowding",)
+    assert len(selected) == 1
+
+    assert _training_ranked_confirmation_candidate_ids(
+        [],
+        {},
+        {},
+        {},
+        validation_pool_limit=24,
+        minimum_train_trades=30,
+    ) == ()
+
+
 def test_candidate_eligibility_requires_all_three_windows():
     from edge.config import ResearchConfig
     from edge.ecological_research import (

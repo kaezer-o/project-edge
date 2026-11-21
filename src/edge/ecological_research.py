@@ -249,6 +249,34 @@ def _candidate_pool_order_key(
     )
 
 
+def _training_ranked_confirmation_candidate_ids(
+    organism_ids: list[str],
+    fitness: dict[str, OrganismFitness],
+    pareto_rank: dict[str, int],
+    crowding_distance: dict[str, float],
+    *,
+    validation_pool_limit: int,
+    minimum_train_trades: int,
+) -> tuple[str, ...]:
+    """Return only the top training-ranked survivor for validation confirmation.
+
+    The shortlist limit is retained for configuration compatibility. Validation
+    outcomes must not be used to choose a fallback candidate.
+    """
+    shortlist = sorted(
+        organism_ids,
+        key=lambda organism_id: _candidate_pool_order_key(
+            organism_id,
+            fitness[organism_id],
+            pareto_rank.get(organism_id, len(pareto_rank)),
+            crowding_distance.get(organism_id, 0.0),
+            minimum_train_trades=minimum_train_trades,
+        ),
+    )[:max(0, validation_pool_limit)]
+
+    return tuple(shortlist[:1])
+
+
 def _trade_group_summary(trades: pd.DataFrame) -> dict[str, object]:
     if trades.empty:
         return {
@@ -540,16 +568,22 @@ def research_ecological_timeframe(
 
     crowding = dict(selection.crowding_distance)
 
-    candidates = sorted(
-        selection.population.organisms,
-        key=lambda organism: _candidate_pool_order_key(
-            organism.organism_id,
-            ecological_run.final_evaluation.fitness[organism.organism_id],
-            front_rank.get(organism.organism_id, len(front_rank)),
-            crowding.get(organism.organism_id, 0.0),
-            minimum_train_trades=research.minimum_train_trades,
-        ),
-    )[:evolution.validation_pool]
+    organisms_by_id = {
+        organism.organism_id: organism
+        for organism in selection.population.organisms
+    }
+    confirmation_candidate_ids = _training_ranked_confirmation_candidate_ids(
+        list(organisms_by_id),
+        ecological_run.final_evaluation.fitness,
+        front_rank,
+        crowding,
+        validation_pool_limit=evolution.validation_pool,
+        minimum_train_trades=research.minimum_train_trades,
+    )
+    candidates = [
+        organisms_by_id[organism_id]
+        for organism_id in confirmation_candidate_ids
+    ]
 
     candidate_rows = []
     eligible = []
@@ -620,7 +654,7 @@ def research_ecological_timeframe(
             + len(organism.genome.short_conditions)
         )
 
-        validation_rank_key = (
+        validation_quality_diagnostic = (
             _candidate_rank_key(
                 validation_metrics,
                 robustness,
@@ -642,9 +676,10 @@ def research_ecological_timeframe(
             "validation_robustness": robustness,
             "eligible": passed,
             "rejection_reasons": rejection_reasons,
-            "validation_rank_key": (
-                list(validation_rank_key)
-                if validation_rank_key is not None
+            "training_selection_rank": 1,
+            "validation_quality_diagnostic": (
+                list(validation_quality_diagnostic)
+                if validation_quality_diagnostic is not None
                 else None),
             "validation_habitat_performance": validation_habitat_diagnostics,              
         }
@@ -652,8 +687,8 @@ def research_ecological_timeframe(
         candidate_rows.append(row)
 
         if passed:
-            assert validation_rank_key is not None
-            eligible.append((validation_rank_key, organism, row))
+            assert validation_quality_diagnostic is not None
+            eligible.append((validation_quality_diagnostic, organism, row))
 
     # Serialize final generation information.
     final_organisms = []
@@ -736,16 +771,25 @@ def research_ecological_timeframe(
     }
 
     if not eligible:
+        reason = (
+            "No surviving organism was available for validation confirmation."
+            if not candidates
+            else (
+                "The single top training-ranked candidate failed validation "
+                "confirmation; no fallback candidate was tested."
+            )
+        )
         return {
             **base_result,
             "status": "no_robust_candidate",
             "winner": None,
             "final_test": None,
             "final_test_skipped": True,
-            "reason": "No survivor passed the validation-confidence, chronological-window and execution-cost gates.",
+            "reason": reason,
         }
 
-    eligible.sort(key=lambda item: item[0], reverse=True)
+    # At most one candidate is confirmed, so no validation-based ranking
+    # or fallback selection occurs here.
     _, winner, winning_row = eligible[0]
     if run_final_test:
         # Evaluate the selected candidate on the final holdout once.
@@ -945,10 +989,14 @@ def run_ecological_research(
         },
         "validation_design": {
             "candidate_selection": (
-                "Training Pareto survivors followed by base validation, a "
-                "positive validation bootstrap lower bound, three chronological "
-                "validation windows and 1.5x cost stress"
+                "Final survivors are ordered using training-only sample "
+                "qualification, Pareto rank and crowding distance. Exactly "
+                "one top-ranked candidate is evaluated on validation; validation "
+                "outcomes do not rank candidates or trigger fallback selection."
             ),
+            "training_ranked_shortlist_limit": evolution.validation_pool,
+            "validation_confirmation_candidate_limit": 1,
+            "validation_fallback_after_rejection": False,
             "validation_expectancy_confidence_gate": (
                 "Require ci_90_low > 0 from the 500-repetition moving-block "
                 "bootstrap with 5-trade blocks; reject unavailable intervals. "
@@ -956,7 +1004,7 @@ def run_ecological_research(
                 "bias or multiple testing."
             ),
             "final_test_run": bool(run_final_test),
-            "final_test_policy": "One evaluation after candidate selection",
+            "final_test_policy": "One evaluation after candidate confirmation",
         },
         "execution_assumptions": {
             "price_basis": price_basis,

@@ -201,7 +201,15 @@ def _parser() -> argparse.ArgumentParser:
     evolve_ecology.add_argument("--population", type=int, default=32)
     evolve_ecology.add_argument("--generations", type=int, default=12)
     evolve_ecology.add_argument("--pattern-clusters", type=int, default=6)
-    evolve_ecology.add_argument("--validation-pool", type=int, default=24)
+    evolve_ecology.add_argument(
+        "--validation-pool",
+        type=int,
+        default=24,
+        help=(
+            "maximum training-ranked shortlist size; only its top candidate "
+            "receives validation confirmation"
+        ),
+    )
     evolve_ecology.add_argument("--seed", type=int, default=2026)
 
     evolve_ecology.add_argument(
