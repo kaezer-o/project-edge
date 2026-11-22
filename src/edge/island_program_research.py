@@ -67,6 +67,90 @@ def _prepare_frames(
     return train, validation, test, features
 
 
+def _contains_expr(root, predicate) -> bool:
+    return predicate(root) or any(
+        _contains_expr(child, predicate) for child in root.args
+    )
+
+
+def _feature_name(expr) -> str | None:
+    return str(expr.value) if expr.op == "feature" else None
+
+
+def _direct_comparison(root, op: str, left: str, right: str) -> bool:
+    return (
+        root.op == op
+        and len(root.args) == 2
+        and _feature_name(root.args[0]) == left
+        and _feature_name(root.args[1]) == right
+    )
+
+
+def _volatility_gate(root, op: str) -> bool:
+    if root.op != op or len(root.args) != 2:
+        return False
+    left, right = root.args
+    return (
+        _feature_name(left) == "atr_14"
+        and right.op == "rolling_mean"
+        and len(right.args) == 1
+        and _feature_name(right.args[0]) == "atr_14"
+    )
+
+
+def _classify_strategy_families(program: StrategyProgram) -> list[str]:
+    """Classify recognizable rule structures, not incidental feature usage."""
+    long_rule, short_rule = program.long_entry, program.short_entry
+    roots = (long_rule, short_rule)
+    families: set[str] = set()
+
+    if (
+        _contains_expr(long_rule, lambda node: _direct_comparison(
+            node, "gt", "ema_10", "ema_40"
+        ))
+        and _contains_expr(short_rule, lambda node: _direct_comparison(
+            node, "lt", "ema_10", "ema_40"
+        ))
+    ):
+        families.add("trend")
+
+    if (
+        _contains_expr(long_rule, lambda node: (
+            node.op == "cross_above"
+            and _feature_name(node.args[0]) == "rsi_14"
+            and node.args[1].op == "const"
+        ))
+        and _contains_expr(short_rule, lambda node: (
+            node.op == "cross_below"
+            and _feature_name(node.args[0]) == "rsi_14"
+            and node.args[1].op == "const"
+        ))
+    ):
+        families.add("mean_reversion")
+
+    if (
+        _contains_expr(long_rule, lambda node: _direct_comparison(
+            node, "gt", "close", "donchian_high_20"
+        ))
+        and _contains_expr(short_rule, lambda node: _direct_comparison(
+            node, "lt", "close", "donchian_low_20"
+        ))
+    ):
+        families.add("breakout")
+
+    for label, op in (
+        ("volatility_expansion", "gt"),
+        ("volatility_contraction", "lt"),
+    ):
+        if (
+            _contains_expr(long_rule, lambda node: _volatility_gate(node, op))
+            and _contains_expr(short_rule, lambda node: _volatility_gate(node, op))
+        ):
+            families.add(label)
+
+    return sorted(families) if families else ["hybrid_or_other"]
+
+
 def _behaviour_descriptor(
     frame: pd.DataFrame,
     program: StrategyProgram,
@@ -125,25 +209,7 @@ def _behaviour_descriptor(
             else:
                 timestamp = timestamp.tz_convert("UTC")
             trade_events.append(f"{timestamp.isoformat()}|{str(trade.direction).lower()}")
-    feature_names: set[str] = set()
-    def collect_features(expr) -> None:
-        if expr.op == "feature":
-            feature_names.add(str(expr.value))
-        for child in expr.args:
-            collect_features(child)
-    collect_features(program.long_entry)
-    collect_features(program.short_entry)
-    families = set()
-    if any(name.startswith("ema_") for name in feature_names):
-        families.add("trend")
-    if any(name.startswith("donchian_") for name in feature_names):
-        families.add("breakout")
-    if any(name.startswith("rsi_") for name in feature_names):
-        families.add("mean_reversion")
-    if any(name.startswith("atr_") or name.endswith("_atr") for name in feature_names):
-        families.add("volatility")
-    if not families:
-        families.add("other")
+    families = _classify_strategy_families(program)
     signal_fingerprint = hashlib.sha256(
         signal.to_numpy(dtype="int8", copy=False).tobytes()
     ).hexdigest()
