@@ -42,8 +42,10 @@ def _evaluate(
     risk: RiskConfig,
     pip_size: float,
     price_basis: str,
+    signal: pd.Series | None = None,
 ) -> tuple[dict[str, object], pd.DataFrame]:
-    signal = evaluate_program(program, frame)
+    if signal is None:
+        signal = evaluate_program(program, frame)
     trades, equity = run_backtest(
         frame, signal,
         stop_atr=program.stop_atr,
@@ -170,12 +172,16 @@ def _training_fitness(
     pip_size: float,
     price_basis: str,
     min_train_trades: int,
+    aggregate_result: tuple[dict[str, object], pd.DataFrame] | None = None,
 ) -> tuple[float, dict[str, object], dict[str, object]]:
     """Score aggregate training results and three unseen-within-training eras."""
-    aggregate_metrics, _ = _evaluate(
-        frame, program, execution=execution, risk=risk,
-        pip_size=pip_size, price_basis=price_basis,
-    )
+    if aggregate_result is None:
+        aggregate_metrics, _ = _evaluate(
+            frame, program, execution=execution, risk=risk,
+            pip_size=pip_size, price_basis=price_basis,
+        )
+    else:
+        aggregate_metrics, _ = aggregate_result
     aggregate_score = _fitness(aggregate_metrics, program, min_train_trades)
     positions = np.array_split(np.arange(len(frame)), 3)
     # Require the total minimum trade budget to be distributed across all
