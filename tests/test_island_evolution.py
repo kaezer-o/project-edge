@@ -444,3 +444,71 @@ def test_hybrid_genomes_do_not_satisfy_single_family_elite_quotas(tmp_path):
     assert counts["trend"] >= 4
     assert counts["breakout"] >= 4
     assert counts["mean_reversion"] >= 4
+
+
+
+def test_family_class_counts_are_exclusive_and_sum_to_population(tmp_path):
+    config = IslandEvolutionConfig(
+        islands=2,
+        population_per_island=4,
+        elite_count=1,
+        migration_interval=10,
+        migrants_per_island=1,
+    )
+    initial = [
+        [
+            {"class": label, "id": island * 10 + index}
+            for index, label in enumerate(("trend", "mean_reversion", "hybrid", "other"))
+        ]
+        for island in range(config.islands)
+    ]
+
+    def class_evaluator(genome):
+        label = str(genome["class"])
+        families = {
+            "trend": ["trend"],
+            "mean_reversion": ["mean_reversion"],
+            "hybrid": ["hybrid", "trend", "mean_reversion"],
+            "other": ["other"],
+        }[label]
+        identifier = int(genome["id"])
+        return float(identifier), {
+            "rates": [identifier / 100.0],
+            "trades": [f"entry-{identifier}"],
+            "signal_fingerprint": f"signal-{identifier}",
+            "behaviour_fingerprint": f"behaviour-{identifier}",
+            "families": families,
+        }
+
+    def other_reproducer(_first, _second, rng):
+        return {"class": "other", "id": int(rng.integers(1000, 100000))}
+
+    result = run_island_evolution(
+        initial,
+        evaluate=class_evaluator,
+        reproduce=other_reproducer,
+        config=config,
+        seed=91,
+        generations=1,
+        checkpoint_path=tmp_path / "exclusive-family-classes.json",
+        run_signature="exclusive-family-classes",
+    )
+
+    row = result.history[0]
+    assert row["strategy_family_class_population_counts"] == {
+        "trend": 2,
+        "mean_reversion": 2,
+        "hybrid": 2,
+        "other": 2,
+    }
+    assert row["island_strategy_family_class_population_counts"] == [
+        {"trend": 1, "mean_reversion": 1, "hybrid": 1, "other": 1},
+        {"trend": 1, "mean_reversion": 1, "hybrid": 1, "other": 1},
+    ]
+    assert sum(row["strategy_family_class_population_counts"].values()) == (
+        config.islands * config.population_per_island
+    )
+    assert all(
+        sum(counts.values()) == config.population_per_island
+        for counts in row["island_strategy_family_class_population_counts"]
+    )
