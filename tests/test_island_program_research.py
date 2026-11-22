@@ -641,3 +641,34 @@ def test_training_signal_diversity_filter_validates_threshold():
             pip_size=0.0001,
             price_basis="mid",
         )
+
+
+def test_finalist_limit_cli_defaults_to_20_and_accepts_custom_value():
+    from edge.cli import _parser
+
+    parser = _parser()
+
+    default_args = parser.parse_args([
+        "evolve-program-islands",
+        "--input", "data.csv",
+    ])
+    assert default_args.finalist_limit == 20
+
+    custom_args = parser.parse_args([
+        "evolve-program-islands",
+        "--input", "data.csv",
+        "--finalist-limit", "100",
+    ])
+    assert custom_args.finalist_limit == 100
+
+
+def test_finalist_limit_cli_rejects_non_integer_values():
+    import pytest
+    from edge.cli import _parser
+
+    with pytest.raises(SystemExit):
+        _parser().parse_args([
+            "evolve-program-islands",
+            "--input", "data.csv",
+            "--finalist-limit", "not-an-integer",
+        ])
