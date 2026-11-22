@@ -157,3 +157,27 @@ The generation argument is the total target, not an additional-generation count.
 Do not add `--final-test` during development.
 - No GPU speedup is claimed. Profiling and CPU/GPU parity work are still
   required before a CUDA evaluator can be considered.
+
+## Cross-seed finalist reproducibility audit
+
+The offline audit compares finalist structures and validation diagnostics from
+independent evolutionary runs. It is descriptive only: it does not change
+fitness, selection, migration, validation gates or final-test access.
+
+Run the script directly from the repository root:
+
+~~~powershell
+.\.venv\Scripts\python.exe scripts\audit_candidate_reproducibility.py --report 2033=results\motif-repro-h4-seed-2033\island_program_evolution_report.json --report 2034=results\motif-repro-h4-seed-2034\island_program_evolution_report.json --report 2035=results\motif-repro-h4-seed-2035\island_program_evolution_report.json
+~~~
+
+It writes JSON and Markdown summaries under `results`. Candidate rule
+structures are compared after normalizing numeric constants and ordering
+commutative operands; risk parameters are retained separately. Motif labels
+are coarse structural descriptors, not proof of equivalent behaviour.
+
+The reports store validation entry-event SHA-256 fingerprints rather than
+event sets. Cross-seed exact equality can therefore be detected, but
+approximate Jaccard overlap cannot be reconstructed. The audit rejects
+reports with mismatched symbol, timeframe, partition metadata, or any
+indication that the final test was evaluated. Validation results remain
+development diagnostics because this partition has already been examined.
