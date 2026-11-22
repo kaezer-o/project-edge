@@ -47,6 +47,19 @@ to validation or final-test outcomes.
      regardless of syntactic differences.
    - Next-generation construction rejects duplicate behavioural fingerprints
      while alternatives are available. Migration skips behaviours already
+     present in the receiving island. Retries are bounded.
+   - Generation telemetry records unique genomes, unique signal behaviours,
+     per-island uniqueness and inferred strategy-family counts. Family labels
+     describe feature usage and do not prove a strategy belongs to a family.
+   - Expression trees are canonicalized after generation, mutation and
+     crossover. Safe rewrites include double-negation removal, duplicate
+     logical operands, identical min/max operands, commutative logical operand
+     ordering and absolute value of raw positive FX price-level features.
+   - A semantic fingerprint hashes the exact per-bar directional signal stream
+     on training data. Equal fingerprints receive zero behavioural distance,
+     regardless of syntactic differences.
+   - Next-generation construction rejects duplicate behavioural fingerprints
+     while alternatives are available. Migration skips behaviours already
      present in the receiving island. Retries are bounded to avoid infinite
      reproduction loops.
    - Generation telemetry records unique genomes, unique signal behaviours,
@@ -103,10 +116,11 @@ to validation or final-test outcomes.
   over training data only; validation is used only after evolution to rank the
   final shortlist. The final holdout remains disabled unless explicitly
   requested with `--final-test`.
-- **M3 trade-level implementation:** novelty combines normalized signal rates
-  with Jaccard similarity over exact UTC entry-time/direction events. Migrants
-  are selected to reduce within-batch behavioural overlap. Full per-bar signal
-  fingerprints remain future work.
+- **M3 semantic diversity implementation:** expression canonicalization,
+  exact per-bar training-signal fingerprints, behavioural duplicate rejection
+  during reproduction, duplicate-aware migration, trade-overlap novelty and
+  per-generation diversity/family telemetry are implemented. Validation and
+  final-test data do not enter semantic fingerprints or evolutionary selection.
 - **M6 partial:** the new command supports generation budgets, checkpoints and
   resume. Duration limits and graceful signal handling are not implemented.
 
