@@ -357,6 +357,12 @@ def main() -> None:
     parser.add_argument("--spread-pips", type=float, default=0.8)
     parser.add_argument("--slippage-pips", type=float, default=0.1)
     parser.add_argument("--commission-pips", type=float, default=0.0)
+    parser.add_argument("--swap-long-pips", type=float, default=0.0)
+    parser.add_argument("--swap-short-pips", type=float, default=0.0)
+    parser.add_argument("--rollover-timezone", default="America/New_York")
+    parser.add_argument("--rollover-local-time", default="17:00")
+    parser.add_argument("--triple-swap-weekday", type=int, choices=range(7), default=None)
+    parser.add_argument("--triple-swap-multiplier", type=float, default=3.0)
     parser.add_argument("--starting-balance", type=float, default=10_000.0)
     parser.add_argument("--risk-per-trade", type=float, default=0.0025)
     parser.add_argument("--max-daily-loss", type=float, default=0.01)
@@ -379,6 +385,12 @@ def main() -> None:
         spread_pips=args.spread_pips,
         slippage_pips_per_side=args.slippage_pips,
         commission_round_trip_pips=args.commission_pips,
+        swap_long_pips_per_rollover=args.swap_long_pips,
+        swap_short_pips_per_rollover=args.swap_short_pips,
+        rollover_timezone=args.rollover_timezone,
+        rollover_local_time=args.rollover_local_time,
+        triple_swap_weekday=args.triple_swap_weekday,
+        triple_swap_multiplier=args.triple_swap_multiplier,
     )
     risk = RiskConfig(
         starting_balance=args.starting_balance,
