@@ -14,7 +14,7 @@ from .island_evolution import (
     IslandEvolutionConfig,
     run_island_evolution,
 )
-from .program import StrategyProgram, evaluate_program
+from .program import StrategyProgram, evaluate_program, canonicalize_program
 from .program_evolution import crossover_programs, mutate_program
 from .program_research import (
     _diverse_ranked,
@@ -112,7 +112,34 @@ def _behaviour_descriptor(
             else:
                 timestamp = timestamp.tz_convert("UTC")
             trade_events.append(f"{timestamp.isoformat()}|{str(trade.direction).lower()}")
-    return {"rates": rates, "trades": sorted(set(trade_events))}
+    feature_names: set[str] = set()
+    def collect_features(expr) -> None:
+        if expr.op == "feature":
+            feature_names.add(str(expr.value))
+        for child in expr.args:
+            collect_features(child)
+    collect_features(program.long_entry)
+    collect_features(program.short_entry)
+    families = set()
+    if any(name.startswith("ema_") for name in feature_names):
+        families.add("trend")
+    if any(name.startswith("donchian_") for name in feature_names):
+        families.add("breakout")
+    if any(name.startswith("rsi_") for name in feature_names):
+        families.add("mean_reversion")
+    if any(name.startswith("atr_") or name.endswith("_atr") for name in feature_names):
+        families.add("volatility")
+    if not families:
+        families.add("other")
+    signal_fingerprint = hashlib.sha256(
+        signal.to_numpy(dtype="int8", copy=False).tobytes()
+    ).hexdigest()
+    return {
+        "rates": rates,
+        "trades": sorted(set(trade_events)),
+        "signal_fingerprint": signal_fingerprint,
+        "families": sorted(families),
+    }
 
 
 def _run_signature(
@@ -145,7 +172,7 @@ def _run_signature(
         "seed": seed,
         "min_train_trades": min_train_trades,
         "min_validation_trades": min_validation_trades,
-        "fitness_version": 3,
+        "fitness_version": 4,
     }
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
     return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
@@ -195,7 +222,7 @@ def run_island_program_research(
         min_validation_trades=min_validation_trades,
     )
 
-    def evaluate(genome: dict[str, object]) -> tuple[float, list[float]]:
+    def evaluate(genome: dict[str, object]) -> tuple[float, dict[str, object]]:
         program = StrategyProgram.from_dict(genome)
         score, _, _ = _training_fitness(
             train,
@@ -227,7 +254,7 @@ def run_island_program_research(
             child = crossover_programs(parent_a, parent_b, rng)
         else:
             child = mutate_program(parent_a, features, rng)
-        return child.to_dict()
+        return canonicalize_program(child).to_dict()
 
     initial_populations = None
     if not resume:
@@ -238,7 +265,7 @@ def run_island_program_research(
             population: list[dict[str, object]] = []
             seen: set[str] = set()
             while len(population) < config.population_per_island:
-                candidate = _random_program(features, rng)
+                candidate = canonicalize_program(_random_program(features, rng))
                 fingerprint = candidate.fingerprint()
                 if fingerprint not in seen:
                     seen.add(fingerprint)
