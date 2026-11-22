@@ -760,6 +760,11 @@ def run_island_program_research(
         for rank, (score, program, _metrics, _robustness)
         in enumerate(fitness_ranked_shortlist, start=1)
     ]
+    fitness_rank_by_fingerprint = {
+        program.fingerprint(): rank
+        for rank, (_score, program, _metrics, _robustness)
+        in enumerate(fitness_ranked_shortlist, start=1)
+    }
     candidates: list[dict[str, object]] = []
     accepted: list[tuple[float, StrategyProgram, dict[str, object]]] = []
     for score, program, train_metrics, robustness in shortlist:
@@ -775,6 +780,7 @@ def run_island_program_research(
         row = {
             "program": program.to_dict(),
             "fingerprint": program.fingerprint(),
+            "fitness_rank": fitness_rank_by_fingerprint[program.fingerprint()],
             "training_fitness": float(score),
             "training_metrics": train_metrics,
             "training_robustness": robustness,
