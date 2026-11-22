@@ -134,6 +134,41 @@ def test_training_minimum_trades_are_distributed_across_windows():
     assert _minimum_window_trades(1, 3) == 5
 
 
+def test_training_fitness_reuses_precomputed_aggregate_result(monkeypatch):
+    import edge.program_research as research
+    from edge.program import Expr, StrategyProgram
+
+    frame = pd.DataFrame(
+        {"close": np.ones(90)},
+        index=pd.date_range("2025-01-01", periods=90, freq="h", tz="UTC"),
+    )
+    program = StrategyProgram(
+        long_entry=Expr("gt", (Expr("feature", value="close"), Expr("const", value=0.0))),
+        short_entry=Expr("lt", (Expr("feature", value="close"), Expr("const", value=0.0))),
+    )
+    aggregate_metrics = {
+        "trades": 30, "expectancy_r": 0.1,
+        "max_realized_drawdown_pct": 0.01, "profit_factor": 1.2,
+    }
+    calls = []
+
+    def fake_evaluate(candidate_frame, candidate_program, **kwargs):
+        calls.append(len(candidate_frame))
+        return aggregate_metrics, pd.DataFrame()
+
+    monkeypatch.setattr(research, "_evaluate", fake_evaluate)
+    score, metrics, robustness = research._training_fitness(
+        frame, program, execution=ExecutionConfig(), risk=RiskConfig(),
+        pip_size=0.0001, price_basis="mid", min_train_trades=3,
+        aggregate_result=(aggregate_metrics, pd.DataFrame()),
+    )
+    assert len(calls) == 3
+    assert calls == [30, 30, 30]
+    assert metrics is aggregate_metrics
+    assert robustness["aggregate_fitness"] > -1e8
+    assert score > -1e8
+
+
 
 def test_cost_stress_report_explains_trade_set_changes(monkeypatch):
     import edge.program_research as research
