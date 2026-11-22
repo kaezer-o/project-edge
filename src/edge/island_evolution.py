@@ -437,6 +437,15 @@ def run_island_evolution(
             },
             history=history,
         )
+        # Keep only the next generation's cache entries. Candidate descriptors
+        # contain trade events, so retaining every attempted child would grow
+        # memory with the total number of generations.
+        evaluation_cache = {
+            _fingerprint(genome): evaluation_cache[_fingerprint(genome)]
+            for population in islands
+            for genome in population
+            if _fingerprint(genome) in evaluation_cache
+        }
 
     final_rows = [
         (float(evaluate(genome)[0]), genome)
