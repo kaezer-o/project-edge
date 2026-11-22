@@ -333,6 +333,13 @@ stop, target or holding-time behaviour.
 
 The filter is opt-in and does not alter evolutionary fitness, population
 selection, migration, checkpoint state, validation gates or final-test access.
+It evaluates each unique program fingerprint once, stores trade events as
+compact UTC nanosecond tuples, and avoids evaluating the remaining similarity
+components when they cannot improve the current best pairwise score. The
+selection order, minimum-of-three similarity score, threshold comparison and
+reported winning comparison are preserved. Performance counters record unique
+program evaluations, training backtests and short-circuited pairwise comparisons.
+
 It evaluates directional signals and executed trade paths on the training
 partition only. The report retains the original fitness-ranked shortlist,
 selected original fitness ranks, and separate signal, trade-path and risk-profile
