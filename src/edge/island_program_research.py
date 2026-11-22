@@ -412,6 +412,7 @@ def run_island_program_research(
             "migration_interval": config.migration_interval,
             "migrants_per_island": config.migrants_per_island,
             "novelty_weight": config.novelty_weight,
+            "generation_performance": result.runtime_metrics,
             "history": result.history,
         },
         "candidate_count": len(candidates),
