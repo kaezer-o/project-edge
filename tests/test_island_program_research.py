@@ -164,7 +164,7 @@ def test_behaviour_descriptor_uses_comparable_rate_scales(monkeypatch):
     ]
     assert len(descriptor["signal_fingerprint"]) == 64
     assert len(descriptor["behaviour_fingerprint"]) == 64
-    assert descriptor["families"] == ["other"]
+    assert descriptor["families"] == ["hybrid_or_other"]
     assert max(descriptor["rates"]) <= 1.0
 
 
