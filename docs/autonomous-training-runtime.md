@@ -29,11 +29,15 @@ to validation or final-test outcomes.
 3. **Behavioural diversity**
    - The integrated descriptor records long-signal frequency, short-signal
      frequency and executed-trade frequency per bar in each of three training
-     eras. All components use comparable 0–1 rate scales; the descriptor
-     version is part of the checkpoint signature.
+     eras, plus every executed trade's UTC entry timestamp and direction.
+   - Novelty combines normalized signal-rate distance with Jaccard distance
+     over exact directional trade-entry events. Identical trade sets have
+     zero trade distance; disjoint sets have distance one.
    - Each island maintains a bounded nearest-neighbour novelty archive.
-   - This is a coarse behavioural descriptor, not yet a full signal/position
-     fingerprint or pairwise trade-overlap model.
+     Migration greedily selects behaviourally distinct migrants rather than
+     taking the highest-novelty rows without checking overlap.
+   - Descriptor/checkpoint versioning rejects checkpoints created by the
+     earlier aggregate-only descriptor.
 
 4. **Search grammar**
    - Expand strategy primitives by family: trend, mean reversion, breakout,
@@ -84,9 +88,10 @@ to validation or final-test outcomes.
   over training data only; validation is used only after evolution to rank the
   final shortlist. The final holdout remains disabled unless explicitly
   requested with `--final-test`.
-- **M3 initial implementation:** novelty descriptors use normalized long/short
-  signal rates and executed-trade rates across three training eras. Full signal
-  fingerprints and pairwise trade-overlap similarity remain future work.
+- **M3 trade-level implementation:** novelty combines normalized signal rates
+  with Jaccard similarity over exact UTC entry-time/direction events. Migrants
+  are selected to reduce within-batch behavioural overlap. Full per-bar signal
+  fingerprints remain future work.
 - **M6 partial:** the new command supports generation budgets, checkpoints and
   resume. Duration limits and graceful signal handling are not implemented.
 
