@@ -65,6 +65,7 @@ def test_island_program_research_runs_and_resumes_without_final_test(tmp_path):
         "trend", "mean_reversion", "breakout",
         "volatility_expansion", "volatility_contraction",
     }
+    assert "close" in first["data"]["features"]
     assert first["final_test"] is None
     assert first["final_test_skipped"] is True
     assert (tmp_path / "checkpoint.json").exists()
