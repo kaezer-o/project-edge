@@ -110,7 +110,7 @@ def test_selection_audit_uses_fitness_only_baseline_with_same_selected_count(mon
     }
     result = build_selection_audit(
         [(2033, report)],
-        object(),
+        np.zeros(4),
         similarity_threshold=0.65,
         limit=3,
     )
@@ -157,7 +157,7 @@ def test_threshold_sensitivity_audit_reports_each_threshold(monkeypatch):
     }
     result = build_threshold_sensitivity_audit(
         [(2033, report)],
-        object(),
+        np.zeros(4),
         thresholds=[0.65, 0.90],
         limit=3,
     )
