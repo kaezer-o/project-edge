@@ -126,7 +126,7 @@ def build_selection_audit(
             if not isinstance(program_data, dict):
                 raise ValueError(f"Seed {seed} candidate {rank} has no program")
             program = StrategyProgram.from_dict(program_data)
-            signals[rank] = evaluate_program(program, train).to_numpy(dtype=np.int8, copy=False)
+            signals[rank] = np.asarray(evaluate_program(program, train), dtype=np.int8)
             rows.append({"rank": rank, "training_fitness": float(fitness)})
         selection = select_training_diverse(
             rows, signals, similarity_threshold=similarity_threshold, limit=limit,
