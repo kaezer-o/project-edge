@@ -67,17 +67,22 @@ def _behaviour_descriptor(
     risk: RiskConfig,
     pip_size: float,
     price_basis: str,
+    signal: pd.Series | None = None,
+    trades: pd.DataFrame | None = None,
 ) -> dict[str, object]:
     """Describe signal rates and exact executed entry-time/direction events."""
-    signal = evaluate_program(program, frame)
-    _, trades = _evaluate(
-        frame,
-        program,
-        execution=execution,
-        risk=risk,
-        pip_size=pip_size,
-        price_basis=price_basis,
-    )
+    if signal is None:
+        signal = evaluate_program(program, frame)
+    if trades is None:
+        _, trades = _evaluate(
+            frame,
+            program,
+            execution=execution,
+            risk=risk,
+            pip_size=pip_size,
+            price_basis=price_basis,
+            signal=signal,
+        )
     chunks = np.array_split(np.arange(len(frame)), 3)
     rates: list[float] = []
     for positions in chunks:
@@ -236,9 +241,21 @@ def run_island_program_research(
         min_validation_trades=min_validation_trades,
     )
 
+    training_results: dict[str, tuple[float, dict[str, object], dict[str, object]]] = {}
+
     def evaluate(genome: dict[str, object]) -> tuple[float, dict[str, object]]:
         program = StrategyProgram.from_dict(genome)
-        score, _, _ = _training_fitness(
+        signal = evaluate_program(program, train)
+        aggregate_result = _evaluate(
+            train,
+            program,
+            execution=execution,
+            risk=risk,
+            pip_size=pip_size,
+            price_basis=price_basis,
+            signal=signal,
+        )
+        score, metrics, robustness = _training_fitness(
             train,
             program,
             execution=execution,
@@ -246,7 +263,9 @@ def run_island_program_research(
             pip_size=pip_size,
             price_basis=price_basis,
             min_train_trades=min_train_trades,
+            aggregate_result=aggregate_result,
         )
+        training_results[program.fingerprint()] = (score, metrics, robustness)
         descriptor = _behaviour_descriptor(
             train,
             program,
@@ -254,6 +273,8 @@ def run_island_program_research(
             risk=risk,
             pip_size=pip_size,
             price_basis=price_basis,
+            signal=signal,
+            trades=aggregate_result[1],
         )
         return float(score), descriptor
 
@@ -302,15 +323,19 @@ def run_island_program_research(
     for population in result.islands:
         for genome in population:
             program = StrategyProgram.from_dict(genome)
-            score, metrics, robustness = _training_fitness(
-                train,
-                program,
-                execution=execution,
-                risk=risk,
-                pip_size=pip_size,
-                price_basis=price_basis,
-                min_train_trades=min_train_trades,
-            )
+            cached = training_results.get(program.fingerprint())
+            if cached is None:
+                score, metrics, robustness = _training_fitness(
+                    train,
+                    program,
+                    execution=execution,
+                    risk=risk,
+                    pip_size=pip_size,
+                    price_basis=price_basis,
+                    min_train_trades=min_train_trades,
+                )
+            else:
+                score, metrics, robustness = cached
             final_evaluated.append((score, program, metrics, robustness))
     shortlist = _diverse_ranked(
         final_evaluated,
