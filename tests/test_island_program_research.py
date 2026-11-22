@@ -191,3 +191,39 @@ def test_behaviour_descriptor_reuses_precomputed_signal_and_trades(monkeypatch):
         pip_size=0.0001, price_basis="mid", signal=signal, trades=trades,
     )
     assert descriptor["trades"] == [f"{frame.index[3].isoformat()}|long"]
+
+
+
+def test_semantic_family_classifier_recognizes_seed_templates():
+    from edge.island_program_research import _classify_strategy_families
+    from edge.program_evolution import strategy_family_program
+
+    features = (
+        "ema_10", "ema_20", "ema_40", "rsi_14", "close",
+        "donchian_high_20", "donchian_low_20", "atr_14",
+    )
+    rng = np.random.default_rng(2026)
+    expected = (
+        "trend",
+        "mean_reversion",
+        "breakout",
+        "volatility_expansion",
+        "volatility_contraction",
+    )
+    for family in expected:
+        program = strategy_family_program(family, features, rng)
+        assert _classify_strategy_families(program) == [family]
+
+
+def test_semantic_family_classifier_does_not_tag_incidental_features():
+    from edge.island_program_research import _classify_strategy_families
+
+    program = StrategyProgram(
+        long_entry=Expr(
+            "gt", (Expr("feature", value="ema_10"), Expr("feature", value="close"))
+        ),
+        short_entry=Expr(
+            "lt", (Expr("feature", value="ema_40"), Expr("feature", value="close"))
+        ),
+    )
+    assert _classify_strategy_families(program) == ["hybrid_or_other"]
