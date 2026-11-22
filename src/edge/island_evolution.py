@@ -90,10 +90,12 @@ def _rank(values: np.ndarray) -> np.ndarray:
 
 
 def _validate_descriptor(descriptor: BehaviourDescriptor) -> BehaviourDescriptor:
-    if not isinstance(descriptor, dict) or set(descriptor) != {"rates", "trades"}:
+    if not isinstance(descriptor, dict) or set(descriptor) != {"rates", "trades", "signal_fingerprint", "families"}:
         raise ValueError("Behaviour descriptor must contain exactly rates and trades")
     rates = descriptor["rates"]
     trades = descriptor["trades"]
+    signal_fingerprint = descriptor["signal_fingerprint"]
+    families = descriptor["families"]
     if (
         not isinstance(rates, list)
         or not rates
@@ -101,15 +103,21 @@ def _validate_descriptor(descriptor: BehaviourDescriptor) -> BehaviourDescriptor
         or not isinstance(trades, list)
         or any(not isinstance(item, str) or not item for item in trades)
         or len(set(trades)) != len(trades)
+        or not isinstance(signal_fingerprint, str)
+        or not signal_fingerprint
+        or not isinstance(families, list)
+        or any(not isinstance(item, str) or not item for item in families)
     ):
         raise ValueError("Behaviour descriptor contains invalid rates or trade events")
-    return {"rates": list(map(float, rates)), "trades": sorted(trades)}
+    return {"rates": list(map(float, rates)), "trades": sorted(trades), "signal_fingerprint": signal_fingerprint, "families": sorted(set(families))}
 
 
 def _descriptor_distance(first: BehaviourDescriptor, second: BehaviourDescriptor) -> float:
     """Combine coarse signal-rate distance with exact directional trade Jaccard distance."""
     first = _validate_descriptor(first)
     second = _validate_descriptor(second)
+    if first["signal_fingerprint"] == second["signal_fingerprint"]:
+        return 0.0
     first_rates = np.asarray(first["rates"], dtype=float)
     second_rates = np.asarray(second["rates"], dtype=float)
     if first_rates.shape != second_rates.shape:
@@ -210,7 +218,7 @@ def run_island_evolution(
     if resume:
         state = load_training_checkpoint(checkpoint, expected_run_signature=run_signature)
         runtime_state = state["rng_state"]
-        if runtime_state.get("runtime") != "island_evolution_v2":
+        if runtime_state.get("runtime") != "island_evolution_v3":
             raise ValueError("Checkpoint does not contain compatible island-evolution state")
         if runtime_state.get("config") != expected_config:
             raise ValueError("Checkpoint evolution configuration does not match")
@@ -287,6 +295,19 @@ def run_island_evolution(
             archives[island_index] = archives[island_index][-config.archive_capacity:]
 
         generation += 1
+        genome_fingerprints = [
+            _fingerprint(row["genome"])
+            for rows in evaluated_islands for row in rows
+        ]
+        behaviour_fingerprints = [
+            str(row["descriptor"]["signal_fingerprint"])
+            for rows in evaluated_islands for row in rows
+        ]
+        family_counts: dict[str, int] = {}
+        for rows in evaluated_islands:
+            for row in rows:
+                for family in row["descriptor"]["families"]:
+                    family_counts[family] = family_counts.get(family, 0) + 1
         history.append({
             "generation": generation,
             "best_fitness": generation_best,
@@ -298,6 +319,17 @@ def run_island_evolution(
                 max(float(row["fitness"]) for row in rows)
                 for rows in evaluated_islands
             ],
+            "unique_genomes": len(set(genome_fingerprints)),
+            "unique_behaviours": len(set(behaviour_fingerprints)),
+            "island_unique_genomes": [
+                len({_fingerprint(row["genome"]) for row in rows})
+                for rows in evaluated_islands
+            ],
+            "island_unique_behaviours": [
+                len({str(row["descriptor"]["signal_fingerprint"]) for row in rows})
+                for rows in evaluated_islands
+            ],
+            "strategy_family_population_counts": family_counts,
         })
 
         # Prepare the next population even at the stopping generation so resume
@@ -352,7 +384,7 @@ def run_island_evolution(
             generation=generation,
             population=islands,
             rng_state={
-                "runtime": "island_evolution_v2",
+                "runtime": "island_evolution_v3",
                 "config": expected_config,
                 "archives": archives,
                 "island_rng_states": [rng.bit_generator.state for rng in rngs],
