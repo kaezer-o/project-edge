@@ -90,11 +90,12 @@ def _rank(values: np.ndarray) -> np.ndarray:
 
 
 def _validate_descriptor(descriptor: BehaviourDescriptor) -> BehaviourDescriptor:
-    if not isinstance(descriptor, dict) or set(descriptor) != {"rates", "trades", "signal_fingerprint", "families"}:
+    if not isinstance(descriptor, dict) or set(descriptor) != {"rates", "trades", "signal_fingerprint", "behaviour_fingerprint", "families"}:
         raise ValueError("Behaviour descriptor must contain exactly rates and trades")
     rates = descriptor["rates"]
     trades = descriptor["trades"]
     signal_fingerprint = descriptor["signal_fingerprint"]
+    behaviour_fingerprint = descriptor["behaviour_fingerprint"]
     families = descriptor["families"]
     if (
         not isinstance(rates, list)
@@ -105,18 +106,20 @@ def _validate_descriptor(descriptor: BehaviourDescriptor) -> BehaviourDescriptor
         or len(set(trades)) != len(trades)
         or not isinstance(signal_fingerprint, str)
         or not signal_fingerprint
+        or not isinstance(behaviour_fingerprint, str)
+        or not behaviour_fingerprint
         or not isinstance(families, list)
         or any(not isinstance(item, str) or not item for item in families)
     ):
         raise ValueError("Behaviour descriptor contains invalid rates or trade events")
-    return {"rates": list(map(float, rates)), "trades": sorted(trades), "signal_fingerprint": signal_fingerprint, "families": sorted(set(families))}
+    return {"rates": list(map(float, rates)), "trades": sorted(trades), "signal_fingerprint": signal_fingerprint, "behaviour_fingerprint": behaviour_fingerprint, "families": sorted(set(families))}
 
 
 def _descriptor_distance(first: BehaviourDescriptor, second: BehaviourDescriptor) -> float:
     """Combine coarse signal-rate distance with exact directional trade Jaccard distance."""
     first = _validate_descriptor(first)
     second = _validate_descriptor(second)
-    if first["signal_fingerprint"] == second["signal_fingerprint"]:
+    if first["behaviour_fingerprint"] == second["behaviour_fingerprint"]:
         return 0.0
     first_rates = np.asarray(first["rates"], dtype=float)
     second_rates = np.asarray(second["rates"], dtype=float)
@@ -312,7 +315,7 @@ def run_island_evolution(
             for rows in evaluated_islands for row in rows
         ]
         behaviour_fingerprints = [
-            str(row["descriptor"]["signal_fingerprint"])
+            str(row["descriptor"]["behaviour_fingerprint"])
             for rows in evaluated_islands for row in rows
         ]
         family_counts: dict[str, int] = {}
@@ -338,7 +341,7 @@ def run_island_evolution(
                 for rows in evaluated_islands
             ],
             "island_unique_behaviours": [
-                len({str(row["descriptor"]["signal_fingerprint"]) for row in rows})
+                len({str(row["descriptor"]["behaviour_fingerprint"]) for row in rows})
                 for rows in evaluated_islands
             ],
             "strategy_family_population_counts": family_counts,
@@ -382,7 +385,7 @@ def run_island_evolution(
                         raise ValueError("reproduce must return a genome dictionary")
                     proposed = _json_copy(proposed)
                     _, descriptor = cached_evaluation(proposed)
-                    proposed_behaviour = str(descriptor["signal_fingerprint"])
+                    proposed_behaviour = str(descriptor["behaviour_fingerprint"])
                     child = proposed
                     child_behaviour = proposed_behaviour
                     if proposed_behaviour not in next_behaviours:
@@ -404,7 +407,7 @@ def run_island_evolution(
             for target_index, target_population in enumerate(next_islands):
                 incoming = migrants[(target_index - 1) % config.islands]
                 existing_behaviours = {
-                    str(cached_evaluation(genome)[1]["signal_fingerprint"])
+                    str(cached_evaluation(genome)[1]["behaviour_fingerprint"])
                     for genome in target_population
                 }
                 replaceable = list(range(len(target_population) - 1, config.elite_count - 1, -1))
@@ -412,7 +415,7 @@ def run_island_evolution(
                     if not replaceable:
                         break
                     migrant_descriptor = cached_evaluation(migrant)[1]
-                    migrant_behaviour = str(migrant_descriptor["signal_fingerprint"])
+                    migrant_behaviour = str(migrant_descriptor["behaviour_fingerprint"])
                     if migrant_behaviour in existing_behaviours:
                         continue
                     replace_index = replaceable.pop(0)
