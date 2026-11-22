@@ -400,7 +400,7 @@ def test_training_signal_diversity_filter_rejects_redundant_finalists(monkeypatc
     ]
     assert diagnostics["selected_fitness_ranks"] == [1, 3]
     assert diagnostics["rejected_as_redundant"][0]["fitness_rank"] == 2
-    assert diagnostics["rejected_as_redundant"][0]["most_similar_selected_rank"] == 1
+    assert diagnostics["rejected_as_redundant"][0]["most_similar_selected_fitness_rank"] == 1
     assert diagnostics["validation_used_for_selection"] is False
     assert diagnostics["final_test_used_for_selection"] is False
 
