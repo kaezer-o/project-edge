@@ -357,3 +357,8 @@ behaviour. The 0.95 value is an experimental starting point based on a small
 offline finalist-pool benchmark, not a validated production optimum. Validation
 remains post-selection only and the final chronological holdout must remain
 untouched.
+
+
+### Configurable island-program finalist limit
+
+`evolve-program-islands` accepts `--finalist-limit` (default `20`) to control the maximum training-ranked shortlist size. The same limit is applied before optional training-only diversity filtering. Validation and final-test partitions remain excluded from finalist selection.
