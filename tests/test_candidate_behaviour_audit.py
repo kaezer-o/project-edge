@@ -79,8 +79,8 @@ def test_audit_rejects_different_partitions():
             [(1, first), (2, second)],
             pd.DataFrame(index=range(4)),
             pd.DataFrame(index=range(3)),
-            execution=__import__("edge.config", fromlist=["ExecutionConfig"]).ExecutionConfig(),
-            risk=__import__("edge.config", fromlist=["RiskConfig"]).RiskConfig(),
+            execution=ExecutionConfig(),
+            risk=RiskConfig(),
             pip_size=0.0001,
             price_basis="bid",
         )
