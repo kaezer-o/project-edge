@@ -8,6 +8,8 @@ from edge.program_evolution import (
     mutate_expression,
     mutate_program,
     random_expression,
+    available_strategy_families,
+    strategy_family_program,
 )
 
 
@@ -197,3 +199,57 @@ def test_numeric_generator_uses_market_features_not_free_floating_constants():
         nodes = list(_walk(expr))
         assert any(node.op == "feature" for node in nodes)
         assert all(node.op != "const" for node in nodes)
+
+
+FAMILY_FEATURES = (
+    "close", "ema_10", "ema_20", "ema_40", "rsi_14", "atr_14",
+    "donchian_high_20", "donchian_low_20",
+)
+
+
+def _feature_names(expr):
+    return {
+        str(node.value) for node in _walk(expr) if node.op == "feature"
+    }
+
+
+def test_strategy_family_templates_are_distinct_and_type_valid():
+    families = available_strategy_families(FAMILY_FEATURES)
+    assert families == (
+        "trend",
+        "mean_reversion",
+        "breakout",
+        "volatility_expansion",
+        "volatility_contraction",
+    )
+
+    rng = np.random.default_rng(20261122)
+    programs = {
+        family: strategy_family_program(family, FAMILY_FEATURES, rng)
+        for family in families
+    }
+    for program in programs.values():
+        validate_expr(program.long_entry, expected="bool")
+        validate_expr(program.short_entry, expected="bool")
+
+    assert "ema_10" in _feature_names(programs["trend"].long_entry)
+    assert "rsi_14" in _feature_names(programs["mean_reversion"].long_entry)
+    assert "donchian_high_20" in _feature_names(programs["breakout"].long_entry)
+    assert "rolling_mean" in {
+        node.op for node in _walk(programs["volatility_expansion"].long_entry)
+    }
+    assert "rolling_mean" in {
+        node.op for node in _walk(programs["volatility_contraction"].long_entry)
+    }
+
+
+def test_strategy_family_template_rejects_missing_features():
+    rng = np.random.default_rng(3)
+    assert available_strategy_families(("close", "ema_10")) == ()
+    with pytest.raises(ValueError, match="unavailable features"):
+        strategy_family_program("breakout", ("close",), rng)
+
+
+def test_strategy_family_template_rejects_unknown_family():
+    with pytest.raises(ValueError, match="Unsupported strategy family"):
+        strategy_family_program("martingale", FAMILY_FEATURES, np.random.default_rng(4))
