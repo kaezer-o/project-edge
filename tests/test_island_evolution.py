@@ -293,3 +293,37 @@ def test_runtime_metrics_measure_generation_and_checkpoint(tmp_path):
         assert row["other_seconds"] >= 0
         assert row["evaluator_calls"] > 0
         assert row["evaluation_cache_hits"] >= 0
+        for phase in (
+            "novelty_seconds",
+            "archive_seconds",
+            "history_seconds",
+            "reproduction_seconds",
+            "migration_seconds",
+        ):
+            assert row[phase] >= 0
+
+
+
+def test_optimized_novelty_scores_match_descriptor_distance_reference():
+    from edge.island_evolution import _descriptor_distance, _novelty_scores
+
+    descriptors = [
+        _descriptor(["a|long", "b|short"], [0.1, 0.2]),
+        _descriptor(["b|short", "c|long"], [0.2, 0.3]),
+        _descriptor(["x|short"], [0.8, 0.9]),
+    ]
+    archive = [
+        _descriptor(["a|long", "x|short"], [0.4, 0.5]),
+        _descriptor(["z|long"], [0.9, 0.1]),
+    ]
+    actual = _novelty_scores(descriptors, archive, neighbours=3)
+    reference = []
+    combined = descriptors + archive
+    for index, descriptor in enumerate(descriptors):
+        distances = [
+            _descriptor_distance(descriptor, other)
+            for other_index, other in enumerate(combined)
+            if other_index != index
+        ]
+        reference.append(float(np.mean(np.partition(distances, 2)[:3])))
+    assert actual == pytest.approx(reference)
