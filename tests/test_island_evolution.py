@@ -136,7 +136,7 @@ def test_evaluator_rejects_non_finite_behaviour(tmp_path):
     config = IslandEvolutionConfig(islands=2, population_per_island=4)
     def bad_evaluator(genome):
         return 1.0, {"rates": [float("nan")], "trades": []}
-    with pytest.raises(ValueError, match="behaviour descriptors"):
+    with pytest.raises(ValueError, match="Behaviour descriptor"):
         run_island_evolution(
             initial_populations(config), evaluate=bad_evaluator,
             reproduce=reproducer, config=config, seed=1, generations=1,
