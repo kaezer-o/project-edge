@@ -44,6 +44,69 @@ def normalize_expression(node: dict[str, Any]) -> dict[str, Any]:
     return {"op": op, "value": value, "args": normalized_args}
 
 
+def detailed_expression_signature(node: dict[str, Any]) -> dict[str, Any]:
+    """Preserve operators, direction, features, thresholds and lookback parameters."""
+    if not isinstance(node, dict) or not isinstance(node.get("op"), str):
+        raise ValueError("Expression node must be an object with a string op")
+    op = node["op"]
+    args = node.get("args", [])
+    if not isinstance(args, list):
+        raise ValueError("Expression args must be a list")
+    children = [detailed_expression_signature(child) for child in args]
+    if op in COMMUTATIVE_OPS:
+        children.sort(key=_stable_json)
+    value = node.get("value")
+    if op == "const":
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            raise ValueError("Numeric constant must have a numeric value")
+        value = float(value)
+    elif op in {"lag", "rolling_mean", "rolling_std"}:
+        if isinstance(value, bool) or not isinstance(value, int):
+            raise ValueError(f"{op} must preserve its integer lookback")
+    elif op == "feature":
+        if not isinstance(value, str):
+            raise ValueError("Feature name must be a string")
+    else:
+        value = None
+    return {"op": op, "value": value, "args": children}
+
+
+def _structural_tokens(node: dict[str, Any], side: str, path: str = "root") -> dict[str, float]:
+    """Create weighted, path-aware tokens for interpretable structural similarity."""
+    tokens: dict[str, float] = {}
+    op = node["op"]
+    tokens[f"{side}:{path}:op:{op}"] = 1.0
+    value = node.get("value")
+    if op == "feature":
+        tokens[f"{side}:{path}:feature:{value}"] = 2.0
+    elif op == "const":
+        tokens[f"{side}:{path}:threshold:{float(value):.12g}"] = 1.5
+    elif op in {"lag", "rolling_mean", "rolling_std"}:
+        tokens[f"{side}:{path}:lookback:{op}:{value}"] = 2.0
+    for index, child in enumerate(node.get("args", [])):
+        tokens.update(_structural_tokens(child, side, f"{path}/{op}[{index}]"))
+    return tokens
+
+
+def _weighted_jaccard(left: dict[str, float], right: dict[str, float]) -> float:
+    keys = set(left) | set(right)
+    if not keys:
+        return 1.0
+    numerator = sum(min(left.get(key, 0.0), right.get(key, 0.0)) for key in keys)
+    denominator = sum(max(left.get(key, 0.0), right.get(key, 0.0)) for key in keys)
+    return numerator / denominator if denominator else 1.0
+
+
+def _candidate_structure(program: dict[str, Any]) -> dict[str, Any]:
+    signature = {
+        "long_entry": detailed_expression_signature(program["long_entry"]),
+        "short_entry": detailed_expression_signature(program["short_entry"]),
+    }
+    tokens = {}
+    for side in ("long_entry", "short_entry"):
+        tokens.update(_structural_tokens(signature[side], side))
+    return {"signature": signature, "tokens": tokens}
+
 def _walk(node: dict[str, Any]):
     yield node
     for child in node.get("args", []):
@@ -155,6 +218,7 @@ def _candidate_record(seed: int, rank: int, candidate: dict[str, Any]) -> dict[s
     long_rule = normalize_expression(program["long_entry"])
     short_rule = normalize_expression(program["short_entry"])
     rule_signature = {"long_entry": long_rule, "short_entry": short_rule}
+    detailed_structure = _candidate_structure(program)
     risk_signature = {
         "stop_atr": program.get("stop_atr"),
         "reward_risk": program.get("reward_risk"),
@@ -171,6 +235,9 @@ def _candidate_record(seed: int, rank: int, candidate: dict[str, Any]) -> dict[s
         "rank": rank,
         "genome_fingerprint": candidate.get("fingerprint"),
         "rule_structure_fingerprint": _digest(rule_signature),
+        "detailed_rule_fingerprint": _digest(detailed_structure["signature"]),
+        "detailed_rule_signature": detailed_structure["signature"],
+        "structural_tokens": detailed_structure["tokens"],
         "full_structure_fingerprint": _digest({"rules": rule_signature, "risk": risk_signature}),
         "risk_parameters": risk_signature,
         "motifs": motif_union,
@@ -256,6 +323,17 @@ def build_audit(reports: list[tuple[int, dict[str, Any]]]) -> dict[str, Any]:
             "same_validation_entry_set": bool(left["validation_entry_fingerprint"])
                 and left["validation_entry_fingerprint"] == right["validation_entry_fingerprint"],
             "motif_jaccard": round(_jaccard(left_motifs, right_motifs), 6),
+            "detailed_rule_similarity": round(_weighted_jaccard(left["structural_tokens"], right["structural_tokens"]), 6),
+            "long_rule_similarity": round(_weighted_jaccard(
+                {k: v for k, v in left["structural_tokens"].items() if k.startswith("long_entry:")},
+                {k: v for k, v in right["structural_tokens"].items() if k.startswith("long_entry:")}), 6),
+            "short_rule_similarity": round(_weighted_jaccard(
+                {k: v for k, v in left["structural_tokens"].items() if k.startswith("short_entry:")},
+                {k: v for k, v in right["structural_tokens"].items() if k.startswith("short_entry:")}), 6),
+            "risk_parameter_similarity": round(sum(
+                left["risk_parameters"].get(key) == right["risk_parameters"].get(key)
+                for key in ("stop_atr", "reward_risk", "max_holding_bars")
+            ) / 3, 6),
             "shared_motifs": sorted(left_motifs & right_motifs),
         })
 
@@ -279,6 +357,11 @@ def build_audit(reports: list[tuple[int, dict[str, Any]]]) -> dict[str, Any]:
         cross_seed_pairs,
         key=lambda row: (-row["motif_jaccard"], row["seed_a"], row["rank_a"], row["seed_b"], row["rank_b"]),
     )
+    structural_similar_pairs = sorted(
+        cross_seed_pairs,
+        key=lambda row: (-row["detailed_rule_similarity"], -row["motif_jaccard"],
+                         row["seed_a"], row["rank_a"], row["seed_b"], row["rank_b"]),
+    )
     return {
         "audit_version": 1,
         "scope": {
@@ -297,9 +380,12 @@ def build_audit(reports: list[tuple[int, dict[str, Any]]]) -> dict[str, Any]:
         "exact_cross_seed_rule_matches": exact_rule_pairs,
         "exact_cross_seed_validation_entry_matches": exact_event_pairs,
         "top_cross_seed_motif_similarities": motif_similar_pairs[:30],
+        "top_cross_seed_structural_similarities": structural_similar_pairs[:30],
         "limitations": [
             "Validation entry events are represented by SHA-256 fingerprints in the source reports. Equality detects exact matches only; approximate cross-seed Jaccard overlap cannot be reconstructed.",
             "Motif labels are coarse structural indicators and do not establish equivalent trading behaviour.",
+            "Detailed rule similarity is a weighted Jaccard score over path-aware operator, feature, threshold and lookback tokens. It is a structural heuristic, not behavioural equivalence.",
+            "Exact threshold values and rolling lookbacks are retained in taxonomy v2; long and short entry trees are scored separately. Risk parameters are compared separately from entry rules.",
             "The validation partition has been repeatedly examined during development and is not an independent performance estimate.",
             "A structural match across seeds is descriptive evidence only and does not justify changing selection or validation thresholds.",
         ],
@@ -338,6 +424,20 @@ def render_markdown(audit: dict[str, Any]) -> str:
     for seed, row in audit["per_seed_candidate_motifs"].items():
         counts = ", ".join(f"{key}: {value}" for key, value in row["motif_candidate_counts"].items()) or "none"
         lines.append(f"| {seed} | {row['candidate_count']} | {row['qualified_count']} | {counts} |")
+    lines.extend([
+        "",
+        "## Highest detailed structural similarities",
+        "",
+        "| Seed A/rank | Seed B/rank | Rule similarity | Long | Short | Motif Jaccard | Risk match |",
+        "|---|---|---:|---:|---:|---:|---:|",
+    ])
+    for row in audit["top_cross_seed_structural_similarities"][:15]:
+        lines.append(
+            f"| {row['seed_a']}/{row['rank_a']} | {row['seed_b']}/{row['rank_b']} | "
+            f"{row['detailed_rule_similarity']:.3f} | {row['long_rule_similarity']:.3f} | "
+            f"{row['short_rule_similarity']:.3f} | {row['motif_jaccard']:.3f} | "
+            f"{row['risk_parameter_similarity']:.3f} |"
+        )
     lines.extend([
         "",
         "## Interpretation constraints",
