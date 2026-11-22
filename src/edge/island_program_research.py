@@ -296,9 +296,10 @@ def _candidate_validation_overlap(
     for first_index, first_events in enumerate(event_sets):
         for second_index in range(first_index + 1, len(event_sets)):
             second_events = event_sets[second_index]
-            union = first_events | second_events
-            if not union:
+            # Empty trade sets carry no useful overlap signal.
+            if not first_events or not second_events:
                 continue
+            union = first_events | second_events
             shared = first_events & second_events
             comparisons.append({
                 "candidate_a": first_index + 1,
