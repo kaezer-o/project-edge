@@ -199,3 +199,33 @@ approximate Jaccard overlap cannot be reconstructed. The audit rejects
 reports with mismatched symbol, timeframe, partition metadata, or any
 indication that the final test was evaluated. Validation results remain
 development diagnostics because this partition has already been examined.
+
+
+## Cross-seed behavioural similarity audit
+
+Replay finalists from independent runs on the exact same chronological training
+and validation partitions. The audit compares per-bar directional signals
+(long, short and active-signal overlap) and executed trade-entry events. It
+reports training and validation similarities separately, includes the
+execution/risk assumptions in the output, and does not evaluate the final
+holdout. The validation partition has already been examined during development;
+its similarity results are descriptive only.
+
+Example for the three 30-generation H4 runs:
+
+~~~powershell
+.\.venv\Scripts\python.exe scripts\audit_candidate_behaviour.py `
+  --input data\EURUSD_M1.csv `
+  --report 2033=results\motif-repro-h4-seed-2033\island_program_evolution_report.json `
+  --report 2034=results\motif-repro-h4-seed-2034\island_program_evolution_report.json `
+  --report 2035=results\motif-repro-h4-seed-2035\island_program_evolution_report.json `
+  --price-basis bid --spread-pips 0.8 --slippage-pips 0.1
+~~~
+
+The script defaults to the execution and risk settings used in these runs.
+Override them when auditing reports produced with different settings. It
+rejects final-test-evaluated reports and mismatched partition metadata. Signal
+similarity is computed on aligned bars; exact agreement is reported alongside
+active-signal Jaccard because long stretches of no-signal bars can inflate
+exact agreement. Trade-entry overlap is execution-dependent. All outputs are
+observational and do not feed back into evolution or candidate selection.
