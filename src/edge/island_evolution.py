@@ -155,17 +155,42 @@ def _validate_descriptor(descriptor: BehaviourDescriptor) -> BehaviourDescriptor
     families = descriptor["families"]
     structure = descriptor.get("structure")
     if structure is not None:
+        structure_fields = {
+            "fingerprint", "long_nodes", "short_nodes", "long_depth",
+            "short_depth", "operator_counts", "features", "lookbacks",
+            "long_only_features", "short_only_features",
+        }
         if (
             not isinstance(structure, dict)
+            or set(structure) != structure_fields
             or not isinstance(structure.get("fingerprint"), str)
             or not structure["fingerprint"]
-            or not isinstance(structure.get("long_nodes"), int)
-            or not isinstance(structure.get("short_nodes"), int)
-            or not isinstance(structure.get("long_depth"), int)
-            or not isinstance(structure.get("short_depth"), int)
+            or any(
+                not isinstance(structure.get(field), int)
+                or isinstance(structure.get(field), bool)
+                or structure[field] < 1
+                for field in ("long_nodes", "short_nodes", "long_depth", "short_depth")
+            )
             or not isinstance(structure.get("operator_counts"), dict)
-            or not isinstance(structure.get("features"), list)
+            or set(structure["operator_counts"]) != {"long", "short"}
+            or any(
+                not isinstance(structure["operator_counts"][side], dict)
+                or any(
+                    not isinstance(name, str) or not isinstance(count, int) or count < 1
+                    for name, count in structure["operator_counts"][side].items()
+                )
+                for side in ("long", "short")
+            )
+            or any(
+                not isinstance(structure.get(field), list)
+                or any(not isinstance(value, str) for value in structure[field])
+                for field in ("features", "long_only_features", "short_only_features")
+            )
             or not isinstance(structure.get("lookbacks"), list)
+            or any(
+                not isinstance(value, int) or isinstance(value, bool) or value < 1
+                for value in structure["lookbacks"]
+            )
         ):
             raise ValueError("Behaviour descriptor contains invalid structure diagnostics")
         _json_copy(structure)
@@ -450,7 +475,6 @@ def run_island_evolution(
         island_class_counts: list[dict[str, int]] = []
         class_counts: dict[str, int] = {}
         island_other_structures: list[dict[str, object]] = []
-        other_structures: dict[str, dict[str, object]] = {}
         for rows in evaluated_islands:
             island_counts: dict[str, int] = {}
             island_classes: dict[str, int] = {}
