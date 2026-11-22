@@ -442,7 +442,7 @@ def run_island_evolution(
                 next_population.append(_json_copy(row["genome"]))
                 next_behaviours.add(behaviour)
                 for family in row["descriptor"]["families"]:
-                    if family not in {"hybrid_or_other", "other", "random_fallback"}:
+                    if family not in {"hybrid", "hybrid_or_other", "other", "random_fallback"}:
                         family_elite_counts[family] = family_elite_counts.get(family, 0) + 1
 
             # Preserve the strongest overall behaviours first.
