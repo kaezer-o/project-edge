@@ -95,13 +95,49 @@ def _volatility_gate(root, op: str) -> bool:
         and right.op == "rolling_mean"
         and len(right.args) == 1
         and _feature_name(right.args[0]) == "atr_14"
+        and isinstance(right.value, int)
     )
+
+
+def _volatility_family_lookbacks(
+    root,
+    *,
+    volatility_op: str,
+    direction_op: str,
+    ema_name: str,
+) -> set[int]:
+    """Find lookbacks where one AND subtree contains both family-defining rules."""
+    lookbacks: set[int] = set()
+
+    def visit(node) -> None:
+        if node.op == "and":
+            gates: set[int] = set()
+            directions = False
+
+            def inspect(subtree) -> None:
+                nonlocal directions
+                if _volatility_gate(subtree, volatility_op):
+                    gates.add(int(subtree.args[1].value))
+                if _direct_comparison(
+                    subtree, direction_op, "close", ema_name
+                ):
+                    directions = True
+                for child in subtree.args:
+                    inspect(child)
+
+            inspect(node)
+            if directions:
+                lookbacks.update(gates)
+        for child in node.args:
+            visit(child)
+
+    visit(root)
+    return lookbacks
 
 
 def _classify_strategy_families(program: StrategyProgram) -> list[str]:
     """Classify recognizable rule structures, not incidental feature usage."""
     long_rule, short_rule = program.long_entry, program.short_entry
-    roots = (long_rule, short_rule)
     families: set[str] = set()
 
     if (
@@ -138,14 +174,23 @@ def _classify_strategy_families(program: StrategyProgram) -> list[str]:
     ):
         families.add("breakout")
 
-    for label, op in (
-        ("volatility_expansion", "gt"),
-        ("volatility_contraction", "lt"),
+    for label, volatility_op, ema_name in (
+        ("volatility_expansion", "gt", "ema_40"),
+        ("volatility_contraction", "lt", "ema_20"),
     ):
-        if (
-            _contains_expr(long_rule, lambda node: _volatility_gate(node, op))
-            and _contains_expr(short_rule, lambda node: _volatility_gate(node, op))
-        ):
+        long_lookbacks = _volatility_family_lookbacks(
+            long_rule,
+            volatility_op=volatility_op,
+            direction_op="gt",
+            ema_name=ema_name,
+        )
+        short_lookbacks = _volatility_family_lookbacks(
+            short_rule,
+            volatility_op=volatility_op,
+            direction_op="lt",
+            ema_name=ema_name,
+        )
+        if long_lookbacks & short_lookbacks:
             families.add(label)
 
     return sorted(families) if families else ["hybrid_or_other"]
@@ -267,7 +312,7 @@ def _run_signature(
         "min_validation_trades": min_validation_trades,
         "fitness_version": 6,
         "strategy_seed_version": 1,
-        "strategy_family_classifier_version": 1,
+        "strategy_family_classifier_version": 2,
     }
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
     return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
