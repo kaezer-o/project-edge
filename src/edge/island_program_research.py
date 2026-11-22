@@ -581,6 +581,8 @@ def run_island_program_research(
     """Run resumable multi-island program evolution; only training reaches the evaluator."""
     if generations < 1:
         raise ValueError("generations must be at least one")
+    if finalist_similarity_threshold is not None and not 0.0 <= finalist_similarity_threshold <= 1.0:
+        raise ValueError("finalist_similarity_threshold must be between zero and one")
     config = config or IslandEvolutionConfig()
     timeframe = timeframe.upper()
     source_timeframe = source_timeframe.upper()
