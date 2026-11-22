@@ -91,7 +91,7 @@ def _rank(values: np.ndarray) -> np.ndarray:
 
 def _validate_descriptor(descriptor: BehaviourDescriptor) -> BehaviourDescriptor:
     if not isinstance(descriptor, dict) or set(descriptor) != {"rates", "trades", "signal_fingerprint", "behaviour_fingerprint", "families"}:
-        raise ValueError("Behaviour descriptor must contain exactly rates and trades")
+        raise ValueError("Behaviour descriptor has an invalid schema")
     rates = descriptor["rates"]
     trades = descriptor["trades"]
     signal_fingerprint = descriptor["signal_fingerprint"]
@@ -318,6 +318,10 @@ def run_island_evolution(
             str(row["descriptor"]["behaviour_fingerprint"])
             for rows in evaluated_islands for row in rows
         ]
+        signal_fingerprints = [
+            str(row["descriptor"]["signal_fingerprint"])
+            for rows in evaluated_islands for row in rows
+        ]
         family_counts: dict[str, int] = {}
         for rows in evaluated_islands:
             for row in rows:
@@ -336,6 +340,11 @@ def run_island_evolution(
             ],
             "unique_genomes": len(set(genome_fingerprints)),
             "unique_behaviours": len(set(behaviour_fingerprints)),
+            "unique_signal_streams": len(set(signal_fingerprints)),
+            "island_unique_signal_streams": [
+                len({str(row["descriptor"]["signal_fingerprint"]) for row in rows})
+                for rows in evaluated_islands
+            ],
             "island_unique_genomes": [
                 len({_fingerprint(row["genome"]) for row in rows})
                 for rows in evaluated_islands
@@ -360,7 +369,7 @@ def run_island_evolution(
             next_population: list[Genome] = []
             next_behaviours: set[str] = set()
             for row in elites:
-                behaviour = str(row["descriptor"]["signal_fingerprint"])
+                behaviour = str(row["descriptor"]["behaviour_fingerprint"])
                 if behaviour not in next_behaviours:
                     next_population.append(_json_copy(row["genome"]))
                     next_behaviours.add(behaviour)
@@ -420,7 +429,7 @@ def run_island_evolution(
                         continue
                     replace_index = replaceable.pop(0)
                     removed_behaviour = str(
-                        cached_evaluation(target_population[replace_index])[1]["signal_fingerprint"]
+                        cached_evaluation(target_population[replace_index])[1]["behaviour_fingerprint"]
                     )
                     existing_behaviours.discard(removed_behaviour)
                     target_population[replace_index] = migrant
