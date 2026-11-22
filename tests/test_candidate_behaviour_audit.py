@@ -25,6 +25,12 @@ def test_signal_similarity_distinguishes_long_short_and_inactive_bars():
     assert result["directional_conflict_rate"] == pytest.approx(1 / 6)
 
 
+def test_signal_similarity_does_not_treat_two_inactive_streams_as_matching_activity():
+    result = signal_similarity(np.zeros(5, dtype=np.int8), np.zeros(5, dtype=np.int8))
+    assert result["exact_signal_agreement"] == 1.0
+    assert result["active_signal_jaccard"] == 0.0
+
+
 def test_signal_similarity_rejects_misaligned_arrays():
     with pytest.raises(ValueError, match="identically sized"):
         signal_similarity(np.array([0, 1]), np.array([0]))
