@@ -12,7 +12,7 @@ def evaluator(genome):
     x = float(genome["x"])
     y = float(genome["y"])
     fitness = -(x - 3.0) ** 2 - (y + 2.0) ** 2
-    return fitness, {"rates": [x, y], "trades": [f"long:{int(x)}", f"short:{int(y)}"], "signal_fingerprint": f"{int(x)}:{int(y)}", "families": ["test"]}
+    return fitness, {"rates": [x, y], "trades": [f"long:{int(x)}", f"short:{int(y)}"], "signal_fingerprint": f"{int(x)}:{int(y)}", "behaviour_fingerprint": f"{int(x)}:{int(y)}", "families": ["test"]}
 
 
 def reproducer(first, second, rng):
@@ -135,7 +135,7 @@ def test_invalid_island_configuration(kwargs):
 def test_evaluator_rejects_non_finite_behaviour(tmp_path):
     config = IslandEvolutionConfig(islands=2, population_per_island=4)
     def bad_evaluator(genome):
-        return 1.0, {"rates": [float("nan")], "trades": [], "signal_fingerprint": "bad", "families": ["test"]}
+        return 1.0, {"rates": [float("nan")], "trades": [], "signal_fingerprint": "bad", "behaviour_fingerprint": "bad", "families": ["test"]}
     with pytest.raises(ValueError, match="Behaviour descriptor"):
         run_island_evolution(
             initial_populations(config), evaluate=bad_evaluator,
@@ -155,7 +155,7 @@ def test_rank_assigns_equal_fitness_equal_selection_rank():
 
 
 def _descriptor(trades, rates=None):
-    return {"rates": rates or [0.1, 0.2], "trades": list(trades), "signal_fingerprint": "|".join(sorted(trades)), "families": ["test"]}
+    return {"rates": rates or [0.1, 0.2], "trades": list(trades), "signal_fingerprint": "|".join(sorted(trades)), "behaviour_fingerprint": "|".join(sorted(trades)), "families": ["test"]}
 
 
 def test_trade_jaccard_distance_identical_trade_sets_is_zero():
@@ -210,6 +210,7 @@ def test_identical_signal_fingerprint_has_zero_behaviour_distance():
         "rates": [0.1, 0.2],
         "trades": ["entry-a|long"],
         "signal_fingerprint": "same-signal",
+        "behaviour_fingerprint": "same-behaviour",
         "families": ["trend"],
     }
     second = {
