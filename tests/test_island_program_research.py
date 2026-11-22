@@ -437,6 +437,82 @@ def test_training_signal_diversity_filter_rejects_redundant_finalists(monkeypatc
     assert diagnostics["final_test_used_for_selection"] is False
 
 
+
+def test_training_trade_path_events_use_timezone_normalized_compact_keys():
+    utc = pd.Timestamp("2024-01-01T00:00:00Z")
+    equivalent_local = pd.Timestamp("2024-01-01T05:30:00+05:30")
+    trades = pd.DataFrame([
+        {
+            "entry_time": utc,
+            "direction": "LONG",
+            "exit_time": utc + pd.Timedelta(hours=1),
+            "exit_reason": "TARGET",
+        },
+        {
+            "entry_time": equivalent_local,
+            "direction": "long",
+            "exit_time": equivalent_local + pd.Timedelta(hours=1),
+            "exit_reason": "target",
+        },
+    ])
+
+    events = island_program_research._training_trade_path_events(trades)
+
+    assert len(events) == 1
+    event = next(iter(events))
+    assert event == (
+        int(utc.value),
+        "long",
+        int((utc + pd.Timedelta(hours=1)).value),
+        "target",
+    )
+
+
+def test_training_signal_filter_evaluates_duplicate_program_fingerprint_once(monkeypatch):
+    program = StrategyProgram(
+        long_entry=Expr("gt", (
+            Expr("feature", value="ema_gap_atr"),
+            Expr("const", value=1),
+        )),
+        short_entry=Expr("lt", (
+            Expr("feature", value="ema_gap_atr"),
+            Expr("const", value=0),
+        )),
+    )
+    calls = {"signals": 0, "backtests": 0}
+
+    def evaluate(_program, frame):
+        calls["signals"] += 1
+        return pd.Series(np.array([1, 0, -1], dtype=np.int8), index=frame.index)
+
+    def backtest(_frame, _program, **_kwargs):
+        calls["backtests"] += 1
+        return {}, pd.DataFrame(columns=[
+            "entry_time", "direction", "exit_time", "exit_reason"
+        ])
+
+    monkeypatch.setattr(island_program_research, "evaluate_program", evaluate)
+    monkeypatch.setattr(island_program_research, "_evaluate", backtest)
+    ranked = [
+        (2.0, program, {}, {}),
+        (1.0, program, {}, {}),
+    ]
+
+    selected, diagnostics = island_program_research._training_signal_diverse_shortlist(
+        ranked,
+        pd.DataFrame(index=range(3)),
+        similarity_threshold=0.95,
+        limit=2,
+        execution=ExecutionConfig(),
+        risk=RiskConfig(),
+        pip_size=0.0001,
+        price_basis="mid",
+    )
+
+    assert calls == {"signals": 1, "backtests": 1}
+    assert len(selected) == 2
+    assert diagnostics["selected_fitness_ranks"] == [1, 2]
+
 def test_training_signal_filter_keeps_same_signals_with_different_trade_paths(monkeypatch):
     feature = lambda name: Expr("feature", value=name)
     programs = [
