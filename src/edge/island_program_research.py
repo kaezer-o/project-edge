@@ -621,6 +621,39 @@ def _training_signal_diverse_shortlist(
     }
 
 
+def _training_eligible_finalists(
+    evaluated: list[tuple[float, StrategyProgram, dict[str, object], dict[str, object]]],
+) -> tuple[list[tuple[float, StrategyProgram, dict[str, object], dict[str, object]]], dict[str, object]]:
+    """Exclude candidates that fail an existing chronological training-era gate."""
+    eligible = []
+    rejected = []
+    for score, program, metrics, robustness in evaluated:
+        all_windows_eligible = robustness.get("all_windows_eligible") is True
+        finite_score = bool(np.isfinite(score))
+        score_above_ineligible_sentinel = finite_score and float(score) > -1e8
+        if all_windows_eligible and score_above_ineligible_sentinel:
+            eligible.append((score, program, metrics, robustness))
+        else:
+            rejected.append({
+                "program_fingerprint": program.fingerprint(),
+                "training_fitness": float(score) if finite_score else None,
+                "all_windows_eligible": all_windows_eligible,
+                "reason": (
+                    "training_window_ineligible" if not all_windows_eligible
+                    else "non_finite_or_ineligible_training_fitness"
+                ),
+            })
+    return eligible, {
+        "method": "existing_three_window_training_eligibility",
+        "evaluated_population_count": len(evaluated),
+        "eligible_population_count": len(eligible),
+        "rejected_population_count": len(rejected),
+        "rejected": rejected,
+        "validation_used": False,
+        "final_test_used": False,
+    }
+
+
 def _candidate_validation_overlap(
     candidates: list[dict[str, object]],
 ) -> list[dict[str, object]]:
@@ -878,13 +911,17 @@ def run_island_program_research(
             else:
                 score, metrics, robustness = cached
             final_evaluated.append((score, program, metrics, robustness))
+    training_eligible_evaluated, training_eligibility = _training_eligible_finalists(
+        final_evaluated
+    )
     fitness_ranked_shortlist = _diverse_ranked(
-        final_evaluated,
-        min(finalist_limit, len(final_evaluated)),
+        training_eligible_evaluated,
+        min(finalist_limit, len(training_eligible_evaluated)),
         max_per_structure=1,
     )
     shortlist = fitness_ranked_shortlist
     finalist_selection: dict[str, object] = {
+        "training_eligibility": training_eligibility,
         "method": "existing_fitness_and_structure_ranking",
         "similarity_filter_enabled": finalist_similarity_threshold is not None,
         "fitness_ranked_pool_count": len(fitness_ranked_shortlist),
