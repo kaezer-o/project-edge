@@ -264,10 +264,25 @@ def _validation_check(
             "metrics": metrics,
             "passed": bool(passed),
         })
-    full_metrics, _ = _evaluate(
+    full_metrics, baseline_trades = _evaluate(
         frame, program, execution=execution, risk=risk,
         pip_size=pip_size, price_basis=price_basis,
     )
+
+    def entry_events(trades: pd.DataFrame) -> set[str]:
+        if trades.empty or not {"entry_time", "direction"}.issubset(trades.columns):
+            return set()
+        events: set[str] = set()
+        for trade in trades.itertuples(index=False):
+            timestamp = pd.Timestamp(trade.entry_time)
+            timestamp = (
+                timestamp.tz_localize("UTC")
+                if timestamp.tzinfo is None else timestamp.tz_convert("UTC")
+            )
+            events.add(f"{timestamp.isoformat()}|{str(trade.direction).lower()}")
+        return events
+
+    baseline_events = entry_events(baseline_trades)
     cost_stress = []
     for multiplier in (1.5, 2.0):
         stressed_execution = replace(
@@ -289,15 +304,38 @@ def _validation_check(
         stressed_frame = frame.copy()
         if "spread_pips" in stressed_frame.columns:
             stressed_frame["spread_pips"] = stressed_frame["spread_pips"].astype(float) * multiplier
-        stressed_metrics, _ = _evaluate(
+        stressed_metrics, stressed_trades = _evaluate(
             stressed_frame, program, execution=stressed_execution, risk=risk,
             pip_size=pip_size, price_basis=price_basis,
         )
+        stressed_events = entry_events(stressed_trades)
+        union_events = baseline_events | stressed_events
         expectancy = stressed_metrics.get("expectancy_r")
         profit_factor = stressed_metrics.get("profit_factor")
+        baseline_expectancy = full_metrics.get("expectancy_r")
+        baseline_profit_factor = full_metrics.get("profit_factor")
         cost_stress.append({
             "cost_multiplier": multiplier,
             "metrics": stressed_metrics,
+            "trade_set_diagnostics": {
+                "baseline_trade_count": len(baseline_trades),
+                "stressed_trade_count": len(stressed_trades),
+                "shared_entry_events": len(baseline_events & stressed_events),
+                "baseline_only_entry_events": len(baseline_events - stressed_events),
+                "stress_only_entry_events": len(stressed_events - baseline_events),
+                "entry_event_jaccard_similarity": (
+                    len(baseline_events & stressed_events) / len(union_events)
+                    if union_events else 1.0
+                ),
+                "expectancy_delta_r": (
+                    float(expectancy) - float(baseline_expectancy)
+                    if expectancy is not None and baseline_expectancy is not None else None
+                ),
+                "profit_factor_delta": (
+                    float(profit_factor) - float(baseline_profit_factor)
+                    if profit_factor is not None and baseline_profit_factor is not None else None
+                ),
+            },
             "pass": bool(
                 expectancy is not None and float(expectancy) > 0
                 and profit_factor is not None and float(profit_factor) > 1.0
