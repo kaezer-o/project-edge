@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections import OrderedDict
 from pathlib import Path
 
 import numpy as np
@@ -241,7 +242,8 @@ def run_island_program_research(
         min_validation_trades=min_validation_trades,
     )
 
-    training_results: dict[str, tuple[float, dict[str, object], dict[str, object]]] = {}
+    training_results: OrderedDict[str, tuple[float, dict[str, object], dict[str, object]]] = OrderedDict()
+    training_result_cache_limit = max(256, config.islands * config.population_per_island * 4)
 
     def evaluate(genome: dict[str, object]) -> tuple[float, dict[str, object]]:
         program = StrategyProgram.from_dict(genome)
@@ -265,7 +267,11 @@ def run_island_program_research(
             min_train_trades=min_train_trades,
             aggregate_result=aggregate_result,
         )
-        training_results[program.fingerprint()] = (score, metrics, robustness)
+        fingerprint = program.fingerprint()
+        training_results[fingerprint] = (score, metrics, robustness)
+        training_results.move_to_end(fingerprint)
+        if len(training_results) > training_result_cache_limit:
+            training_results.popitem(last=False)
         descriptor = _behaviour_descriptor(
             train,
             program,
