@@ -67,8 +67,8 @@ def _behaviour_descriptor(
     risk: RiskConfig,
     pip_size: float,
     price_basis: str,
-) -> list[float]:
-    """Describe actual directional signals and executed trades in three eras."""
+) -> dict[str, object]:
+    """Describe signal rates and exact executed entry-time/direction events."""
     signal = evaluate_program(program, frame)
     _, trades = _evaluate(
         frame,
@@ -78,28 +78,35 @@ def _behaviour_descriptor(
         pip_size=pip_size,
         price_basis=price_basis,
     )
-    trade_times = (
-        pd.DatetimeIndex(trades["entry_time"])
-        if not trades.empty and "entry_time" in trades
-        else pd.DatetimeIndex([], tz=frame.index.tz)
-    )
     chunks = np.array_split(np.arange(len(frame)), 3)
-    descriptor: list[float] = []
+    rates: list[float] = []
     for positions in chunks:
         if not len(positions):
-            descriptor.extend((0.0, 0.0, 0.0))
+            rates.extend((0.0, 0.0, 0.0))
             continue
         segment = signal.iloc[positions]
         start_time = frame.index[int(positions[0])]
         end_time = frame.index[int(positions[-1])]
-        trade_count = int(((trade_times >= start_time) & (trade_times <= end_time)).sum())
-        bars = float(len(positions))
-        descriptor.extend((
+        if not trades.empty:
+            entry_times = pd.to_datetime(trades["entry_time"], utc=True)
+            trade_count = int(((entry_times >= start_time) & (entry_times <= end_time)).sum())
+        else:
+            trade_count = 0
+        rates.extend((
             float((segment == 1).mean()),
             float((segment == -1).mean()),
-            float(trade_count / bars),
+            float(trade_count / len(positions)),
         ))
-    return descriptor
+    trade_events: list[str] = []
+    if not trades.empty:
+        for trade in trades.itertuples(index=False):
+            timestamp = pd.Timestamp(trade.entry_time)
+            if timestamp.tzinfo is None:
+                timestamp = timestamp.tz_localize("UTC")
+            else:
+                timestamp = timestamp.tz_convert("UTC")
+            trade_events.append(f"{timestamp.isoformat()}|{str(trade.direction).lower()}")
+    return {"rates": rates, "trades": sorted(set(trade_events))}
 
 
 def _run_signature(
@@ -132,7 +139,7 @@ def _run_signature(
         "seed": seed,
         "min_train_trades": min_train_trades,
         "min_validation_trades": min_validation_trades,
-        "fitness_version": 2,
+        "fitness_version": 3,
     }
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
     return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
