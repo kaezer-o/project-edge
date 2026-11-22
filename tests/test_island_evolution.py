@@ -58,6 +58,9 @@ def test_unclassified_structure_diagnostics_are_reported_per_island_and_globally
                 "lookbacks": [14],
                 "long_only_features": [],
                 "short_only_features": [],
+                "long_motifs": ["price_vs_ema_filter"],
+                "short_motifs": [],
+                "motifs": ["price_vs_ema_filter"],
             },
         }
 
@@ -82,6 +85,8 @@ def test_unclassified_structure_diagnostics_are_reported_per_island_and_globally
     island_summaries = history["island_unclassified_structure_diagnostics"]
     assert global_summary["unclassified_genomes"] == 8
     assert global_summary["distinct_archetypes"] == 8
+    assert global_summary["motif_population_counts"] == {"price_vs_ema_filter": 8}
+    assert global_summary["top_archetypes"][0]["motifs"] == ["price_vs_ema_filter"]
     assert len(global_summary["top_archetypes"]) == 8
     assert len(island_summaries) == 2
     assert all(item["unclassified_genomes"] == 4 for item in island_summaries)
