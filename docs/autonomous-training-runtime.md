@@ -69,9 +69,12 @@ to validation or final-test outcomes.
    - Structural motif labels separately identify recurring primitives such as
      EMA-pair comparisons, price-versus-EMA filters, RSI threshold crosses,
      ATR-versus-rolling-ATR gates, Donchian breakouts and combined EMA/ATR
-     regime filters. Motif counts are reported globally, per island and on
-     structural archetypes. Motifs are descriptive labels, not strategy-family
-     classifications, and do not affect evolution or validation.
+     regime filters. Motif counts are reported for the entire population and
+     separately for each island, with motif co-occurrence broken down by
+     mutually exclusive strategy-family class. The older unclassified-only
+     archetype summaries remain available for structural inspection. Motifs
+     are descriptive labels, not strategy-family classifications, and do not
+     affect evolution or validation.
    - Each island retains a configurable minimum number of top-fitness elites
      from every recognizable family. A capped additional allocation gives one
      extra protected slot to the strongest half of families, ranked by the mean

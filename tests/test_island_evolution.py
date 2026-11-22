@@ -93,6 +93,104 @@ def test_unclassified_structure_diagnostics_are_reported_per_island_and_globally
     assert all(item["distinct_archetypes"] == 4 for item in island_summaries)
 
 
+def test_population_motif_telemetry_covers_all_classes_and_islands(tmp_path):
+    config = IslandEvolutionConfig(
+        islands=2, population_per_island=4, elite_count=1,
+        tournament_size=2,
+    )
+    class_motifs = {
+        "trend": ["ema_pair_comparison"],
+        "mean_reversion": ["rsi_threshold_cross"],
+        "hybrid": ["rsi_threshold_cross", "atr_vs_rolling_atr"],
+        "other": ["atr_vs_rolling_atr"],
+    }
+    class_families = {
+        "trend": ["trend"],
+        "mean_reversion": ["mean_reversion"],
+        "hybrid": ["hybrid", "trend", "mean_reversion"],
+        "other": ["other"],
+    }
+    initial = [
+        [{"class": label, "id": island * 10 + index}
+         for index, label in enumerate(class_motifs)]
+        for island in range(config.islands)
+    ]
+
+    def evaluate_with_motifs(genome):
+        label = str(genome["class"])
+        identifier = int(genome["id"])
+        fingerprint = f"{label}-{identifier}"
+        return float(identifier), {
+            "rates": [identifier / 100.0],
+            "trades": [],
+            "signal_fingerprint": fingerprint,
+            "behaviour_fingerprint": fingerprint,
+            "families": class_families[label],
+            "structure": {
+                "fingerprint": fingerprint,
+                "long_nodes": 3,
+                "short_nodes": 2,
+                "long_depth": 2,
+                "short_depth": 2,
+                "operator_counts": {"long": {"and": 1}, "short": {"not": 1}},
+                "features": ["rsi_14"],
+                "lookbacks": [14],
+                "long_only_features": [],
+                "short_only_features": [],
+                "long_motifs": class_motifs[label],
+                "short_motifs": [],
+                "motifs": class_motifs[label],
+            },
+        }
+
+    result = run_island_evolution(
+        initial,
+        evaluate=evaluate_with_motifs,
+        reproduce=reproducer,
+        config=config,
+        seed=2030,
+        generations=1,
+        checkpoint_path=tmp_path / "population-motifs.json",
+        run_signature="population-motif-telemetry-v1",
+    )
+
+    row = result.history[0]
+    global_summary = row["population_motif_diagnostics"]
+    assert global_summary["population_size"] == 8
+    assert global_summary["genomes_with_structure"] == 8
+    assert global_summary["motif_population_counts"] == {
+        "atr_vs_rolling_atr": 4,
+        "ema_pair_comparison": 2,
+        "rsi_threshold_cross": 4,
+    }
+    assert global_summary["motif_by_strategy_family_class_population_counts"] == {
+        "hybrid": {
+            "atr_vs_rolling_atr": 2,
+            "rsi_threshold_cross": 2,
+        },
+        "mean_reversion": {"rsi_threshold_cross": 2},
+        "other": {"atr_vs_rolling_atr": 2},
+        "trend": {"ema_pair_comparison": 2},
+    }
+
+    island_summaries = row["island_population_motif_diagnostics"]
+    assert len(island_summaries) == 2
+    assert all(summary["population_size"] == 4 for summary in island_summaries)
+    assert all(summary["genomes_with_structure"] == 4 for summary in island_summaries)
+    assert all(
+        summary["motif_population_counts"] == {
+            "atr_vs_rolling_atr": 2,
+            "ema_pair_comparison": 1,
+            "rsi_threshold_cross": 2,
+        }
+        for summary in island_summaries
+    )
+    assert all(
+        summary["motif_by_strategy_family_class_population_counts"]["hybrid"]
+        == {"atr_vs_rolling_atr": 1, "rsi_threshold_cross": 1}
+        for summary in island_summaries
+    )
+
 def test_island_evolution_runs_and_checkpoints(tmp_path):
     config = IslandEvolutionConfig(
         islands=3, population_per_island=8, elite_count=2,
