@@ -68,6 +68,7 @@ def test_island_program_research_runs_and_resumes_without_final_test(tmp_path):
     assert "close" in first["data"]["features"]
     assert first["final_test"] is None
     assert first["final_test_skipped"] is True
+    assert first["finalist_selection"]["similarity_filter_enabled"] is False
     assert (tmp_path / "checkpoint.json").exists()
 
     resumed = run_island_program_research(
@@ -359,3 +360,61 @@ def test_candidate_validation_overlap_measures_trade_event_jaccard():
     }
     assert len(overlap) == 3
     assert all(row["candidate_a"] < row["candidate_b"] for row in overlap)
+
+
+
+def test_training_signal_diversity_filter_rejects_redundant_finalists(monkeypatch):
+    feature = lambda name: Expr("feature", value=name)
+    programs = [
+        StrategyProgram(
+            long_entry=Expr("gt", (feature("ema_gap_atr"), Expr("const", value=value))),
+            short_entry=Expr("lt", (feature("ema_gap_atr"), Expr("const", value=0))),
+        )
+        for value in (1, 2, 3)
+    ]
+    signals_by_fingerprint = {
+        programs[0].fingerprint(): np.array([1, 1, 1, 1, 0, 0, 0, 0], dtype=np.int8),
+        programs[1].fingerprint(): np.array([1, 1, 1, 1, 0, 0, 0, 0], dtype=np.int8),
+        programs[2].fingerprint(): np.array([0, 0, 0, 0, 0, 0, -1, -1], dtype=np.int8),
+    }
+    monkeypatch.setattr(
+        island_program_research,
+        "evaluate_program",
+        lambda program, _frame: pd.Series(
+            signals_by_fingerprint[program.fingerprint()]
+        ),
+    )
+    ranked = [
+        (3.0, programs[0], {}, {}),
+        (2.0, programs[1], {}, {}),
+        (1.0, programs[2], {}, {}),
+    ]
+
+    selected, diagnostics = island_program_research._training_signal_diverse_shortlist(
+        ranked,
+        pd.DataFrame(index=range(8)),
+        similarity_threshold=0.90,
+        limit=3,
+    )
+
+    assert [item[1].fingerprint() for item in selected] == [
+        programs[0].fingerprint(),
+        programs[2].fingerprint(),
+    ]
+    assert diagnostics["selected_fitness_ranks"] == [1, 3]
+    assert diagnostics["rejected_as_redundant"][0]["fitness_rank"] == 2
+    assert diagnostics["rejected_as_redundant"][0]["most_similar_selected_fitness_rank"] == 1
+    assert diagnostics["validation_used_for_selection"] is False
+    assert diagnostics["final_test_used_for_selection"] is False
+
+
+def test_training_signal_diversity_filter_validates_threshold():
+    import pytest
+
+    with pytest.raises(ValueError, match="between zero and one"):
+        island_program_research._training_signal_diverse_shortlist(
+            [],
+            pd.DataFrame(),
+            similarity_threshold=1.01,
+            limit=20,
+        )

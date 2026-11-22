@@ -315,3 +315,33 @@ production selection, use validation to choose candidates, or evaluate the
 final chronological holdout. A threshold that increases unique signals is not
 automatically superior; fitness retention and the number of candidates kept
 must be considered together.
+
+
+
+## Optional training-signal finalist filtering
+
+The island trainer can optionally reduce redundancy in its final validation
+shortlist after evolution has finished. The existing fitness/structure-ranked
+shortlist is formed first; the optional filter then greedily rejects a lower
+ranked finalist when its active directional training-signal bars have Jaccard
+similarity greater than or equal to the configured threshold with a finalist
+already retained.
+
+The filter is opt-in and does not alter evolutionary fitness, population
+selection, migration, checkpoint state, validation gates or final-test access.
+It evaluates signal arrays on the training partition only. The report retains
+the original fitness-ranked shortlist, selected original fitness ranks, and
+redundancy diagnostics so the effect is auditable. The filter may return fewer
+than 20 finalists when the pool is highly redundant.
+
+Example using the threshold sensitivity experiment's provisional 0.95 value:
+
+~~~powershell
+edge evolve-program-islands --symbol EURUSD --source-timeframe M1 --timeframe H4 --pip-size 0.0001 --price-basis bid --spread-pips 0.8 --slippage-pips 0.1 --population-per-island 32 --islands 4 --minimum-family-elites 2 --generations 30 --migration-interval 2 --migrants-per-island 2 --novelty-weight 0.25 --seed 2041 --checkpoint results\training-signal-shortlist-h4\checkpoint.json --output results\training-signal-shortlist-h4 --finalist-similarity-threshold 0.95
+~~~
+
+Omit `--finalist-similarity-threshold` to preserve the previous shortlist
+behaviour. The 0.95 value is an experimental starting point based on a small
+offline finalist-pool benchmark, not a validated production optimum. Validation
+remains post-selection only and the final chronological holdout must remain
+untouched.
