@@ -326,16 +326,17 @@ shortlist is formed first; the optional filter then greedily rejects a lower
 ranked finalist only when both its directional training-signal stream and its
 executed training trade paths have Jaccard similarity greater than or equal to
 the configured threshold with a finalist already retained. Trade-path events
-include entry time, direction, exit time and exit reason. This distinguishes
-programs that share entry signals but use materially different stop, target or
-holding-time behaviour.
+include entry time, direction, exit time and exit reason. Risk-profile similarity
+also compares stop distance, reward/risk and maximum holding bars. This
+distinguishes programs that share entry signals but use materially different
+stop, target or holding-time behaviour.
 
 The filter is opt-in and does not alter evolutionary fitness, population
 selection, migration, checkpoint state, validation gates or final-test access.
 It evaluates directional signals and executed trade paths on the training
 partition only. The report retains the original fitness-ranked shortlist,
-selected original fitness ranks, and separate signal/trade-path similarity
-diagnostics so the effect is auditable. The filter may return fewer
+selected original fitness ranks, and separate signal, trade-path and risk-profile
+similarity diagnostics so the effect is auditable. The filter may return fewer
 than 20 finalists when the pool is highly redundant.
 
 Example using the threshold sensitivity experiment's provisional 0.95 value:
