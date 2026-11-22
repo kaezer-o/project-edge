@@ -152,13 +152,29 @@ def _novelty_scores(
     if any(len(item["rates"]) != rate_size for item in current + archived):
         raise ValueError("Behaviour archive descriptor dimensions do not match")
     reference = current + archived
+    rate_vectors = [np.asarray(item["rates"], dtype=float) for item in reference]
+    trade_sets = [set(item["trades"]) for item in reference]
+    behaviour_ids = [str(item["behaviour_fingerprint"]) for item in reference]
     scores = np.zeros(len(current), dtype=float)
-    for index, descriptor in enumerate(current):
-        distances = [
-            _descriptor_distance(descriptor, other)
-            for other_index, other in enumerate(reference)
-            if other_index != index
-        ]
+    for index in range(len(current)):
+        distances = []
+        for other_index in range(len(reference)):
+            if other_index == index:
+                continue
+            if behaviour_ids[index] == behaviour_ids[other_index]:
+                distances.append(0.0)
+                continue
+            rate_distance = float(np.mean(np.abs(
+                rate_vectors[index] - rate_vectors[other_index]
+            )))
+            first_trades = trade_sets[index]
+            second_trades = trade_sets[other_index]
+            union_size = len(first_trades | second_trades)
+            trade_distance = (
+                0.0 if union_size == 0
+                else 1.0 - len(first_trades & second_trades) / union_size
+            )
+            distances.append(0.35 * rate_distance + 0.65 * trade_distance)
         if distances:
             count = min(neighbours, len(distances))
             scores[index] = float(np.mean(np.partition(distances, count - 1)[:count]))
@@ -274,7 +290,16 @@ def run_island_evolution(
 
     while generation < generations:
         generation_started = time.perf_counter()
-        phase_stats = {"evaluation_seconds": 0.0, "evaluator_calls": 0, "cache_hits": 0}
+        phase_stats = {
+            "evaluation_seconds": 0.0,
+            "evaluator_calls": 0,
+            "cache_hits": 0,
+            "novelty_seconds": 0.0,
+            "archive_seconds": 0.0,
+            "history_seconds": 0.0,
+            "reproduction_seconds": 0.0,
+            "migration_seconds": 0.0,
+        }
         evaluated_islands: list[list[dict[str, object]]] = []
         island_novelty: list[np.ndarray] = []
         generation_best = -float("inf")
@@ -292,7 +317,11 @@ def run_island_evolution(
             ):
                 raise ValueError("Evaluator returned inconsistent behaviour descriptors")
 
+            novelty_started = time.perf_counter()
             novelty = _novelty_scores(descriptors, archives[island_index])
+            phase_stats["novelty_seconds"] = float(phase_stats["novelty_seconds"]) + (
+                time.perf_counter() - novelty_started
+            )
             combined = (
                 (1.0 - config.novelty_weight) * _rank(fitness)
                 + config.novelty_weight * _rank(novelty)
@@ -314,12 +343,22 @@ def run_island_evolution(
                 generation_best = float(fitness[best_index])
                 generation_best_genome = _json_copy(population[best_index])
 
+            archive_started = time.perf_counter()
+            archived_behaviours = {
+                str(item["behaviour_fingerprint"]) for item in archives[island_index]
+            }
             for index in np.argsort(novelty)[::-1]:
                 descriptor = descriptors[int(index)]
-                if novelty[int(index)] > 0 and descriptor not in archives[island_index]:
+                behaviour_id = str(descriptor["behaviour_fingerprint"])
+                if novelty[int(index)] > 0 and behaviour_id not in archived_behaviours:
                     archives[island_index].append(descriptor)
+                    archived_behaviours.add(behaviour_id)
             archives[island_index] = archives[island_index][-config.archive_capacity:]
+            phase_stats["archive_seconds"] = float(phase_stats["archive_seconds"]) + (
+                time.perf_counter() - archive_started
+            )
 
+        history_started = time.perf_counter()
         generation += 1
         genome_fingerprints = [
             _fingerprint(row["genome"])
@@ -366,9 +405,13 @@ def run_island_evolution(
             ],
             "strategy_family_population_counts": family_counts,
         })
+        phase_stats["history_seconds"] = float(phase_stats["history_seconds"]) + (
+            time.perf_counter() - history_started
+        )
 
         # Prepare the next population even at the stopping generation so resume
         # follows the same deterministic RNG trajectory as an uninterrupted run.
+        reproduction_started = time.perf_counter()
         next_islands: list[list[Genome]] = []
         for rows, rng in zip(evaluated_islands, rngs):
             ranked = sorted(
@@ -415,8 +458,12 @@ def run_island_evolution(
                 next_population.append(child)
                 next_behaviours.add(child_behaviour)
             next_islands.append(next_population)
+        phase_stats["reproduction_seconds"] = float(phase_stats["reproduction_seconds"]) + (
+            time.perf_counter() - reproduction_started
+        )
 
         if generation % config.migration_interval == 0:
+            migration_started = time.perf_counter()
             migrants = [
                 [
                     _json_copy(row["genome"])
@@ -445,6 +492,9 @@ def run_island_evolution(
                     existing_behaviours.discard(removed_behaviour)
                     target_population[replace_index] = migrant
                     existing_behaviours.add(migrant_behaviour)
+            phase_stats["migration_seconds"] = float(phase_stats["migration_seconds"]) + (
+                time.perf_counter() - migration_started
+            )
         islands = next_islands
 
         checkpoint_started = time.perf_counter()
@@ -472,6 +522,11 @@ def run_island_evolution(
             "other_seconds": max(0.0, generation_seconds - evaluation_seconds - checkpoint_seconds),
             "evaluator_calls": int(phase_stats["evaluator_calls"]),
             "evaluation_cache_hits": int(phase_stats["cache_hits"]),
+            "novelty_seconds": float(phase_stats["novelty_seconds"]),
+            "archive_seconds": float(phase_stats["archive_seconds"]),
+            "history_seconds": float(phase_stats["history_seconds"]),
+            "reproduction_seconds": float(phase_stats["reproduction_seconds"]),
+            "migration_seconds": float(phase_stats["migration_seconds"]),
         })
         # Keep only the next generation's cache entries. Candidate descriptors
         # contain trade events, so retaining every attempted child would grow
