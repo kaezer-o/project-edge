@@ -415,6 +415,68 @@ def _behaviour_descriptor(
     }
 
 
+
+def _active_signal_jaccard(left: np.ndarray, right: np.ndarray) -> float:
+    """Jaccard overlap of bars carrying either directional signal."""
+    left_active = set(np.flatnonzero(np.asarray(left, dtype=np.int8) != 0))
+    right_active = set(np.flatnonzero(np.asarray(right, dtype=np.int8) != 0))
+    union = left_active | right_active
+    return len(left_active & right_active) / len(union) if union else 0.0
+
+
+def _training_signal_diverse_shortlist(
+    ranked: list[tuple[float, StrategyProgram, dict[str, object], dict[str, object]]],
+    frame: pd.DataFrame,
+    *,
+    similarity_threshold: float,
+    limit: int,
+) -> tuple[list[tuple[float, StrategyProgram, dict[str, object], dict[str, object]]], dict[str, object]]:
+    """Greedily filter a fitness-ranked shortlist using training signals only."""
+    if not 0.0 <= similarity_threshold <= 1.0:
+        raise ValueError("finalist similarity threshold must be between zero and one")
+    signals = {
+        item[1].fingerprint(): np.asarray(evaluate_program(item[1], frame), dtype=np.int8)
+        for item in ranked
+    }
+    selected = []
+    selected_signals: list[tuple[str, np.ndarray]] = []
+    rejected = []
+    for rank, item in enumerate(ranked, start=1):
+        if len(selected) >= limit:
+            break
+        fingerprint = item[1].fingerprint()
+        signal = signals[fingerprint]
+        comparisons = [
+            (selected_rank, _active_signal_jaccard(signal, prior_signal))
+            for selected_rank, (_, prior_signal) in enumerate(selected_signals, start=1)
+        ]
+        max_overlap = max((overlap for _, overlap in comparisons), default=0.0)
+        if comparisons and max_overlap >= similarity_threshold:
+            most_similar_rank, _ = max(comparisons, key=lambda pair: pair[1])
+            rejected.append({
+                "fitness_rank": rank,
+                "training_fitness": float(item[0]),
+                "most_similar_selected_rank": most_similar_rank,
+                "max_active_signal_jaccard": max_overlap,
+            })
+            continue
+        selected.append(item)
+        selected_signals.append((fingerprint, signal))
+    return selected, {
+        "method": "greedy_training_active_signal_jaccard",
+        "similarity_threshold": float(similarity_threshold),
+        "requested_limit": int(limit),
+        "fitness_ranked_pool_count": len(ranked),
+        "selected_count": len(selected),
+        "selected_fitness_ranks": [
+            index for index, item in enumerate(ranked, start=1) if item in selected
+        ],
+        "rejected_as_redundant": rejected,
+        "selection_inputs": ["training_fitness", "training_directional_signals"],
+        "validation_used_for_selection": False,
+        "final_test_used_for_selection": False,
+    }
+
 def _candidate_validation_overlap(
     candidates: list[dict[str, object]],
 ) -> list[dict[str, object]]:
@@ -513,6 +575,7 @@ def run_island_program_research(
     config: IslandEvolutionConfig | None = None,
     resume: bool = False,
     run_final_test: bool = False,
+    finalist_similarity_threshold: float | None = None,
 ) -> dict[str, object]:
     """Run resumable multi-island program evolution; only training reaches the evaluator."""
     if generations < 1:
@@ -666,11 +729,37 @@ def run_island_program_research(
             else:
                 score, metrics, robustness = cached
             final_evaluated.append((score, program, metrics, robustness))
-    shortlist = _diverse_ranked(
+    fitness_ranked_shortlist = _diverse_ranked(
         final_evaluated,
         min(20, len(final_evaluated)),
         max_per_structure=1,
     )
+    shortlist = fitness_ranked_shortlist
+    finalist_selection: dict[str, object] = {
+        "method": "existing_fitness_and_structure_ranking",
+        "similarity_filter_enabled": finalist_similarity_threshold is not None,
+        "fitness_ranked_pool_count": len(fitness_ranked_shortlist),
+        "selected_count": len(fitness_ranked_shortlist),
+        "validation_used_for_selection": False,
+        "final_test_used_for_selection": False,
+    }
+    if finalist_similarity_threshold is not None:
+        shortlist, finalist_selection = _training_signal_diverse_shortlist(
+            fitness_ranked_shortlist,
+            train,
+            similarity_threshold=finalist_similarity_threshold,
+            limit=min(20, len(fitness_ranked_shortlist)),
+        )
+        finalist_selection["similarity_filter_enabled"] = True
+    fitness_ranked_shortlist_report = [
+        {
+            "fitness_rank": rank,
+            "training_fitness": float(score),
+            "program_fingerprint": program.fingerprint(),
+        }
+        for rank, (score, program, _metrics, _robustness)
+        in enumerate(fitness_ranked_shortlist, start=1)
+    ]
     candidates: list[dict[str, object]] = []
     accepted: list[tuple[float, StrategyProgram, dict[str, object]]] = []
     for score, program, train_metrics, robustness in shortlist:
@@ -748,6 +837,10 @@ def run_island_program_research(
             "available_strategy_families": list(available_strategy_families(features)),
             "generation_performance": result.runtime_metrics,
             "history": result.history,
+        },
+        "finalist_selection": {
+            **finalist_selection,
+            "fitness_ranked_shortlist": fitness_ranked_shortlist_report,
         },
         "candidate_count": len(candidates),
         "validated_candidate_count": len(accepted),
