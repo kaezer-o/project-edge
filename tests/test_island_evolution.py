@@ -240,3 +240,35 @@ def test_generation_history_reports_genome_and_behaviour_diversity(tmp_path):
     assert row["unique_behaviours"] >= 6
     assert len(row["island_unique_behaviours"]) == 2
     assert "test" in row["strategy_family_population_counts"]
+
+
+def test_final_population_reuses_cached_evaluations(tmp_path):
+    import json
+    from collections import Counter
+
+    config = IslandEvolutionConfig(islands=2, population_per_island=4)
+    evaluated = []
+
+    def counting_evaluator(genome):
+        evaluated.append(json.dumps(genome, sort_keys=True))
+        return evaluator(genome)
+
+    result = run_island_evolution(
+        initial_populations(config),
+        evaluate=counting_evaluator,
+        reproduce=reproducer,
+        config=config,
+        seed=321,
+        generations=2,
+        checkpoint_path=tmp_path / "evaluation-cache.json",
+        run_signature="evaluation-cache-test",
+    )
+
+    counts = Counter(evaluated)
+    assert counts
+    assert all(count == 1 for count in counts.values())
+    assert result.best_fitness == max(
+        evaluator(genome)[0]
+        for population in result.islands
+        for genome in population
+    )
