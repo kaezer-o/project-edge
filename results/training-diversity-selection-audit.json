@@ -1,0 +1,508 @@
+{
+  "audit_version": 1,
+  "limitations": [
+    "This is an offline finalist-selection simulation, not a change to production evolution.",
+    "It operates only on the existing finalist pool and cannot recover candidates discarded earlier.",
+    "Training fitness and training signals are used for selection; validation is not read by the selection algorithm.",
+    "The validation partition remains development data and is not independent performance evidence.",
+    "The final chronological holdout is never evaluated.",
+    "Bid-only source data requires an estimated spread for execution-based audits; this signal-only simulation does not model fills."
+  ],
+  "per_seed": {
+    "2033": {
+      "candidate_count": 20,
+      "diversity_selected_ranks": [
+        1,
+        6,
+        8,
+        9,
+        10,
+        13
+      ],
+      "diversity_selected_unique_signals": 6,
+      "fitness_only_top_ranks": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20
+      ],
+      "fitness_only_unique_signals": 13,
+      "selection": {
+        "not_considered_after_limit": [],
+        "rejected_as_redundant": [
+          {
+            "max_active_signal_jaccard": 0.975072463768116,
+            "most_similar_selected_rank": 1,
+            "rank": 2,
+            "training_fitness": 2.0842620323124965
+          },
+          {
+            "max_active_signal_jaccard": 0.9802784222737819,
+            "most_similar_selected_rank": 1,
+            "rank": 3,
+            "training_fitness": 2.0652816801658673
+          },
+          {
+            "max_active_signal_jaccard": 0.975072463768116,
+            "most_similar_selected_rank": 1,
+            "rank": 4,
+            "training_fitness": 2.059831475794311
+          },
+          {
+            "max_active_signal_jaccard": 0.975072463768116,
+            "most_similar_selected_rank": 1,
+            "rank": 5,
+            "training_fitness": 2.0398626959417743
+          },
+          {
+            "max_active_signal_jaccard": 0.9773781902552204,
+            "most_similar_selected_rank": 1,
+            "rank": 7,
+            "training_fitness": 1.855180133627589
+          },
+          {
+            "max_active_signal_jaccard": 1.0,
+            "most_similar_selected_rank": 10,
+            "rank": 11,
+            "training_fitness": 1.8002729248009905
+          },
+          {
+            "max_active_signal_jaccard": 1.0,
+            "most_similar_selected_rank": 8,
+            "rank": 12,
+            "training_fitness": 1.7833900312580113
+          },
+          {
+            "max_active_signal_jaccard": 0.9395894428152493,
+            "most_similar_selected_rank": 6,
+            "rank": 14,
+            "training_fitness": 1.7542593775584296
+          },
+          {
+            "max_active_signal_jaccard": 1.0,
+            "most_similar_selected_rank": 13,
+            "rank": 15,
+            "training_fitness": 1.7474917164079744
+          },
+          {
+            "max_active_signal_jaccard": 0.9406928948913682,
+            "most_similar_selected_rank": 6,
+            "rank": 16,
+            "training_fitness": 1.7049975506360013
+          },
+          {
+            "max_active_signal_jaccard": 0.9753086419753086,
+            "most_similar_selected_rank": 10,
+            "rank": 17,
+            "training_fitness": 1.6951140206486934
+          },
+          {
+            "max_active_signal_jaccard": 0.975072463768116,
+            "most_similar_selected_rank": 1,
+            "rank": 18,
+            "training_fitness": 1.6792989378916847
+          },
+          {
+            "max_active_signal_jaccard": 0.940026075619296,
+            "most_similar_selected_rank": 8,
+            "rank": 19,
+            "training_fitness": 1.6391419963515508
+          },
+          {
+            "max_active_signal_jaccard": 1.0,
+            "most_similar_selected_rank": 13,
+            "rank": 20,
+            "training_fitness": 1.5959843437128782
+          }
+        ],
+        "requested_limit": 20,
+        "selected": [
+          {
+            "max_active_signal_jaccard_to_selected": 0.0,
+            "rank": 1,
+            "training_fitness": 2.133681524727035
+          },
+          {
+            "max_active_signal_jaccard_to_selected": 0.8513215859030837,
+            "rank": 6,
+            "training_fitness": 1.926457822812503
+          },
+          {
+            "max_active_signal_jaccard_to_selected": 0.2662098049551924,
+            "rank": 8,
+            "training_fitness": 1.8241925755396184
+          },
+          {
+            "max_active_signal_jaccard_to_selected": 0.12166859791425261,
+            "rank": 9,
+            "training_fitness": 1.812238822779021
+          },
+          {
+            "max_active_signal_jaccard_to_selected": 0.5582191780821918,
+            "rank": 10,
+            "training_fitness": 1.802611660942842
+          },
+          {
+            "max_active_signal_jaccard_to_selected": 0.37037037037037035,
+            "rank": 13,
+            "training_fitness": 1.7656917827790477
+          }
+        ],
+        "selected_count": 6,
+        "similarity_threshold": 0.9
+      },
+      "unique_training_signal_streams": 13
+    },
+    "2034": {
+      "candidate_count": 20,
+      "diversity_selected_ranks": [
+        1,
+        2,
+        3,
+        13,
+        16,
+        19
+      ],
+      "diversity_selected_unique_signals": 6,
+      "fitness_only_top_ranks": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20
+      ],
+      "fitness_only_unique_signals": 12,
+      "selection": {
+        "not_considered_after_limit": [],
+        "rejected_as_redundant": [
+          {
+            "max_active_signal_jaccard": 0.9774393683023125,
+            "most_similar_selected_rank": 3,
+            "rank": 4,
+            "training_fitness": 1.7171999441922483
+          },
+          {
+            "max_active_signal_jaccard": 0.9937958262831359,
+            "most_similar_selected_rank": 3,
+            "rank": 5,
+            "training_fitness": 1.6761430588959885
+          },
+          {
+            "max_active_signal_jaccard": 0.9943598420755781,
+            "most_similar_selected_rank": 3,
+            "rank": 6,
+            "training_fitness": 1.6079343392233563
+          },
+          {
+            "max_active_signal_jaccard": 1.0,
+            "most_similar_selected_rank": 2,
+            "rank": 7,
+            "training_fitness": 1.5504552409156647
+          },
+          {
+            "max_active_signal_jaccard": 0.9954467842914058,
+            "most_similar_selected_rank": 2,
+            "rank": 8,
+            "training_fitness": 1.5049596266441454
+          },
+          {
+            "max_active_signal_jaccard": 1.0,
+            "most_similar_selected_rank": 2,
+            "rank": 9,
+            "training_fitness": 1.4862146166337413
+          },
+          {
+            "max_active_signal_jaccard": 1.0,
+            "most_similar_selected_rank": 2,
+            "rank": 10,
+            "training_fitness": 1.459374056683722
+          },
+          {
+            "max_active_signal_jaccard": 1.0,
+            "most_similar_selected_rank": 2,
+            "rank": 11,
+            "training_fitness": 1.4429901399368008
+          },
+          {
+            "max_active_signal_jaccard": 1.0,
+            "most_similar_selected_rank": 2,
+            "rank": 12,
+            "training_fitness": 1.4325702929737774
+          },
+          {
+            "max_active_signal_jaccard": 1.0,
+            "most_similar_selected_rank": 13,
+            "rank": 14,
+            "training_fitness": 1.376259177988324
+          },
+          {
+            "max_active_signal_jaccard": 1.0,
+            "most_similar_selected_rank": 2,
+            "rank": 15,
+            "training_fitness": 1.304675623470443
+          },
+          {
+            "max_active_signal_jaccard": 0.9994359842075579,
+            "most_similar_selected_rank": 3,
+            "rank": 17,
+            "training_fitness": 1.2715985808402328
+          },
+          {
+            "max_active_signal_jaccard": 0.9876957494407159,
+            "most_similar_selected_rank": 3,
+            "rank": 18,
+            "training_fitness": 1.2640297088639536
+          },
+          {
+            "max_active_signal_jaccard": 1.0,
+            "most_similar_selected_rank": 2,
+            "rank": 20,
+            "training_fitness": 1.082785022918951
+          }
+        ],
+        "requested_limit": 20,
+        "selected": [
+          {
+            "max_active_signal_jaccard_to_selected": 0.0,
+            "rank": 1,
+            "training_fitness": 2.26751894650044
+          },
+          {
+            "max_active_signal_jaccard_to_selected": 0.2613752993499829,
+            "rank": 2,
+            "training_fitness": 1.9955615131870161
+          },
+          {
+            "max_active_signal_jaccard_to_selected": 0.7769929364278506,
+            "rank": 3,
+            "training_fitness": 1.9802254138125581
+          },
+          {
+            "max_active_signal_jaccard_to_selected": 0.05358062854198867,
+            "rank": 13,
+            "training_fitness": 1.3835737035217182
+          },
+          {
+            "max_active_signal_jaccard_to_selected": 0.050137741046831955,
+            "rank": 16,
+            "training_fitness": 1.2889625436208756
+          },
+          {
+            "max_active_signal_jaccard_to_selected": 0.6915357766143106,
+            "rank": 19,
+            "training_fitness": 1.1261787174889912
+          }
+        ],
+        "selected_count": 6,
+        "similarity_threshold": 0.9
+      },
+      "unique_training_signal_streams": 12
+    },
+    "2035": {
+      "candidate_count": 20,
+      "diversity_selected_ranks": [
+        1,
+        4,
+        5,
+        6,
+        7,
+        16
+      ],
+      "diversity_selected_unique_signals": 6,
+      "fitness_only_top_ranks": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20
+      ],
+      "fitness_only_unique_signals": 14,
+      "selection": {
+        "not_considered_after_limit": [],
+        "rejected_as_redundant": [
+          {
+            "max_active_signal_jaccard": 1.0,
+            "most_similar_selected_rank": 1,
+            "rank": 2,
+            "training_fitness": 2.3777509527466507
+          },
+          {
+            "max_active_signal_jaccard": 0.9938524590163934,
+            "most_similar_selected_rank": 1,
+            "rank": 3,
+            "training_fitness": 2.2182796299583782
+          },
+          {
+            "max_active_signal_jaccard": 0.9938524590163934,
+            "most_similar_selected_rank": 1,
+            "rank": 8,
+            "training_fitness": 1.901809934631373
+          },
+          {
+            "max_active_signal_jaccard": 1.0,
+            "most_similar_selected_rank": 4,
+            "rank": 9,
+            "training_fitness": 1.8992179202902535
+          },
+          {
+            "max_active_signal_jaccard": 0.9586206896551724,
+            "most_similar_selected_rank": 7,
+            "rank": 10,
+            "training_fitness": 1.821605527975584
+          },
+          {
+            "max_active_signal_jaccard": 0.9948542024013722,
+            "most_similar_selected_rank": 7,
+            "rank": 11,
+            "training_fitness": 1.7509399182084466
+          },
+          {
+            "max_active_signal_jaccard": 0.9586206896551724,
+            "most_similar_selected_rank": 7,
+            "rank": 12,
+            "training_fitness": 1.688872483439301
+          },
+          {
+            "max_active_signal_jaccard": 0.9938524590163934,
+            "most_similar_selected_rank": 1,
+            "rank": 13,
+            "training_fitness": 1.64078932025396
+          },
+          {
+            "max_active_signal_jaccard": 1.0,
+            "most_similar_selected_rank": 4,
+            "rank": 14,
+            "training_fitness": 1.562249622249039
+          },
+          {
+            "max_active_signal_jaccard": 0.9617321248741189,
+            "most_similar_selected_rank": 6,
+            "rank": 15,
+            "training_fitness": 1.4988062851630604
+          },
+          {
+            "max_active_signal_jaccard": 0.9279538904899135,
+            "most_similar_selected_rank": 6,
+            "rank": 17,
+            "training_fitness": 1.411399720989012
+          },
+          {
+            "max_active_signal_jaccard": 0.9235181644359465,
+            "most_similar_selected_rank": 6,
+            "rank": 18,
+            "training_fitness": 1.3612325364445073
+          },
+          {
+            "max_active_signal_jaccard": 0.9613180515759312,
+            "most_similar_selected_rank": 4,
+            "rank": 19,
+            "training_fitness": 1.3602236346528316
+          },
+          {
+            "max_active_signal_jaccard": 0.9755980861244019,
+            "most_similar_selected_rank": 4,
+            "rank": 20,
+            "training_fitness": 1.3065392574014811
+          }
+        ],
+        "requested_limit": 20,
+        "selected": [
+          {
+            "max_active_signal_jaccard_to_selected": 0.0,
+            "rank": 1,
+            "training_fitness": 2.6164692367017133
+          },
+          {
+            "max_active_signal_jaccard_to_selected": 0.21680993314231137,
+            "rank": 4,
+            "training_fitness": 1.9518108920040742
+          },
+          {
+            "max_active_signal_jaccard_to_selected": 0.33321666083304163,
+            "rank": 5,
+            "training_fitness": 1.9216627046182584
+          },
+          {
+            "max_active_signal_jaccard_to_selected": 0.5523156089193825,
+            "rank": 6,
+            "training_fitness": 1.9069490399618503
+          },
+          {
+            "max_active_signal_jaccard_to_selected": 0.8413793103448276,
+            "rank": 7,
+            "training_fitness": 1.903086146908765
+          },
+          {
+            "max_active_signal_jaccard_to_selected": 0.7251720747295969,
+            "rank": 16,
+            "training_fitness": 1.4344952444893055
+          }
+        ],
+        "selected_count": 6,
+        "similarity_threshold": 0.9
+      },
+      "unique_training_signal_streams": 14
+    }
+  },
+  "scope": {
+    "final_test_evaluated": false,
+    "production_selection_changed": false,
+    "seeds": [
+      2033,
+      2034,
+      2035
+    ],
+    "selection_uses_training_fitness_and_training_signals_only": true,
+    "similarity_threshold": 0.9,
+    "source_timeframe": "M1",
+    "symbol": "EURUSD",
+    "timeframe": "H4",
+    "validation_used_for_selection": false
+  }
+}
