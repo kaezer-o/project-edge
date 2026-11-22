@@ -52,7 +52,9 @@ to validation or final-test outcomes.
      present in the receiving island. Retries are bounded.
    - Generation telemetry records unique genomes, unique full behaviours,
      unique signal streams, per-island uniqueness and semantically classified
-     strategy-family counts.
+     strategy-family counts, both globally and separately for each island.
+     Per-island family counts expose local family collapse that aggregate
+     counts can hide.
    - Each island retains a configurable minimum number of top-fitness elites
      from every recognizable family. A capped additional allocation gives one
      extra protected slot to the strongest half of families, ranked by the mean
