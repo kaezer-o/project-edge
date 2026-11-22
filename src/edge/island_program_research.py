@@ -439,6 +439,7 @@ def _training_signal_diverse_shortlist(
         for item in ranked
     }
     selected = []
+    selected_ranks: list[int] = []
     selected_signals: list[tuple[str, np.ndarray]] = []
     rejected = []
     for rank, item in enumerate(ranked, start=1):
@@ -461,6 +462,7 @@ def _training_signal_diverse_shortlist(
             })
             continue
         selected.append(item)
+        selected_ranks.append(rank)
         selected_signals.append((fingerprint, signal))
     return selected, {
         "method": "greedy_training_active_signal_jaccard",
@@ -468,9 +470,7 @@ def _training_signal_diverse_shortlist(
         "requested_limit": int(limit),
         "fitness_ranked_pool_count": len(ranked),
         "selected_count": len(selected),
-        "selected_fitness_ranks": [
-            index for index, item in enumerate(ranked, start=1) if item in selected
-        ],
+        "selected_fitness_ranks": selected_ranks,
         "rejected_as_redundant": rejected,
         "selection_inputs": ["training_fitness", "training_directional_signals"],
         "validation_used_for_selection": False,
