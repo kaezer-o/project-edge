@@ -248,6 +248,18 @@ def run_island_evolution(
         generation = 0
         history: list[dict[str, object]] = []
 
+    evaluation_cache: dict[str, Evaluation] = {}
+
+    def cached_evaluation(genome: Genome) -> Evaluation:
+        key = _fingerprint(genome)
+        if key not in evaluation_cache:
+            fitness_value, descriptor_value = evaluate(_json_copy(genome))
+            evaluation_cache[key] = (
+                float(fitness_value),
+                _validate_descriptor(descriptor_value),
+            )
+        return evaluation_cache[key]
+
     while generation < generations:
         evaluated_islands: list[list[dict[str, object]]] = []
         island_novelty: list[np.ndarray] = []
@@ -255,7 +267,7 @@ def run_island_evolution(
         generation_best_genome: Genome | None = None
 
         for island_index, population in enumerate(islands):
-            evaluated = [evaluate(_json_copy(genome)) for genome in population]
+            evaluated = [cached_evaluation(genome) for genome in population]
             fitness = np.asarray([float(row[0]) for row in evaluated], dtype=float)
             descriptors = [_validate_descriptor(row[1]) for row in evaluated]
             if not np.isfinite(fitness).all():
@@ -341,8 +353,16 @@ def run_island_evolution(
             )
             elites = sorted(
                 rows, key=lambda row: float(row["fitness"]), reverse=True
-            )[:config.elite_count]
-            next_population = [_json_copy(row["genome"]) for row in elites]
+            )
+            next_population: list[Genome] = []
+            next_behaviours: set[str] = set()
+            for row in elites:
+                behaviour = str(row["descriptor"]["signal_fingerprint"])
+                if behaviour not in next_behaviours:
+                    next_population.append(_json_copy(row["genome"]))
+                    next_behaviours.add(behaviour)
+                if len(next_population) >= config.elite_count:
+                    break
 
             def select_parent() -> Genome:
                 count = min(config.tournament_size, len(ranked))
@@ -354,10 +374,23 @@ def run_island_evolution(
                 return _json_copy(winner["genome"])
 
             while len(next_population) < config.population_per_island:
-                child = reproduce(select_parent(), select_parent(), rng)
-                if not isinstance(child, dict):
-                    raise ValueError("reproduce must return a genome dictionary")
-                next_population.append(_json_copy(child))
+                child: Genome | None = None
+                child_behaviour = ""
+                for _attempt in range(12):
+                    proposed = reproduce(select_parent(), select_parent(), rng)
+                    if not isinstance(proposed, dict):
+                        raise ValueError("reproduce must return a genome dictionary")
+                    proposed = _json_copy(proposed)
+                    _, descriptor = cached_evaluation(proposed)
+                    proposed_behaviour = str(descriptor["signal_fingerprint"])
+                    child = proposed
+                    child_behaviour = proposed_behaviour
+                    if proposed_behaviour not in next_behaviours:
+                        break
+                if child is None:
+                    raise RuntimeError("Reproduction failed to produce a child")
+                next_population.append(child)
+                next_behaviours.add(child_behaviour)
             next_islands.append(next_population)
 
         if generation % config.migration_interval == 0:
@@ -370,12 +403,25 @@ def run_island_evolution(
             ]
             for target_index, target_population in enumerate(next_islands):
                 incoming = migrants[(target_index - 1) % config.islands]
-                replace_count = min(
-                    len(incoming),
-                    config.population_per_island - config.elite_count,
-                )
-                if replace_count:
-                    target_population[-replace_count:] = incoming[:replace_count]
+                existing_behaviours = {
+                    str(cached_evaluation(genome)[1]["signal_fingerprint"])
+                    for genome in target_population
+                }
+                replaceable = list(range(len(target_population) - 1, config.elite_count - 1, -1))
+                for migrant in incoming:
+                    if not replaceable:
+                        break
+                    migrant_descriptor = cached_evaluation(migrant)[1]
+                    migrant_behaviour = str(migrant_descriptor["signal_fingerprint"])
+                    if migrant_behaviour in existing_behaviours:
+                        continue
+                    replace_index = replaceable.pop(0)
+                    removed_behaviour = str(
+                        cached_evaluation(target_population[replace_index])[1]["signal_fingerprint"]
+                    )
+                    existing_behaviours.discard(removed_behaviour)
+                    target_population[replace_index] = migrant
+                    existing_behaviours.add(migrant_behaviour)
         islands = next_islands
 
         save_training_checkpoint(
