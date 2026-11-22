@@ -280,6 +280,44 @@ def _behaviour_descriptor(
     }
 
 
+def _candidate_validation_overlap(
+    candidates: list[dict[str, object]],
+) -> list[dict[str, object]]:
+    """Measure pairwise overlap of candidate trade entries on validation only."""
+    event_sets = [
+        set(
+            candidate.get("validation", {})
+            .get("trade_event_diagnostics", {})
+            .get("events", [])
+        )
+        for candidate in candidates
+    ]
+    comparisons: list[dict[str, object]] = []
+    for first_index, first_events in enumerate(event_sets):
+        for second_index in range(first_index + 1, len(event_sets)):
+            second_events = event_sets[second_index]
+            # Empty trade sets carry no useful overlap signal.
+            if not first_events or not second_events:
+                continue
+            union = first_events | second_events
+            shared = first_events & second_events
+            comparisons.append({
+                "candidate_a": first_index + 1,
+                "candidate_b": second_index + 1,
+                "shared_entry_events": len(shared),
+                "union_entry_events": len(union),
+                "jaccard_similarity": len(shared) / len(union),
+            })
+    return sorted(
+        comparisons,
+        key=lambda row: (
+            float(row["jaccard_similarity"]),
+            int(row["shared_entry_events"]),
+        ),
+        reverse=True,
+    )
+
+
 def _run_signature(
     source_data: pd.DataFrame,
     *,
@@ -519,6 +557,14 @@ def run_island_program_research(
         if validation_result["pass"]:
             accepted.append((score, program, row))
 
+    candidate_validation_overlap = _candidate_validation_overlap(candidates)
+    # Keep the compact overlap summary, not every raw validation timestamp.
+    for candidate in candidates:
+        validation_diagnostics = candidate["validation"].get("trade_event_diagnostics", {})
+        validation_diagnostics.pop("events", None)
+        for window in candidate["validation"].get("windows", []):
+            window.get("trade_event_diagnostics", {}).pop("events", None)
+
     winner = max(accepted, key=lambda item: item[0]) if accepted else None
     final_test = None
     if winner is not None and run_final_test:
@@ -568,6 +614,7 @@ def run_island_program_research(
         "validated_candidate_count": len(accepted),
         "status": "validated_candidate" if winner else "no_robust_candidate",
         "candidates": candidates,
+        "candidate_validation_overlap": candidate_validation_overlap,
         "winner": winner[2] if winner else None,
         "final_test": final_test,
         "final_test_skipped": final_test is None,

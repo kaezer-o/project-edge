@@ -260,3 +260,25 @@ def test_volatility_family_requires_matching_directional_filter_and_lookback():
     assert _classify_strategy_families(valid) == ["volatility_expansion"]
     assert _classify_strategy_families(missing_direction) == ["hybrid_or_other"]
     assert _classify_strategy_families(mismatched_lookback) == ["hybrid_or_other"]
+
+
+
+def test_candidate_validation_overlap_measures_trade_event_jaccard():
+    candidates = [
+        {"validation": {"trade_event_diagnostics": {"events": ["a", "b", "c"]}}},
+        {"validation": {"trade_event_diagnostics": {"events": ["a", "b", "d"]}}},
+        {"validation": {"trade_event_diagnostics": {"events": ["x", "y"]}}},
+        {"validation": {"trade_event_diagnostics": {"events": []}}},
+    ]
+
+    overlap = island_program_research._candidate_validation_overlap(candidates)
+
+    assert overlap[0] == {
+        "candidate_a": 1,
+        "candidate_b": 2,
+        "shared_entry_events": 2,
+        "union_entry_events": 4,
+        "jaccard_similarity": 0.5,
+    }
+    assert len(overlap) == 3
+    assert all(row["candidate_a"] < row["candidate_b"] for row in overlap)

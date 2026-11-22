@@ -212,6 +212,15 @@ def test_cost_stress_report_explains_trade_set_changes(monkeypatch):
     )
 
     diagnostic = result["cost_stress"][0]["trade_set_diagnostics"]
+    baseline_events = result["trade_event_diagnostics"]
+    assert len(baseline_events["entry_event_fingerprint"]) == 64
+    assert baseline_events["long_entries"] == 1
+    assert baseline_events["short_entries"] == 1
+    assert len(result["windows"]) == 3
+    for window in result["windows"]:
+        assert len(window["trade_event_diagnostics"]["entry_event_fingerprint"]) == 64
+        assert window["trade_event_diagnostics"]["long_entries"] == 1
+        assert window["trade_event_diagnostics"]["short_entries"] == 1
     assert diagnostic["baseline_trade_count"] == 2
     assert diagnostic["stressed_trade_count"] == 2
     assert diagnostic["shared_entry_events"] == 1
