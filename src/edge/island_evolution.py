@@ -12,7 +12,8 @@ from .training_checkpoint import load_training_checkpoint, save_training_checkpo
 
 
 Genome = dict[str, object]
-Evaluation = tuple[float, list[float]]
+BehaviourDescriptor = dict[str, object]
+Evaluation = tuple[float, BehaviourDescriptor]
 Evaluator = Callable[[Genome], Evaluation]
 Reproducer = Callable[[Genome, Genome, np.random.Generator], Genome]
 
@@ -88,28 +89,94 @@ def _rank(values: np.ndarray) -> np.ndarray:
     return ranks
 
 
+def _validate_descriptor(descriptor: BehaviourDescriptor) -> BehaviourDescriptor:
+    if not isinstance(descriptor, dict) or set(descriptor) != {"rates", "trades"}:
+        raise ValueError("Behaviour descriptor must contain exactly rates and trades")
+    rates = descriptor["rates"]
+    trades = descriptor["trades"]
+    if (
+        not isinstance(rates, list)
+        or not rates
+        or not np.isfinite(np.asarray(rates, dtype=float)).all()
+        or not isinstance(trades, list)
+        or any(not isinstance(item, str) or not item for item in trades)
+        or len(set(trades)) != len(trades)
+    ):
+        raise ValueError("Behaviour descriptor contains invalid rates or trade events")
+    return {"rates": list(map(float, rates)), "trades": sorted(trades)}
+
+
+def _descriptor_distance(first: BehaviourDescriptor, second: BehaviourDescriptor) -> float:
+    """Combine coarse signal-rate distance with exact directional trade Jaccard distance."""
+    first = _validate_descriptor(first)
+    second = _validate_descriptor(second)
+    first_rates = np.asarray(first["rates"], dtype=float)
+    second_rates = np.asarray(second["rates"], dtype=float)
+    if first_rates.shape != second_rates.shape:
+        raise ValueError("Behaviour descriptor rate dimensions do not match")
+    rate_distance = float(np.mean(np.abs(first_rates - second_rates)))
+    first_trades = set(first["trades"])
+    second_trades = set(second["trades"])
+    union = first_trades | second_trades
+    if not union:
+        trade_distance = 0.0
+    else:
+        trade_distance = 1.0 - len(first_trades & second_trades) / len(union)
+    return 0.35 * rate_distance + 0.65 * trade_distance
+
+
 def _novelty_scores(
-    descriptors: list[list[float]],
-    archive: list[list[float]],
+    descriptors: list[BehaviourDescriptor],
+    archive: list[BehaviourDescriptor],
     *,
     neighbours: int = 5,
 ) -> np.ndarray:
-    matrix = np.asarray(descriptors, dtype=float)
-    if matrix.ndim != 2 or matrix.shape[1] == 0 or not np.isfinite(matrix).all():
-        raise ValueError("Behaviour descriptors must be a finite rectangular matrix")
-    archived = np.asarray(archive, dtype=float) if archive else np.empty((0, matrix.shape[1]))
-    if archived.ndim != 2 or archived.shape[1] != matrix.shape[1]:
+    if not descriptors:
+        raise ValueError("At least one behaviour descriptor is required")
+    current = [_validate_descriptor(item) for item in descriptors]
+    archived = [_validate_descriptor(item) for item in archive]
+    rate_size = len(current[0]["rates"])
+    if any(len(item["rates"]) != rate_size for item in current + archived):
         raise ValueError("Behaviour archive descriptor dimensions do not match")
-    reference = np.vstack((matrix, archived))
-    scores = np.zeros(len(matrix), dtype=float)
-    for index, descriptor in enumerate(matrix):
-        distances = np.linalg.norm(reference - descriptor, axis=1)
-        distances[index] = np.inf
-        finite = distances[np.isfinite(distances)]
-        if finite.size:
-            count = min(neighbours, finite.size)
-            scores[index] = float(np.mean(np.partition(finite, count - 1)[:count]))
+    reference = current + archived
+    scores = np.zeros(len(current), dtype=float)
+    for index, descriptor in enumerate(current):
+        distances = [
+            _descriptor_distance(descriptor, other)
+            for other_index, other in enumerate(reference)
+            if other_index != index
+        ]
+        if distances:
+            count = min(neighbours, len(distances))
+            scores[index] = float(np.mean(np.partition(distances, count - 1)[:count]))
     return scores
+
+
+def _select_diverse_rows(
+    rows: list[dict[str, object]],
+    count: int,
+) -> list[dict[str, object]]:
+    """Greedily select migrants with low pairwise behavioural overlap."""
+    if count <= 0 or not rows:
+        return []
+    remaining = sorted(
+        rows,
+        key=lambda row: float(row["novelty"]),
+        reverse=True,
+    )
+    selected = [remaining.pop(0)]
+    while remaining and len(selected) < count:
+        best_index = max(
+            range(len(remaining)),
+            key=lambda index: min(
+                _descriptor_distance(
+                    remaining[index]["descriptor"], chosen["descriptor"]
+                )
+                for chosen in selected
+            ),
+        )
+        selected.append(remaining.pop(best_index))
+    return selected
 
 
 def _fingerprint(genome: Genome) -> str:
@@ -129,7 +196,7 @@ def run_island_evolution(
     run_signature: str,
     resume: bool = False,
 ) -> IslandEvolutionResult:
-    """Run resumable island evolution with novelty ranking and ring migration.
+    """Run resumable island evolution with trade-overlap novelty and ring migration.
 
     generations is the total target generation, including work already saved.
     The evaluator must use training data only; validation and final-test data
@@ -143,8 +210,8 @@ def run_island_evolution(
     if resume:
         state = load_training_checkpoint(checkpoint, expected_run_signature=run_signature)
         runtime_state = state["rng_state"]
-        if runtime_state.get("runtime") != "island_evolution_v1":
-            raise ValueError("Checkpoint does not contain island-evolution state")
+        if runtime_state.get("runtime") != "island_evolution_v2":
+            raise ValueError("Checkpoint does not contain compatible island-evolution state")
         if runtime_state.get("config") != expected_config:
             raise ValueError("Checkpoint evolution configuration does not match")
         islands = state["population"]
@@ -158,13 +225,16 @@ def run_island_evolution(
         history = list(state["history"])
         if len(islands) != config.islands or len(archives) != config.islands:
             raise ValueError("Checkpoint island count does not match configuration")
+        for archive in archives:
+            for descriptor in archive:
+                _validate_descriptor(descriptor)
     else:
         if initial_populations is None or len(initial_populations) != config.islands:
             raise ValueError("Provide one initial population per island")
         if any(len(population) != config.population_per_island for population in initial_populations):
             raise ValueError("Every initial island must match population_per_island")
         islands = [[_json_copy(genome) for genome in population] for population in initial_populations]
-        archives: list[list[list[float]]] = [[] for _ in range(config.islands)]
+        archives: list[list[BehaviourDescriptor]] = [[] for _ in range(config.islands)]
         seed_sequence = np.random.SeedSequence(seed)
         rngs = [np.random.default_rng(child) for child in seed_sequence.spawn(config.islands)]
         generation = 0
@@ -179,15 +249,14 @@ def run_island_evolution(
         for island_index, population in enumerate(islands):
             evaluated = [evaluate(_json_copy(genome)) for genome in population]
             fitness = np.asarray([float(row[0]) for row in evaluated], dtype=float)
-            descriptors = [list(map(float, row[1])) for row in evaluated]
+            descriptors = [_validate_descriptor(row[1]) for row in evaluated]
             if not np.isfinite(fitness).all():
                 raise ValueError("Evaluator returned non-finite fitness")
-            if not descriptors or any(
-                not descriptor or not np.isfinite(descriptor).all()
-                or len(descriptor) != len(descriptors[0])
+            if any(
+                len(descriptor["rates"]) != len(descriptors[0]["rates"])
                 for descriptor in descriptors
             ):
-                raise ValueError("Evaluator returned invalid behaviour descriptors")
+                raise ValueError("Evaluator returned inconsistent behaviour descriptors")
 
             novelty = _novelty_scores(descriptors, archives[island_index])
             combined = (
@@ -231,9 +300,8 @@ def run_island_evolution(
             ],
         })
 
-        # Always prepare the next population, even at the requested stopping
-        # generation. This makes a checkpoint at generation N resumable to N+K
-        # with exactly the same RNG trajectory as one uninterrupted run.
+        # Prepare the next population even at the stopping generation so resume
+        # follows the same deterministic RNG trajectory as an uninterrupted run.
         next_islands: list[list[Genome]] = []
         for rows, rng in zip(evaluated_islands, rngs):
             ranked = sorted(
@@ -261,15 +329,13 @@ def run_island_evolution(
             next_islands.append(next_population)
 
         if generation % config.migration_interval == 0:
-            migrants = []
-            for rows in evaluated_islands:
-                novel_rows = sorted(
-                    rows, key=lambda row: float(row["novelty"]), reverse=True
-                )
-                migrants.append([
+            migrants = [
+                [
                     _json_copy(row["genome"])
-                    for row in novel_rows[:config.migrants_per_island]
-                ])
+                    for row in _select_diverse_rows(rows, config.migrants_per_island)
+                ]
+                for rows in evaluated_islands
+            ]
             for target_index, target_population in enumerate(next_islands):
                 incoming = migrants[(target_index - 1) % config.islands]
                 replace_count = min(
@@ -286,7 +352,7 @@ def run_island_evolution(
             generation=generation,
             population=islands,
             rng_state={
-                "runtime": "island_evolution_v1",
+                "runtime": "island_evolution_v2",
                 "config": expected_config,
                 "archives": archives,
                 "island_rng_states": [rng.bit_generator.state for rng in rngs],
