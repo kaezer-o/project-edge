@@ -13,12 +13,20 @@ from edge.config import ExecutionConfig, RiskConfig
 from edge.island_program_research import _classify_strategy_families
 from edge.program import StrategyProgram
 
-from scripts.audit_candidate_behaviour import (
-    _candidate_behaviour,
-    _prepare_train_validation,
-    signal_similarity,
-    trade_overlap,
-)
+try:
+    from audit_candidate_behaviour import (
+        _candidate_behaviour,
+        _prepare_train_validation,
+        signal_similarity,
+        trade_overlap,
+    )
+except ModuleNotFoundError:
+    from scripts.audit_candidate_behaviour import (
+        _candidate_behaviour,
+        _prepare_train_validation,
+        signal_similarity,
+        trade_overlap,
+    )
 from edge.data import load_ohlc_csv
 
 
