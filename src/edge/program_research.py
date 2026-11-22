@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from dataclasses import replace
 from pathlib import Path
@@ -245,11 +246,34 @@ def _validation_check(
     price_basis: str,
     min_trades: int,
 ) -> dict[str, object]:
+    def entry_events(trades: pd.DataFrame) -> set[str]:
+        if trades.empty or not {"entry_time", "direction"}.issubset(trades.columns):
+            return set()
+        events: set[str] = set()
+        for trade in trades.itertuples(index=False):
+            timestamp = pd.Timestamp(trade.entry_time)
+            timestamp = (
+                timestamp.tz_localize("UTC")
+                if timestamp.tzinfo is None else timestamp.tz_convert("UTC")
+            )
+            events.add(f"{timestamp.isoformat()}|{str(trade.direction).lower()}")
+        return events
+
+    def event_diagnostics(trades: pd.DataFrame) -> dict[str, object]:
+        events = entry_events(trades)
+        encoded = "\\n".join(sorted(events)).encode("utf-8")
+        directions = [event.rsplit("|", 1)[-1] for event in events]
+        return {
+            "entry_event_fingerprint": hashlib.sha256(encoded).hexdigest(),
+            "long_entries": directions.count("long"),
+            "short_entries": directions.count("short"),
+        }
+
     chunks = np.array_split(np.arange(len(frame)), 3)
     windows = []
     for i, positions in enumerate(chunks, start=1):
         window = frame.iloc[positions]
-        metrics, _ = _evaluate(
+        metrics, window_trades = _evaluate(
             window, program, execution=execution, risk=risk,
             pip_size=pip_size, price_basis=price_basis,
         )
@@ -268,25 +292,13 @@ def _validation_check(
             "start_utc": window.index.min().isoformat() if len(window) else None,
             "end_utc": window.index.max().isoformat() if len(window) else None,
             "metrics": metrics,
+            "trade_event_diagnostics": event_diagnostics(window_trades),
             "passed": bool(passed),
         })
     full_metrics, baseline_trades = _evaluate(
         frame, program, execution=execution, risk=risk,
         pip_size=pip_size, price_basis=price_basis,
     )
-
-    def entry_events(trades: pd.DataFrame) -> set[str]:
-        if trades.empty or not {"entry_time", "direction"}.issubset(trades.columns):
-            return set()
-        events: set[str] = set()
-        for trade in trades.itertuples(index=False):
-            timestamp = pd.Timestamp(trade.entry_time)
-            timestamp = (
-                timestamp.tz_localize("UTC")
-                if timestamp.tzinfo is None else timestamp.tz_convert("UTC")
-            )
-            events.add(f"{timestamp.isoformat()}|{str(trade.direction).lower()}")
-        return events
 
     baseline_events = entry_events(baseline_trades)
     cost_stress = []
@@ -351,6 +363,7 @@ def _validation_check(
     stress_pass = bool(cost_stress and cost_stress[0]["pass"])
     return {
         "metrics": full_metrics,
+        "trade_event_diagnostics": event_diagnostics(baseline_trades),
         "windows": windows,
         "passed_windows": passed_windows,
         "cost_stress": cost_stress,
