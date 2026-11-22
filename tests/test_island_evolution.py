@@ -241,6 +241,14 @@ def test_generation_history_reports_genome_and_behaviour_diversity(tmp_path):
     assert row["unique_behaviours"] >= 6
     assert len(row["island_unique_behaviours"]) == 2
     assert "test" in row["strategy_family_population_counts"]
+    assert row["island_strategy_family_population_counts"] == [
+        {"test": 4},
+        {"test": 4},
+    ]
+    assert sum(
+        island_counts.get("test", 0)
+        for island_counts in row["island_strategy_family_population_counts"]
+    ) == row["strategy_family_population_counts"]["test"]
 
 
 def test_final_population_reuses_cached_evaluations(tmp_path):

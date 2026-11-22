@@ -376,11 +376,16 @@ def run_island_evolution(
             str(row["descriptor"]["signal_fingerprint"])
             for rows in evaluated_islands for row in rows
         ]
+        island_family_counts: list[dict[str, int]] = []
         family_counts: dict[str, int] = {}
         for rows in evaluated_islands:
+            island_counts: dict[str, int] = {}
             for row in rows:
                 for family in row["descriptor"]["families"]:
-                    family_counts[family] = family_counts.get(family, 0) + 1
+                    island_counts[family] = island_counts.get(family, 0) + 1
+            island_family_counts.append(island_counts)
+            for family, count in island_counts.items():
+                family_counts[family] = family_counts.get(family, 0) + count
         history.append({
             "generation": generation,
             "best_fitness": generation_best,
@@ -408,6 +413,7 @@ def run_island_evolution(
                 for rows in evaluated_islands
             ],
             "strategy_family_population_counts": family_counts,
+            "island_strategy_family_population_counts": island_family_counts,
         })
         phase_stats["history_seconds"] = float(phase_stats["history_seconds"]) + (
             time.perf_counter() - history_started
