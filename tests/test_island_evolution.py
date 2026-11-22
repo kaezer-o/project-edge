@@ -61,8 +61,13 @@ def test_unclassified_structure_diagnostics_are_reported_per_island_and_globally
             },
         }
 
+    initial = [
+        [{"x": float(island * config.population_per_island + index), "y": 0.0}
+         for index in range(config.population_per_island)]
+        for island in range(config.islands)
+    ]
     result = run_island_evolution(
-        initial_populations(config),
+        initial,
         evaluate=evaluate_with_structure,
         reproduce=reproducer,
         config=config,
