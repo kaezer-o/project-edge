@@ -122,6 +122,38 @@ def test_island_program_resume_rejects_changed_configuration(tmp_path):
 
 
 
+def test_program_structure_diagnostics_normalizes_constants_and_reports_asymmetry():
+    from edge.island_program_research import _program_structure_diagnostics
+
+    feature = lambda name: Expr("feature", value=name)
+    first = StrategyProgram(
+        long_entry=Expr("and", (
+            Expr("cross_above", (feature("rsi_14"), Expr("const", value=30))),
+            Expr("gt", (feature("close"), feature("ema_20"))),
+        )),
+        short_entry=Expr("cross_below", (feature("rsi_14"), Expr("const", value=70))),
+    )
+    second = StrategyProgram(
+        long_entry=Expr("and", (
+            Expr("cross_above", (feature("rsi_14"), Expr("const", value=35))),
+            Expr("gt", (feature("close"), feature("ema_20"))),
+        )),
+        short_entry=Expr("cross_below", (feature("rsi_14"), Expr("const", value=65))),
+    )
+
+    first_result = _program_structure_diagnostics(first)
+    second_result = _program_structure_diagnostics(second)
+
+    assert first_result["fingerprint"] == second_result["fingerprint"]
+    assert first_result["long_nodes"] == 7
+    assert first_result["short_nodes"] == 3
+    assert first_result["long_depth"] == 3
+    assert first_result["short_depth"] == 2
+    assert first_result["features"] == ["close", "ema_20", "rsi_14"]
+    assert first_result["long_only_features"] == ["close", "ema_20"]
+    assert first_result["short_only_features"] == []
+
+
 def test_behaviour_descriptor_uses_comparable_rate_scales(monkeypatch):
     frame = pd.DataFrame(
         {"open": np.ones(90),
@@ -165,6 +197,9 @@ def test_behaviour_descriptor_uses_comparable_rate_scales(monkeypatch):
     assert len(descriptor["signal_fingerprint"]) == 64
     assert len(descriptor["behaviour_fingerprint"]) == 64
     assert descriptor["families"] == ["other"]
+    assert descriptor["structure"]["long_nodes"] > 0
+    assert descriptor["structure"]["short_nodes"] > 0
+    assert len(descriptor["structure"]["fingerprint"]) == 64
     assert max(descriptor["rates"]) <= 1.0
 
 
