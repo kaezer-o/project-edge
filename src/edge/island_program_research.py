@@ -449,7 +449,7 @@ def _training_signal_diverse_shortlist(
         signal = signals[fingerprint]
         comparisons = [
             (selected_rank, _active_signal_jaccard(signal, prior_signal))
-            for selected_rank, (_, prior_signal) in enumerate(selected_signals, start=1)
+            for selected_rank, (_, prior_signal) in zip(selected_ranks, selected_signals)
         ]
         max_overlap = max((overlap for _, overlap in comparisons), default=0.0)
         if comparisons and max_overlap >= similarity_threshold:
@@ -457,7 +457,7 @@ def _training_signal_diverse_shortlist(
             rejected.append({
                 "fitness_rank": rank,
                 "training_fitness": float(item[0]),
-                "most_similar_selected_rank": most_similar_rank,
+                "most_similar_selected_fitness_rank": most_similar_rank,
                 "max_active_signal_jaccard": max_overlap,
             })
             continue
@@ -476,6 +476,7 @@ def _training_signal_diverse_shortlist(
         "validation_used_for_selection": False,
         "final_test_used_for_selection": False,
     }
+
 
 def _candidate_validation_overlap(
     candidates: list[dict[str, object]],
