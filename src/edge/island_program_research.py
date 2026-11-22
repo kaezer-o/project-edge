@@ -460,6 +460,25 @@ def _set_jaccard(left: set[str], right: set[str]) -> float:
     return len(left & right) / len(union) if union else 0.0
 
 
+def _risk_profile_similarity(left: StrategyProgram, right: StrategyProgram) -> float:
+    """Return one minus the largest relative difference in risk parameters."""
+    left_values = (
+        float(left.stop_atr),
+        float(left.reward_risk),
+        float(left.max_holding_bars),
+    )
+    right_values = (
+        float(right.stop_atr),
+        float(right.reward_risk),
+        float(right.max_holding_bars),
+    )
+    differences = [
+        abs(a - b) / max(abs(a), abs(b), 1e-12)
+        for a, b in zip(left_values, right_values)
+    ]
+    return max(0.0, 1.0 - max(differences, default=0.0))
+
+
 def _training_signal_diverse_shortlist(
     ranked: list[tuple[float, StrategyProgram, dict[str, object], dict[str, object]]],
     frame: pd.DataFrame,
@@ -510,13 +529,22 @@ def _training_signal_diverse_shortlist(
             trade_similarity = _set_jaccard(
                 trade_paths[fingerprint], trade_paths[selected_fingerprint]
             )
-            # A candidate is redundant only when both its directional signals
-            # and its realized entry/exit paths are highly similar.
-            combined_similarity = min(signal_similarity, trade_similarity)
+            risk_similarity = _risk_profile_similarity(
+                item[1], next(
+                    prior[1] for prior in ranked
+                    if prior[1].fingerprint() == selected_fingerprint
+                )
+            )
+            # A candidate is redundant only when its directional signals,
+            # realized entry/exit paths and risk profile are all highly similar.
+            combined_similarity = min(
+                signal_similarity, trade_similarity, risk_similarity
+            )
             comparisons.append({
                 "fitness_rank": selected_rank,
                 "directional_signal_jaccard": signal_similarity,
                 "training_trade_path_jaccard": trade_similarity,
+                "risk_profile_similarity": risk_similarity,
                 "combined_similarity": combined_similarity,
             })
         most_similar = max(
@@ -534,6 +562,7 @@ def _training_signal_diverse_shortlist(
                 "most_similar_selected_fitness_rank": most_similar["fitness_rank"],
                 "max_directional_signal_jaccard": most_similar["directional_signal_jaccard"],
                 "max_training_trade_path_jaccard": most_similar["training_trade_path_jaccard"],
+                "max_risk_profile_similarity": most_similar["risk_profile_similarity"],
                 "max_combined_similarity": most_similar["combined_similarity"],
             })
             continue
@@ -552,6 +581,7 @@ def _training_signal_diverse_shortlist(
             "training_fitness",
             "directional_training_signals",
             "training_trade_entry_exit_paths",
+            "risk_management_profile",
         ],
         "validation_used_for_selection": False,
         "final_test_used_for_selection": False,
