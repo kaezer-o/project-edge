@@ -54,10 +54,11 @@ to validation or final-test outcomes.
      unique signal streams, per-island uniqueness and semantically classified
      strategy-family counts.
    - Each island retains a configurable minimum number of top-fitness elites
-     from every recognizable family before filling the remaining population
-     through normal novelty/fitness-guided reproduction. The default floor is
-     two representatives per family per island; hybrid/other programs do not
-     satisfy a named-family quota.
+     from every recognizable family. A capped additional allocation gives one
+     extra protected slot to the strongest half of families, ranked by the mean
+     of their top three training-only combined fitness/novelty selection scores.
+     Hybrid/other programs do not satisfy a named-family quota. Remaining
+     population slots use normal novelty/fitness-guided reproduction.
 
 4. **Search grammar**
    - Expand strategy primitives by family: trend, mean reversion, breakout,
