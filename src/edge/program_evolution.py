@@ -7,6 +7,7 @@ from .program import (
     Expr,
     StrategyProgram,
     validate_expr,
+    canonicalize_expr,
 )
 
 
@@ -133,7 +134,7 @@ def random_expression(
             validate_expr(result, expected=expected)
         except ValueError:
             continue
-        return result
+        return canonicalize_expr(result)
 
     # Guaranteed-valid fallback; the normal path should almost always succeed.
     terminal = Expr("feature", value=feature_names[0])
@@ -144,7 +145,7 @@ def random_expression(
         (terminal, Expr("lag", (terminal,), value=1)),
     )
     validate_expr(fallback, expected="bool")
-    return fallback
+    return canonicalize_expr(fallback)
 
 
 def _node_type(node: Expr) -> str:
@@ -230,8 +231,8 @@ def mutate_expression(
             validate_expr(candidate, expected=_node_type(expr))
         except ValueError:
             continue
-        return candidate
-    return expr
+        return canonicalize_expr(candidate)
+    return canonicalize_expr(expr)
 
 
 def crossover_expressions(
@@ -267,8 +268,8 @@ def crossover_expressions(
                 validate_expr(candidate, expected=expected)
             except ValueError:
                 continue
-            return candidate
-    return first
+            return canonicalize_expr(candidate)
+    return canonicalize_expr(first)
 
 
 def mutate_program(
