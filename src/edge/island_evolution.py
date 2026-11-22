@@ -417,6 +417,7 @@ def run_island_evolution(
         # follows the same deterministic RNG trajectory as an uninterrupted run.
         reproduction_started = time.perf_counter()
         next_islands: list[list[Genome]] = []
+        protected_elite_counts: list[int] = []
         for rows, rng in zip(evaluated_islands, rngs):
             ranked = sorted(
                 rows, key=lambda row: float(row["selection_score"]), reverse=True
@@ -465,6 +466,8 @@ def run_island_evolution(
                     if len(next_population) >= config.population_per_island:
                         break
 
+            protected_elite_counts.append(len(next_population))
+
             def select_parent() -> Genome:
                 count = min(config.tournament_size, len(ranked))
                 indices = rng.choice(len(ranked), size=count, replace=False)
@@ -512,7 +515,11 @@ def run_island_evolution(
                     str(cached_evaluation(genome)[1]["behaviour_fingerprint"])
                     for genome in target_population
                 }
-                replaceable = list(range(len(target_population) - 1, config.elite_count - 1, -1))
+                replaceable = list(range(
+                    len(target_population) - 1,
+                    protected_elite_counts[target_index] - 1,
+                    -1,
+                ))
                 for migrant in incoming:
                     if not replaceable:
                         break
