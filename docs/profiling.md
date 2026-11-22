@@ -29,3 +29,17 @@ The script does not run evolution, does not evaluate validation or final-test
 performance, and does not invoke a GPU. Run it on the target machine to obtain
 the actual CPU baseline before choosing kernels for acceleration. Preserve the
 JSON report with machine and software details when comparing later runs.
+
+## CUDA capability probe
+
+Run:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\probe_acceleration.py
+```
+
+This records NVIDIA driver/GPU details, installed optional packages, PyTorch CUDA
+availability and compiled GPU architectures, and Numba CUDA availability.
+It does not install dependencies, benchmark a kernel, or establish numerical
+parity. For a GTX 1060, verify that the installed framework build supports
+compute capability 6.1 (sm_61) before attempting a CUDA implementation.
