@@ -267,6 +267,7 @@ def _validation_check(
             "entry_event_fingerprint": hashlib.sha256(encoded).hexdigest(),
             "long_entries": directions.count("long"),
             "short_entries": directions.count("short"),
+            "events": sorted(events),
         }
 
     chunks = np.array_split(np.arange(len(frame)), 3)
