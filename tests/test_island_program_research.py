@@ -159,3 +159,28 @@ def test_behaviour_descriptor_uses_comparable_rate_scales(monkeypatch):
     assert len(descriptor["behaviour_fingerprint"]) == 64
     assert descriptor["families"] == ["other"]
     assert max(descriptor["rates"]) <= 1.0
+
+
+def test_behaviour_descriptor_reuses_precomputed_signal_and_trades(monkeypatch):
+    frame = pd.DataFrame(
+        {"open": np.ones(30), "high": np.ones(30), "low": np.ones(30), "close": np.ones(30)},
+        index=pd.date_range("2024-01-01", periods=30, freq="h", tz="UTC"),
+    )
+    program = StrategyProgram(
+        long_entry=Expr("gt", (Expr("feature", value="close"), Expr("feature", value="open"))),
+        short_entry=Expr("lt", (Expr("feature", value="close"), Expr("feature", value="open"))),
+    )
+    signal = pd.Series(0, index=frame.index, dtype="int8")
+    signal.iloc[2] = 1
+    trades = pd.DataFrame({"entry_time": [frame.index[3]], "direction": ["long"]})
+
+    def unexpected_evaluation(*args, **kwargs):
+        raise AssertionError("precomputed results should prevent another evaluation/backtest")
+
+    monkeypatch.setattr(island_program_research, "evaluate_program", unexpected_evaluation)
+    monkeypatch.setattr(island_program_research, "_evaluate", unexpected_evaluation)
+    descriptor = island_program_research._behaviour_descriptor(
+        frame, program, execution=ExecutionConfig(), risk=RiskConfig(),
+        pip_size=0.0001, price_basis="mid", signal=signal, trades=trades,
+    )
+    assert descriptor["trades"] == [f"{frame.index[3].isoformat()}|long"]
