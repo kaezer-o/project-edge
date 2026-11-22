@@ -366,7 +366,10 @@ def test_candidate_validation_overlap_measures_trade_event_jaccard():
 def test_training_signal_diversity_filter_rejects_redundant_finalists(monkeypatch):
     feature = lambda name: Expr("feature", value=name)
     programs = [
-        StrategyProgram(long_entry=Expr("gt", (feature("close"), Expr("const", value=value))))
+        StrategyProgram(
+            long_entry=Expr("gt", (feature("close"), Expr("const", value=value))),
+            short_entry=Expr("const", value=False),
+        )
         for value in (1, 2, 3)
     ]
     signals_by_fingerprint = {
