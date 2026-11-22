@@ -177,12 +177,66 @@ def _expression_structure(root) -> dict[str, object]:
     }
 
 
+def _classify_structural_motifs(root) -> list[str]:
+    """Label recurring AST motifs without assigning strategy families."""
+    motifs: set[str] = set()
+
+    def visit(node) -> None:
+        if node.op in {"gt", "lt", "cross_above", "cross_below"} and len(node.args) == 2:
+            left, right = node.args
+            left_name = _feature_name(left)
+            right_name = _feature_name(right)
+            if left_name and right_name and left_name.startswith("ema_") and right_name.startswith("ema_"):
+                motifs.add("ema_pair_comparison")
+            if left_name == "close" and right_name and right_name.startswith("ema_"):
+                motifs.add("price_vs_ema_filter")
+            if left_name == "close" and right_name and right_name.startswith("donchian_high_") and node.op == "gt":
+                motifs.add("donchian_high_breakout")
+            if left_name == "close" and right_name and right_name.startswith("donchian_low_") and node.op == "lt":
+                motifs.add("donchian_low_breakout")
+            if left_name == "rsi_14" and right.op == "const" and node.op in {"cross_above", "cross_below"}:
+                motifs.add("rsi_threshold_cross")
+            if (left_name == "atr_14" and right.op == "rolling_mean" and len(right.args) == 1
+                    and _feature_name(right.args[0]) == "atr_14" and isinstance(right.value, int)
+                    and node.op in {"gt", "lt"}):
+                motifs.add("atr_vs_rolling_atr")
+        if node.op == "and":
+            subtree_nodes: list[object] = []
+            def collect(current) -> None:
+                subtree_nodes.append(current)
+                for child in current.args:
+                    collect(child)
+            collect(node)
+            has_atr_gate = any(
+                current.op in {"gt", "lt"} and len(current.args) == 2
+                and _feature_name(current.args[0]) == "atr_14"
+                and current.args[1].op == "rolling_mean" and len(current.args[1].args) == 1
+                and _feature_name(current.args[1].args[0]) == "atr_14"
+                for current in subtree_nodes
+            )
+            has_price_ema = any(
+                current.op in {"gt", "lt"} and len(current.args) == 2
+                and _feature_name(current.args[0]) == "close"
+                and (_feature_name(current.args[1]) or "").startswith("ema_")
+                for current in subtree_nodes
+            )
+            if has_atr_gate and has_price_ema:
+                motifs.add("ema_direction_with_atr_regime_gate")
+        for child in node.args:
+            visit(child)
+
+    visit(root)
+    return sorted(motifs)
+
 def _program_structure_diagnostics(program: StrategyProgram) -> dict[str, object]:
     """Describe AST topology without changing evaluation or selection."""
     long = _expression_structure(program.long_entry)
     short = _expression_structure(program.short_entry)
     long_features = set(long["features"])
     short_features = set(short["features"])
+    long_motifs = _classify_structural_motifs(program.long_entry)
+    short_motifs = _classify_structural_motifs(program.short_entry)
+    motifs = sorted(set(long_motifs) | set(short_motifs))
     payload = {
         "long": long["tree"],
         "short": short["tree"],
@@ -205,6 +259,9 @@ def _program_structure_diagnostics(program: StrategyProgram) -> dict[str, object
         "lookbacks": sorted(set(long["lookbacks"]) | set(short["lookbacks"])),
         "long_only_features": sorted(long_features - short_features),
         "short_only_features": sorted(short_features - long_features),
+        "long_motifs": long_motifs,
+        "short_motifs": short_motifs,
+        "motifs": motifs,
     }
 
 
@@ -429,7 +486,8 @@ def _run_signature(
         "fitness_version": 7,
         "strategy_seed_version": 1,
         "strategy_family_classifier_version": 3,
-        "structure_diagnostics_version": 1,
+        "structure_diagnostics_version": 2,
+        "structural_motif_taxonomy_version": 1,
     }
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
     return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
