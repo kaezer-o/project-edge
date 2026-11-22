@@ -5,6 +5,7 @@ import pytest
 from scripts.audit_candidate_reproducibility import (
     build_audit,
     classify_motifs,
+    detailed_expression_signature,
     normalize_expression,
 )
 
@@ -53,6 +54,47 @@ def test_motif_classifier_reports_side_specific_motifs():
     assert "ema_direction_with_atr_regime_gate" in result["long_entry"]
     assert "ema_pair_comparison" in result["short_entry"]
 
+
+
+def test_detailed_signature_preserves_thresholds_operators_and_features():
+    first = node("cross_above", feature("rsi_14"), const(30))
+    second = node("cross_below", feature("rsi_14"), const(70))
+    assert detailed_expression_signature(first) != detailed_expression_signature(second)
+    assert detailed_expression_signature(first)["op"] == "cross_above"
+    assert detailed_expression_signature(first)["args"][1]["value"] == 30.0
+
+
+def test_detailed_signature_preserves_rolling_lookback():
+    short = node("gt", feature("atr_14"), node("rolling_mean", feature("atr_14"), value=10))
+    long = node("gt", feature("atr_14"), node("rolling_mean", feature("atr_14"), value=30))
+    assert detailed_expression_signature(short) != detailed_expression_signature(long)
+
+
+def test_detailed_signature_canonicalizes_commutative_logic_only():
+    left = node("and", node("gt", feature("close"), feature("ema_20")),
+                node("lt", feature("rsi_14"), const(40)))
+    right = node("and", node("lt", feature("rsi_14"), const(40)),
+                 node("gt", feature("close"), feature("ema_20")))
+    assert detailed_expression_signature(left) == detailed_expression_signature(right)
+    assert detailed_expression_signature(left) != detailed_expression_signature(
+        node("or", node("gt", feature("close"), feature("ema_20")),
+             node("lt", feature("rsi_14"), const(40)))
+    )
+
+
+def test_audit_reports_parameter_aware_similarity_separately_by_side_and_risk():
+    first = _candidate(threshold=30)
+    second = _candidate(threshold=70)
+    second["program"]["long_entry"] = node("cross_below", feature("rsi_14"), const(70))
+    second["program"]["short_entry"] = node("cross_above", feature("rsi_14"), const(30))
+    second["program"]["stop_atr"] = 3.0
+    audit = build_audit([(1, _report(1, first)), (2, _report(2, second))])
+    pair = audit["top_cross_seed_structural_similarities"][0]
+    assert pair["detailed_rule_similarity"] < 1.0
+    assert pair["long_rule_similarity"] < 1.0
+    assert pair["short_rule_similarity"] < 1.0
+    assert pair["risk_parameter_similarity"] < 1.0
+    assert "detailed_rule_signature" in audit["candidate_records"][0]
 
 def _candidate(*, threshold=30, entry_fingerprint="same-event-hash", passed=True):
     return {
