@@ -512,6 +512,14 @@ def test_training_signal_filter_evaluates_duplicate_program_fingerprint_once(mon
     assert calls == {"signals": 1, "backtests": 1}
     assert len(selected) == 2
     assert diagnostics["selected_fitness_ranks"] == [1, 2]
+    assert diagnostics["performance"] == {
+        "ranked_program_count": 2,
+        "unique_program_count": 1,
+        "signal_evaluations": 1,
+        "training_backtests": 1,
+        "pairwise_comparisons": 1,
+        "short_circuited_comparisons": 0,
+    }
 
 def test_training_signal_filter_keeps_same_signals_with_different_trade_paths(monkeypatch):
     feature = lambda name: Expr("feature", value=name)
