@@ -459,8 +459,11 @@ def run_island_evolution(
             if _fingerprint(genome) in evaluation_cache
         }
 
+    # Every genome in the final population has already been evaluated while
+    # preparing that population. Reuse the generation cache instead of
+    # repeating the full fitness and behaviour workload here.
     final_rows = [
-        (float(evaluate(genome)[0]), genome)
+        (float(cached_evaluation(genome)[0]), genome)
         for population in islands for genome in population
     ]
     best_fitness, best_genome = max(final_rows, key=lambda row: row[0])
