@@ -16,7 +16,12 @@ from .island_evolution import (
     run_island_evolution,
 )
 from .program import StrategyProgram, evaluate_program, canonicalize_program
-from .program_evolution import crossover_programs, mutate_program
+from .program_evolution import (
+    available_strategy_families,
+    crossover_programs,
+    mutate_program,
+    strategy_family_program,
+)
 from .program_research import (
     _diverse_ranked,
     _evaluate,
@@ -192,7 +197,8 @@ def _run_signature(
         "seed": seed,
         "min_train_trades": min_train_trades,
         "min_validation_trades": min_validation_trades,
-        "fitness_version": 4,
+        "fitness_version": 5,
+        "strategy_seed_version": 1,
     }
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
     return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
@@ -298,19 +304,43 @@ def run_island_program_research(
         return canonicalize_program(child).to_dict()
 
     initial_populations = None
+    initial_family_counts: dict[str, int] = {}
     if not resume:
         seed_sequence = np.random.SeedSequence(seed)
         initial_populations = []
-        for child_seed in seed_sequence.spawn(config.islands):
+        family_names = available_strategy_families(features)
+        if not family_names:
+            raise ValueError("No supported strategy-family templates for available features")
+        for island_index, child_seed in enumerate(seed_sequence.spawn(config.islands)):
             rng = np.random.default_rng(child_seed)
             population: list[dict[str, object]] = []
             seen: set[str] = set()
             while len(population) < config.population_per_island:
-                candidate = canonicalize_program(_random_program(features, rng))
+                slot = len(population)
+                family = family_names[
+                    (island_index * config.population_per_island + slot)
+                    % len(family_names)
+                ]
+                candidate = canonicalize_program(
+                    strategy_family_program(family, features, rng)
+                )
                 fingerprint = candidate.fingerprint()
+                attempts = 0
+                while fingerprint in seen and attempts < 16:
+                    candidate = canonicalize_program(
+                        strategy_family_program(family, features, rng)
+                    )
+                    fingerprint = candidate.fingerprint()
+                    attempts += 1
+                if fingerprint in seen:
+                    candidate = canonicalize_program(_random_program(features, rng))
+                    fingerprint = candidate.fingerprint()
                 if fingerprint not in seen:
                     seen.add(fingerprint)
                     population.append(candidate.to_dict())
+                    initial_family_counts[family] = (
+                        initial_family_counts.get(family, 0) + 1
+                    )
             initial_populations.append(population)
 
     result = run_island_evolution(
@@ -412,6 +442,8 @@ def run_island_program_research(
             "migration_interval": config.migration_interval,
             "migrants_per_island": config.migrants_per_island,
             "novelty_weight": config.novelty_weight,
+            "initial_strategy_family_counts": initial_family_counts,
+            "available_strategy_families": list(available_strategy_families(features)),
             "generation_performance": result.runtime_metrics,
             "history": result.history,
         },
