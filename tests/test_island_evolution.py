@@ -201,3 +201,40 @@ def test_migrant_selection_prefers_behaviourally_distinct_rows():
     selected = _select_diverse_rows(rows, 2)
 
     assert [row["genome"]["id"] for row in selected] == ["a", "c"]
+
+
+def test_identical_signal_fingerprint_has_zero_behaviour_distance():
+    from edge.island_evolution import _descriptor_distance
+
+    first = {
+        "rates": [0.1, 0.2],
+        "trades": ["entry-a|long"],
+        "signal_fingerprint": "same-signal",
+        "families": ["trend"],
+    }
+    second = {
+        "rates": [0.8, 0.9],
+        "trades": ["entry-b|short"],
+        "signal_fingerprint": "same-signal",
+        "families": ["breakout"],
+    }
+    assert _descriptor_distance(first, second) == 0.0
+
+
+def test_generation_history_reports_genome_and_behaviour_diversity(tmp_path):
+    config = IslandEvolutionConfig(islands=2, population_per_island=4)
+    result = run_island_evolution(
+        initial_populations(config),
+        evaluate=evaluator,
+        reproduce=reproducer,
+        config=config,
+        seed=123,
+        generations=1,
+        checkpoint_path=tmp_path / "telemetry.json",
+        run_signature="telemetry-test",
+    )
+    row = result.history[0]
+    assert row["unique_genomes"] >= 6
+    assert row["unique_behaviours"] >= 6
+    assert len(row["island_unique_behaviours"]) == 2
+    assert "test" in row["strategy_family_population_counts"]
