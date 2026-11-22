@@ -19,7 +19,7 @@ from edge.program_research import _evaluate
 
 def _jaccard(left: set[Any], right: set[Any]) -> float:
     union = left | right
-    return len(left & right) / len(union) if union else 1.0
+    return len(left & right) / len(union) if union else 0.0
 
 
 def signal_similarity(left: np.ndarray, right: np.ndarray) -> dict[str, float | int]:
@@ -66,7 +66,7 @@ def trade_overlap(left: set[str], right: set[str]) -> dict[str, int | float]:
         "entries_b": len(right),
         "shared_entries": len(shared),
         "union_entries": len(union),
-        "entry_jaccard": len(shared) / len(union) if union else 1.0,
+        "entry_jaccard": len(shared) / len(union) if union else 0.0,
     }
 
 
