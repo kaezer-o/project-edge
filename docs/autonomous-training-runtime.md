@@ -300,14 +300,14 @@ selected and the lowest selected training fitness.
 Example:
 
 ~~~powershell
-.\\.venv\\Scripts\\python.exe scripts\\audit_training_diversity_selection.py `
-  --input data\\EURUSD_M1.csv `
-  --report 2033=results\\motif-repro-h4-seed-2033\\island_program_evolution_report.json `
-  --report 2034=results\\motif-repro-h4-seed-2034\\island_program_evolution_report.json `
-  --report 2035=results\\motif-repro-h4-seed-2035\\island_program_evolution_report.json `
+.\.venv\Scripts\python.exe scripts\audit_training_diversity_selection.py `
+  --input data\EURUSD_M1.csv `
+  --report 2033=results\motif-repro-h4-seed-2033\island_program_evolution_report.json `
+  --report 2034=results\motif-repro-h4-seed-2034\island_program_evolution_report.json `
+  --report 2035=results\motif-repro-h4-seed-2035\island_program_evolution_report.json `
   --thresholds 0.80 0.85 0.90 0.95 `
   --limit 20 `
-  --output results\\training-diversity-threshold-sensitivity.json
+  --output results\training-diversity-threshold-sensitivity.json
 ~~~
 
 This is still an offline finalist-pool simulation. It does not change
