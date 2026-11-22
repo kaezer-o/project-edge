@@ -33,6 +33,56 @@ def initial_populations(config):
     ]
 
 
+def test_unclassified_structure_diagnostics_are_reported_per_island_and_globally(tmp_path):
+    config = IslandEvolutionConfig(
+        islands=2, population_per_island=4, elite_count=1,
+        tournament_size=2,
+    )
+
+    def evaluate_with_structure(genome):
+        fingerprint = f"shape-{int(genome['x'])}"
+        return 1.0, {
+            "rates": [0.1, 0.2],
+            "trades": [],
+            "signal_fingerprint": fingerprint,
+            "behaviour_fingerprint": fingerprint,
+            "families": ["other"],
+            "structure": {
+                "fingerprint": fingerprint,
+                "long_nodes": 3,
+                "short_nodes": 2,
+                "long_depth": 2,
+                "short_depth": 2,
+                "operator_counts": {"long": {"and": 1}, "short": {"not": 1}},
+                "features": ["rsi_14"],
+                "lookbacks": [14],
+                "long_only_features": [],
+                "short_only_features": [],
+            },
+        }
+
+    result = run_island_evolution(
+        initial_populations(config),
+        evaluate=evaluate_with_structure,
+        reproduce=reproducer,
+        config=config,
+        seed=18,
+        generations=1,
+        checkpoint_path=tmp_path / "structure.json",
+        run_signature="structure-diagnostics-v1",
+    )
+
+    history = result.history[0]
+    global_summary = history["unclassified_structure_diagnostics"]
+    island_summaries = history["island_unclassified_structure_diagnostics"]
+    assert global_summary["unclassified_genomes"] == 8
+    assert global_summary["distinct_archetypes"] == 8
+    assert len(global_summary["top_archetypes"]) == 8
+    assert len(island_summaries) == 2
+    assert all(item["unclassified_genomes"] == 4 for item in island_summaries)
+    assert all(item["distinct_archetypes"] == 4 for item in island_summaries)
+
+
 def test_island_evolution_runs_and_checkpoints(tmp_path):
     config = IslandEvolutionConfig(
         islands=3, population_per_island=8, elite_count=2,
