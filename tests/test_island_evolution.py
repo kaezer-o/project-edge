@@ -12,7 +12,7 @@ def evaluator(genome):
     x = float(genome["x"])
     y = float(genome["y"])
     fitness = -(x - 3.0) ** 2 - (y + 2.0) ** 2
-    return fitness, [x, y]
+    return fitness, {"rates": [x, y], "trades": [f"long:{int(x)}", f"short:{int(y)}"]}
 
 
 def reproducer(first, second, rng):
@@ -135,7 +135,7 @@ def test_invalid_island_configuration(kwargs):
 def test_evaluator_rejects_non_finite_behaviour(tmp_path):
     config = IslandEvolutionConfig(islands=2, population_per_island=4)
     def bad_evaluator(genome):
-        return 1.0, [float("nan")]
+        return 1.0, {"rates": [float("nan")], "trades": []}
     with pytest.raises(ValueError, match="behaviour descriptors"):
         run_island_evolution(
             initial_populations(config), evaluate=bad_evaluator,
@@ -151,3 +151,53 @@ def test_rank_assigns_equal_fitness_equal_selection_rank():
     assert ranks[0] == 1.0 / 6.0
     assert ranks[2] == 2.0 / 3.0
     assert ranks[3] == 1.0
+
+
+
+def _descriptor(trades, rates=None):
+    return {"rates": rates or [0.1, 0.2], "trades": list(trades)}
+
+
+def test_trade_jaccard_distance_identical_trade_sets_is_zero():
+    from edge.island_evolution import _descriptor_distance
+
+    first = _descriptor(["t1|long", "t2|short"])
+    second = _descriptor(["t1|long", "t2|short"])
+
+    assert _descriptor_distance(first, second) == 0.0
+
+
+def test_trade_jaccard_distance_partial_overlap():
+    from edge.island_evolution import _descriptor_distance
+
+    first = _descriptor(["t1|long", "t2|short"])
+    second = _descriptor(["t2|short", "t3|long"])
+
+    # Jaccard distance = 1 - intersection(1) / union(3).
+    assert _descriptor_distance(first, second) == pytest.approx(0.65 * (2 / 3))
+
+
+def test_trade_jaccard_distance_disjoint_sets_is_one_trade_component():
+    from edge.island_evolution import _descriptor_distance
+
+    first = _descriptor(["t1|long"])
+    second = _descriptor(["t2|short"])
+
+    assert _descriptor_distance(first, second) == pytest.approx(0.65)
+
+
+def test_migrant_selection_prefers_behaviourally_distinct_rows():
+    from edge.island_evolution import _select_diverse_rows
+
+    rows = [
+        {"genome": {"id": "a"}, "novelty": 1.0,
+         "descriptor": _descriptor(["t1", "t2"])},
+        {"genome": {"id": "b"}, "novelty": 0.9,
+         "descriptor": _descriptor(["t1", "t2"])},
+        {"genome": {"id": "c"}, "novelty": 0.1,
+         "descriptor": _descriptor(["t3", "t4"])},
+    ]
+
+    selected = _select_diverse_rows(rows, 2)
+
+    assert [row["genome"]["id"] for row in selected] == ["a", "c"]
