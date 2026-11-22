@@ -85,8 +85,14 @@ def _behaviour_descriptor(
             rates.extend((0.0, 0.0, 0.0))
             continue
         segment = signal.iloc[positions]
-        start_time = frame.index[int(positions[0])]
-        end_time = frame.index[int(positions[-1])]
+        start_time = pd.Timestamp(frame.index[int(positions[0])])
+        end_time = pd.Timestamp(frame.index[int(positions[-1])])
+        if start_time.tzinfo is None:
+            start_time = start_time.tz_localize("UTC")
+            end_time = end_time.tz_localize("UTC")
+        else:
+            start_time = start_time.tz_convert("UTC")
+            end_time = end_time.tz_convert("UTC")
         if not trades.empty:
             entry_times = pd.to_datetime(trades["entry_time"], utc=True)
             trade_count = int(((entry_times >= start_time) & (entry_times <= end_time)).sum())
