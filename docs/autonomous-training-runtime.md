@@ -285,3 +285,33 @@ The default threshold is 0.90. This is a diagnostic choice, not a tuned
 production parameter. The output records selected and rejected ranks, unique
 training signal counts, and a fitness-only baseline. It never reads validation
 results for selection and never evaluates the final chronological holdout.
+
+
+### Diversity-selection threshold sensitivity benchmark
+
+Use the same finalist reports to compare several active-signal Jaccard
+thresholds in one pass. The default thresholds are 0.80, 0.85, 0.90 and 0.95.
+At each threshold, the fitness-only baseline is truncated to exactly the
+number of candidates retained by diversity selection. This controls for
+shortlist size when comparing the number of unique training signal streams.
+The report also records whether the highest-training-fitness finalist remains
+selected and the lowest selected training fitness.
+
+Example:
+
+~~~powershell
+.\\.venv\\Scripts\\python.exe scripts\\audit_training_diversity_selection.py `
+  --input data\\EURUSD_M1.csv `
+  --report 2033=results\\motif-repro-h4-seed-2033\\island_program_evolution_report.json `
+  --report 2034=results\\motif-repro-h4-seed-2034\\island_program_evolution_report.json `
+  --report 2035=results\\motif-repro-h4-seed-2035\\island_program_evolution_report.json `
+  --thresholds 0.80 0.85 0.90 0.95 `
+  --limit 20 `
+  --output results\\training-diversity-threshold-sensitivity.json
+~~~
+
+This is still an offline finalist-pool simulation. It does not change
+production selection, use validation to choose candidates, or evaluate the
+final chronological holdout. A threshold that increases unique signals is not
+automatically superior; fitness retention and the number of candidates kept
+must be considered together.
