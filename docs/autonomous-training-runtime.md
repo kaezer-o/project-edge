@@ -255,3 +255,33 @@ evolving population. It is observational: it does not alter fitness,
 selection, migration, validation gates or final-test access. Validation has
 been repeatedly examined during development and is not independent evidence.
 The final chronological holdout is never evaluated.
+
+
+## Training-only diversity selection simulation
+
+Use `scripts/audit_training_diversity_selection.py` to compare a fitness-only
+shortlist with a greedy shortlist that rejects candidates whose active
+directional training signals overlap an already selected candidate at or above
+a configurable Jaccard threshold. Ranking uses each report's
+`training_fitness`. The selection routine reads only training signals and
+training fitness; validation and final-test data do not influence it. This is
+an offline finalist-pool diagnostic and does not change production selection,
+fitness, validation gates, or checkpoint compatibility.
+
+Example:
+
+~~~powershell
+.\.venv\Scripts\python.exe scripts\audit_training_diversity_selection.py `
+  --input data\EURUSD_M1.csv `
+  --report 2033=results\motif-repro-h4-seed-2033\island_program_evolution_report.json `
+  --report 2034=results\motif-repro-h4-seed-2034\island_program_evolution_report.json `
+  --report 2035=results\motif-repro-h4-seed-2035\island_program_evolution_report.json `
+  --similarity-threshold 0.90 `
+  --limit 20 `
+  --output results\training-diversity-selection-audit.json
+~~~
+
+The default threshold is 0.90. This is a diagnostic choice, not a tuned
+production parameter. The output records selected and rejected ranks, unique
+training signal counts, and a fitness-only baseline. It never reads validation
+results for selection and never evaluates the final chronological holdout.
