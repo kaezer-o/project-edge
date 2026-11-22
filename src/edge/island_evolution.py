@@ -441,9 +441,13 @@ def run_island_evolution(
                     return
                 next_population.append(_json_copy(row["genome"]))
                 next_behaviours.add(behaviour)
-                for family in row["descriptor"]["families"]:
-                    if family not in {"hybrid", "hybrid_or_other", "other", "random_fallback"}:
-                        family_elite_counts[family] = family_elite_counts.get(family, 0) + 1
+                families = set(row["descriptor"]["families"])
+                # A multi-family genome is explicitly hybrid and cannot
+                # satisfy a protected quota for any component family.
+                if "hybrid" not in families:
+                    for family in families:
+                        if family not in {"hybrid_or_other", "other", "random_fallback"}:
+                            family_elite_counts[family] = family_elite_counts.get(family, 0) + 1
 
             # Preserve the strongest overall behaviours first.
             for row in elites:
@@ -458,8 +462,9 @@ def run_island_evolution(
                 families = sorted({
                     family
                     for row in rows
+                    if "hybrid" not in row["descriptor"]["families"]
                     for family in row["descriptor"]["families"]
-                    if family not in {"hybrid", "hybrid_or_other", "other", "random_fallback"}
+                    if family not in {"hybrid_or_other", "other", "random_fallback"}
                 })
                 family_quotas = {
                     family: config.minimum_family_elites for family in families
@@ -469,7 +474,10 @@ def run_island_evolution(
                     family_rows = sorted(
                         (
                             row for row in rows
-                            if family in row["descriptor"]["families"]
+                            if (
+                                "hybrid" not in row["descriptor"]["families"]
+                                and family in row["descriptor"]["families"]
+                            )
                         ),
                         key=lambda row: float(row["selection_score"]),
                         reverse=True,
