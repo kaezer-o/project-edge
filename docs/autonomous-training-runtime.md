@@ -175,6 +175,24 @@ structures are compared after normalizing numeric constants and ordering
 commutative operands; risk parameters are retained separately. Motif labels
 are coarse structural descriptors, not proof of equivalent behaviour.
 
+
+### Motif taxonomy v2: parameter-aware finalist comparison
+
+The offline finalist audit also preserves the detailed entry-rule structure:
+operator direction, exact numeric thresholds, feature identities, rolling/lag
+lookbacks, and the separate long/short expression trees. Commutative operands
+are canonicalized; directional comparisons and ordered operands are preserved.
+It computes weighted Jaccard similarity over path-aware structural tokens,
+reports long-side and short-side similarity separately, and compares risk
+parameters separately from entry logic. The score is a structural heuristic,
+not a measure of equivalent signals or profitability.
+
+Re-run the same command shown above to produce the expanded report. The JSON
+includes the top cross-seed detailed structural similarities; the Markdown
+report includes a ranked table. This analysis is observational only and does
+not feed back into evolution, candidate selection, validation gates or
+final-test access.
+
 The reports store validation entry-event SHA-256 fingerprints rather than
 event sets. Cross-seed exact equality can therefore be detected, but
 approximate Jaccard overlap cannot be reconstructed. The audit rejects
