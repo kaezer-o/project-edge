@@ -4,6 +4,7 @@ from dataclasses import dataclass
 import hashlib
 import json
 from pathlib import Path
+import time
 from typing import Any, Callable
 
 import numpy as np
@@ -53,6 +54,7 @@ class IslandEvolutionResult:
     history: list[dict[str, object]]
     best_genome: Genome
     best_fitness: float
+    runtime_metrics: list[dict[str, float | int]]
 
 
 def _config_payload(config: IslandEvolutionConfig) -> dict[str, object]:
@@ -252,18 +254,27 @@ def run_island_evolution(
         history: list[dict[str, object]] = []
 
     evaluation_cache: dict[str, Evaluation] = {}
+    runtime_metrics: list[dict[str, float | int]] = []
+    phase_stats: dict[str, float | int] = {}
 
     def cached_evaluation(genome: Genome) -> Evaluation:
         key = _fingerprint(genome)
         if key not in evaluation_cache:
+            evaluation_started = time.perf_counter()
             fitness_value, descriptor_value = evaluate(_json_copy(genome))
+            phase_stats["evaluation_seconds"] = float(phase_stats.get("evaluation_seconds", 0.0)) + (time.perf_counter() - evaluation_started)
+            phase_stats["evaluator_calls"] = int(phase_stats.get("evaluator_calls", 0)) + 1
             evaluation_cache[key] = (
                 float(fitness_value),
                 _validate_descriptor(descriptor_value),
             )
+        else:
+            phase_stats["cache_hits"] = int(phase_stats.get("cache_hits", 0)) + 1
         return evaluation_cache[key]
 
     while generation < generations:
+        generation_started = time.perf_counter()
+        phase_stats = {"evaluation_seconds": 0.0, "evaluator_calls": 0, "cache_hits": 0}
         evaluated_islands: list[list[dict[str, object]]] = []
         island_novelty: list[np.ndarray] = []
         generation_best = -float("inf")
@@ -436,6 +447,7 @@ def run_island_evolution(
                     existing_behaviours.add(migrant_behaviour)
         islands = next_islands
 
+        checkpoint_started = time.perf_counter()
         save_training_checkpoint(
             checkpoint,
             run_signature=run_signature,
@@ -449,6 +461,18 @@ def run_island_evolution(
             },
             history=history,
         )
+        checkpoint_seconds = time.perf_counter() - checkpoint_started
+        generation_seconds = time.perf_counter() - generation_started
+        evaluation_seconds = float(phase_stats["evaluation_seconds"])
+        runtime_metrics.append({
+            "generation": generation,
+            "generation_wall_seconds": generation_seconds,
+            "evaluation_seconds": evaluation_seconds,
+            "checkpoint_seconds": checkpoint_seconds,
+            "other_seconds": max(0.0, generation_seconds - evaluation_seconds - checkpoint_seconds),
+            "evaluator_calls": int(phase_stats["evaluator_calls"]),
+            "evaluation_cache_hits": int(phase_stats["cache_hits"]),
+        })
         # Keep only the next generation's cache entries. Candidate descriptors
         # contain trade events, so retaining every attempted child would grow
         # memory with the total number of generations.
@@ -473,4 +497,5 @@ def run_island_evolution(
         history=history,
         best_genome=_json_copy(best_genome),
         best_fitness=float(best_fitness),
+        runtime_metrics=runtime_metrics,
     )
