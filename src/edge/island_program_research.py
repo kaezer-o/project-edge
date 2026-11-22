@@ -942,6 +942,7 @@ def run_island_program_research(
             price_basis=price_basis,
         )
         finalist_selection["similarity_filter_enabled"] = True
+        finalist_selection["training_eligibility"] = training_eligibility
     fitness_ranked_shortlist_report = [
         {
             "fitness_rank": rank,
