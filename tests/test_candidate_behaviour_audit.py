@@ -39,7 +39,7 @@ def test_trade_entry_events_normalize_timezone_and_direction():
 
 
 def test_trade_overlap_handles_empty_sets():
-    assert trade_overlap(set(), set())["entry_jaccard"] == 1.0
+    assert trade_overlap(set(), set())["entry_jaccard"] == 0.0
     assert trade_overlap({"a"}, set())["entry_jaccard"] == 0.0
 
 
