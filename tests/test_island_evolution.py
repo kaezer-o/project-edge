@@ -124,6 +124,7 @@ def test_run_signature_prevents_cross_dataset_resume(tmp_path):
     {"population_per_island": 3},
     {"elite_count": 4, "population_per_island": 4},
     {"novelty_weight": 1.1},
+    {"minimum_family_elites": -1},
 ])
 def test_invalid_island_configuration(kwargs):
     values = {"islands": 2, "population_per_island": 4}
