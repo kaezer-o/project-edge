@@ -134,10 +134,24 @@ def _behaviour_descriptor(
     signal_fingerprint = hashlib.sha256(
         signal.to_numpy(dtype="int8", copy=False).tobytes()
     ).hexdigest()
+    unique_trade_events = sorted(set(trade_events))
+    behaviour_payload = json.dumps(
+        {
+            "signals": signal_fingerprint,
+            "trades": unique_trade_events,
+            "stop_atr": program.stop_atr,
+            "reward_risk": program.reward_risk,
+            "max_holding_bars": program.max_holding_bars,
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    behaviour_fingerprint = hashlib.sha256(behaviour_payload).hexdigest()
     return {
         "rates": rates,
-        "trades": sorted(set(trade_events)),
+        "trades": unique_trade_events,
         "signal_fingerprint": signal_fingerprint,
+        "behaviour_fingerprint": behaviour_fingerprint,
         "families": sorted(families),
     }
 
