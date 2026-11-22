@@ -1,0 +1,2380 @@
+{
+  "audit_version": 1,
+  "candidate_records": [
+    {
+      "expectancy_r": -0.06294851533048403,
+      "full_structure_fingerprint": "5efa54246f238b1c8470b9f37fae433dc51533a32b263b3ee2d0d21609a27d17",
+      "genome_fingerprint": "22d483c2da29ca4fd4f6",
+      "long_motifs": [
+        "price_vs_ema_filter",
+        "rsi_threshold_cross"
+      ],
+      "motifs": [
+        "price_vs_ema_filter",
+        "rsi_threshold_cross"
+      ],
+      "passed_windows": 1,
+      "profit_factor": 0.8906291276541253,
+      "rank": 1,
+      "risk_parameters": {
+        "max_holding_bars": 88,
+        "reward_risk": 2.6839355468750004,
+        "stop_atr": 2.9609375
+      },
+      "rule_structure_fingerprint": "3eaa63f9d7ced16f6ccc535e644733a06c5c163bc4ab0498ea24d5fae27cd096",
+      "seed": 2033,
+      "short_motifs": [
+        "rsi_threshold_cross"
+      ],
+      "stress_1_5x_pass": false,
+      "stress_2x_pass": false,
+      "trades": 42,
+      "validation_entry_fingerprint": "ba2b8a87c801c6afdabb27bc3863426bb5a002ccc4717d62d1573761750d032c",
+      "validation_pass": false
+    },
+    {
+      "expectancy_r": -0.05306586210965678,
+      "full_structure_fingerprint": "9ea67fc83e0f492c3e2b50d8b581cfcfa7dc65be7a13415ad5a9a97977b4474d",
+      "genome_fingerprint": "8fb7f25d3c107b7c0b4b",
+      "long_motifs": [
+        "ema_pair_comparison",
+        "price_vs_ema_filter",
+        "rsi_threshold_cross"
+      ],
+      "motifs": [
+        "ema_pair_comparison",
+        "price_vs_ema_filter",
+        "rsi_threshold_cross"
+      ],
+      "passed_windows": 2,
+      "profit_factor": 0.9078464343490227,
+      "rank": 2,
+      "risk_parameters": {
+        "max_holding_bars": 79,
+        "reward_risk": 2.6839355468750004,
+        "stop_atr": 2.9609375
+      },
+      "rule_structure_fingerprint": "53df7c55f68c6116a846d7cae64d14380d8f936af2ea26a6b3aef000b51c666f",
+      "seed": 2033,
+      "short_motifs": [
+        "rsi_threshold_cross"
+      ],
+      "stress_1_5x_pass": false,
+      "stress_2x_pass": false,
+      "trades": 40,
+      "validation_entry_fingerprint": "1afcb080b7aedf4ea4f726869037900af5e8f3c515f431fee3d151ddde984353",
+      "validation_pass": false
+    },
+    {
+      "expectancy_r": -0.06962802739580222,
+      "full_structure_fingerprint": "dfb0c22ed8a21398d1dee08edead73975a9d3f21d828a8ac992c4ffab908b563",
+      "genome_fingerprint": "31039929ac684eca26f8",
+      "long_motifs": [
+        "price_vs_ema_filter",
+        "rsi_threshold_cross"
+      ],
+      "motifs": [
+        "price_vs_ema_filter",
+        "rsi_threshold_cross"
+      ],
+      "passed_windows": 1,
+      "profit_factor": 0.8767968459584361,
+      "rank": 3,
+      "risk_parameters": {
+        "max_holding_bars": 88,
+        "reward_risk": 2.6839355468750004,
+        "stop_atr": 2.9609375
+      },
+      "rule_structure_fingerprint": "bccca778f1f4c3c90f53ad03f3d9a4b05f70125977d487e7359a4373d652a56f",
+      "seed": 2033,
+      "short_motifs": [
+        "rsi_threshold_cross"
+      ],
+      "stress_1_5x_pass": false,
+      "stress_2x_pass": false,
+      "trades": 41,
+      "validation_entry_fingerprint": "3744f99e6bb122d09758f051aa54d0aa18ff320332a51b79ae0ba88d442e2e42",
+      "validation_pass": false
+    },
+    {
+      "expectancy_r": -0.07734653652173477,
+      "full_structure_fingerprint": "c72bb38de9ef75c03d5b49d1ed6c79130ef0ee822d18f93d947a3bb52282939e",
+      "genome_fingerprint": "69c7cf62bef09816081d",
+      "long_motifs": [
+        "price_vs_ema_filter",
+        "rsi_threshold_cross"
+      ],
+      "motifs": [
+        "price_vs_ema_filter",
+        "rsi_threshold_cross"
+      ],
+      "passed_windows": 1,
+      "profit_factor": 0.8695601808685641,
+      "rank": 4,
+      "risk_parameters": {
+        "max_holding_bars": 88,
+        "reward_risk": 2.6839355468750004,
+        "stop_atr": 2.9609375
+      },
+      "rule_structure_fingerprint": "51b88454d11045e8e80d8b7f19c399d354ac692a6bc55ef012d3a1d1ce864e2e",
+      "seed": 2033,
+      "short_motifs": [
+        "rsi_threshold_cross"
+      ],
+      "stress_1_5x_pass": false,
+      "stress_2x_pass": false,
+      "trades": 39,
+      "validation_entry_fingerprint": "dc2a3e3b831e60836ddfd304222be8e9d14f5e07b86e89f4bd047de5088cb5a2",
+      "validation_pass": false
+    },
+    {
+      "expectancy_r": -0.11144576258100217,
+      "full_structure_fingerprint": "40c0fc84d4709d19c1b56f69358862b77cca0cc597b1c7f25010e125e7582343",
+      "genome_fingerprint": "b6fd59945f5b7a444118",
+      "long_motifs": [
+        "price_vs_ema_filter",
+        "rsi_threshold_cross"
+      ],
+      "motifs": [
+        "price_vs_ema_filter",
+        "rsi_threshold_cross"
+      ],
+      "passed_windows": 0,
+      "profit_factor": 0.8129030821696068,
+      "rank": 5,
+      "risk_parameters": {
+        "max_holding_bars": 110,
+        "reward_risk": 2.6839355468750004,
+        "stop_atr": 2.9609375
+      },
+      "rule_structure_fingerprint": "b9431aa9630261e3f4c211ff5d551165a728f6c662211dd056687e9810d902b1",
+      "seed": 2033,
+      "short_motifs": [
+        "rsi_threshold_cross"
+      ],
+      "stress_1_5x_pass": false,
+      "stress_2x_pass": false,
+      "trades": 36,
+      "validation_entry_fingerprint": "9dae2d141d1f3356302828e44e04438bc246b971a44ed7ff688046eaa9d910a8",
+      "validation_pass": false
+    },
+    {
+      "expectancy_r": -0.11014382961639996,
+      "full_structure_fingerprint": "78a7ad88e76168ca74f3decf841f386d96d97a08c0c1d8e9f97c4690788fb335",
+      "genome_fingerprint": "7e3222401cb009e63453",
+      "long_motifs": [
+        "price_vs_ema_filter",
+        "rsi_threshold_cross"
+      ],
+      "motifs": [
+        "price_vs_ema_filter",
+        "rsi_threshold_cross"
+      ],
+      "passed_windows": 1,
+      "profit_factor": 0.8072410066733696,
+      "rank": 6,
+      "risk_parameters": {
+        "max_holding_bars": 88,
+        "reward_risk": 2.6839355468750004,
+        "stop_atr": 2.9609375
+      },
+      "rule_structure_fingerprint": "43df3e230c893c294e037575317b7846458b5236d44af08c3f6e17b837712bba",
+      "seed": 2033,
+      "short_motifs": [
+        "rsi_threshold_cross"
+      ],
+      "stress_1_5x_pass": false,
+      "stress_2x_pass": false,
+      "trades": 39,
+      "validation_entry_fingerprint": "0a59722878e6550f031918e161f3b991b3f202ad888b1524ab4907ed51459075",
+      "validation_pass": false
+    },
+    {
+      "expectancy_r": -0.11311824571585133,
+      "full_structure_fingerprint": "0c72df4d059597a001107a1158068df6e6b6d88f37fcc6d33e32e8a722776a93",
+      "genome_fingerprint": "a24f0106d489e2cf5a86",
+      "long_motifs": [
+        "price_vs_ema_filter",
+        "rsi_threshold_cross"
+      ],
+      "motifs": [
+        "price_vs_ema_filter",
+        "rsi_threshold_cross"
+      ],
+      "passed_windows": 0,
+      "profit_factor": 0.7783052748755691,
+      "rank": 7,
+      "risk_parameters": {
+        "max_holding_bars": 88,
+        "reward_risk": 2.6839355468750004,
+        "stop_atr": 3.701171875
+      },
+      "rule_structure_fingerprint": "fc804c767dde5093b442e2d2f704a2885c20817b3146daa00b7bb6265af9011c",
+      "seed": 2033,
+      "short_motifs": [
+        "rsi_threshold_cross"
+      ],
+      "stress_1_5x_pass": false,
+      "stress_2x_pass": false,
+      "trades": 35,
+      "validation_entry_fingerprint": "8af02005a557624713d594bcf3abfc50da28c46a928332a43597dc3bcf0fe680",
+      "validation_pass": false
+    },
+    {
+      "expectancy_r": 0.038964039164030705,
+      "full_structure_fingerprint": "1afed5847e07fa7ff6fcedfa1a8a9a94663862bb379775aea08e64ae657487c0",
+      "genome_fingerprint": "b3118c0cd1ddc16f951d",
+      "long_motifs": [
+        "rsi_threshold_cross"
+      ],
+      "motifs": [
+        "rsi_threshold_cross"
+      ],
+      "passed_windows": 2,
+      "profit_factor": 1.0718822277067845,
+      "rank": 8,
+      "risk_parameters": {
+        "max_holding_bars": 44,
+        "reward_risk": 2.475,
+        "stop_atr": 2.6
+      },
+      "rule_structure_fingerprint": "f6e87d30c5abd013f696c2daa6ed25239932c7650b1e2eef74857540d656f6dd",
+      "seed": 2033,
+      "short_motifs": [],
+      "stress_1_5x_pass": true,
+      "stress_2x_pass": true,
+      "trades": 58,
+      "validation_entry_fingerprint": "927575525ac775c96b83ac45849474de39df28fab06885c4217124756835b32d",
+      "validation_pass": true
+    },
+    {
+      "expectancy_r": 0.05466804493141454,
+      "full_structure_fingerprint": "9f4ac19004d414e80902c68a112449527dc3cfae20bb37834d1bbde06d09eeae",
+      "genome_fingerprint": "c5bbfacd91f74b3b10d8",
+      "long_motifs": [
+        "rsi_threshold_cross"
+      ],
+      "motifs": [
+        "rsi_threshold_cross"
+      ],
+      "passed_windows": 2,
+      "profit_factor": 1.091649436004153,
+      "rank": 9,
+      "risk_parameters": {
+        "max_holding_bars": 176,
+        "reward_risk": 1.7597412109375,
+        "stop_atr": 1.48119287109375
+      },
+      "rule_structure_fingerprint": "5bb4d5e5dd205b3aa9e9938abeb9b9dc268333153fda37816b1dd47d9ca1caf7",
+      "seed": 2033,
+      "short_motifs": [],
+      "stress_1_5x_pass": true,
+      "stress_2x_pass": true,
+      "trades": 62,
+      "validation_entry_fingerprint": "19afc1d26113fe60eaef1f323027a3c5616c22360dec9722ab8fae9511e13a22",
+      "validation_pass": true
+    },
+    {
+      "expectancy_r": -0.16551259875318358,
+      "full_structure_fingerprint": "3a09c00a0f58df41dcc664ee9220eafe05abc567b296844bfb074bfe3db336ad",
+      "genome_fingerprint": "6091f3a8cb41b7aeeef0",
+      "long_motifs": [
+        "rsi_threshold_cross"
+      ],
+      "motifs": [
+        "rsi_threshold_cross"
+      ],
+      "passed_windows": 1,
+      "profit_factor": 0.7608593746209822,
+      "rank": 10,
+      "risk_parameters": {
+        "max_holding_bars": 176,
+        "reward_risk": 1.716309356689453,
+        "stop_atr": 1.3761650390625002
+      },
+      "rule_structure_fingerprint": "94c387632b21e15688f5efcf2d125d93637deb58df036bf290dd3f131e19eece",
+      "seed": 2033,
+      "short_motifs": [],
+      "stress_1_5x_pass": false,
+      "stress_2x_pass": false,
+      "trades": 78,
+      "validation_entry_fingerprint": "2688d26281acc5cd170dae5e1e4ab70402398e492a35ad1f84b880933258e105",
+      "validation_pass": false
+    },
+    {
+      "expectancy_r": -0.13956928248065822,
+      "full_structure_fingerprint": "fd6a0cfb85263cbb7b6d2fde47137e682782752df706075799a1e5c1d3975b78",
+      "genome_fingerprint": "734bf1977eaa00c14beb",
+      "long_motifs": [
+        "price_vs_ema_filter",
+        "rsi_threshold_cross"
+      ],
+      "motifs": [
+        "price_vs_ema_filter",
+        "rsi_threshold_cross"
+      ],
+      "passed_windows": 1,
+      "profit_factor": 0.7985308546837929,
+      "rank": 11,
+      "risk_parameters": {
+        "max_holding_bars": 176,
+        "reward_risk": 1.8085693359375,
+        "stop_atr": 1.4032353515625002
+      },
+      "rule_structure_fingerprint": "bb8fbc47dcb72fed7cce71cefdf8170fc858ebfc35ba5603b7a7d5b19481be3b",
+      "seed": 2033,
+      "short_motifs": [],
+      "stress_1_5x_pass": false,
+      "stress_2x_pass": false,
+      "trades": 75,
+      "validation_entry_fingerprint": "a6a756c401ad159858505c5733d45052a2fc6a1840c74a2bce5f569e25189669",
+      "validation_pass": false
+    },
+    {
+      "expectancy_r": 0.019889822270682207,
+      "full_structure_fingerprint": "79af8e74765e14bfc4c8c2162fa4f6d066f8aa8a934d01ce9db62362c9d0e31f",
+      "genome_fingerprint": "b95c280e6f65d2b123d6",
+      "long_motifs": [
+        "rsi_threshold_cross"
+      ],
+      "motifs": [
+        "rsi_threshold_cross"
+      ],
+      "passed_windows": 2,
+      "profit_factor": 1.0356973636591527,
+      "rank": 12,
+      "risk_parameters": {
+        "max_holding_bars": 44,
+        "reward_risk": 2.1768750000000003,
+        "stop_atr": 2.535
+      },
+      "rule_structure_fingerprint": "6b08421c34904fe6a09e96dae2f2a3a03518b3b4e73ab6e679ad34a19d4b3b67",
+      "seed": 2033,
+      "short_motifs": [],
+      "stress_1_5x_pass": true,
+      "stress_2x_pass": true,
+      "trades": 60,
+      "validation_entry_fingerprint": "160ec0b66262775371dfae9ebe4c83fd7af627f043560cdb6c0d50857e6f92b5",
+      "validation_pass": true
+    },
+    {
+      "expectancy_r": -0.43720381882272596,
+      "full_structure_fingerprint": "04bc3a7f90bf9401c72c71e14102aae85e0feeb62b1e321ccd7424f0e04fbc73",
+      "genome_fingerprint": "dec704bd2ac7b87f9c09",
+      "long_motifs": [
+        "atr_vs_rolling_atr",
+        "ema_direction_with_atr_regime_gate",
+        "price_vs_ema_filter",
+        "rsi_threshold_cross"
+      ],
+      "motifs": [
+        "atr_vs_rolling_atr",
+        "ema_direction_with_atr_regime_gate",
+        "price_vs_ema_filter",
+        "rsi_threshold_cross"
+      ],
+      "passed_windows": 0,
+      "profit_factor": 0.430338796904687,
+      "rank": 13,
+      "risk_parameters": {
+        "max_holding_bars": 20,
+        "reward_risk": 1.5625,
+        "stop_atr": 1.28875
+      },
+      "rule_structure_fingerprint": "56fa5076c5c52bc45ba9eb4166d2bb07b1ed35eb8f33aebaa4ab1be0f5174cc6",
+      "seed": 2033,
+      "short_motifs": [],
+      "stress_1_5x_pass": false,
+      "stress_2x_pass": false,
+      "trades": 33,
+      "validation_entry_fingerprint": "659caa2cfa0e17cfc604bf7767bbec9dfebf555bc0e45b38e2b657941196e020",
+      "validation_pass": false
+    },
+    {
+      "expectancy_r": -0.0808159039223167,
+      "full_structure_fingerprint": "d6eee775f96e8064449abcd69b1a2760a02222b6e870f14547894250964bfb9f",
+      "genome_fingerprint": "79a0778cd7a4b6263ce1",
+      "long_motifs": [
+        "rsi_threshold_cross"
+      ],
+      "motifs": [
+        "rsi_threshold_cross"
+      ],
+      "passed_windows": 1,
+      "profit_factor": 0.8524440578402864,
+      "rank": 14,
+      "risk_parameters": {
+        "max_holding_bars": 88,
+        "reward_risk": 2.6839355468750004,
+        "stop_atr": 2.9609375
+      },
+      "rule_structure_fingerprint": "5c44fe47ea15888f07ef2a9d1400b9657027997e063db75a1bf5f6587587ee65",
+      "seed": 2033,
+      "short_motifs": [
+        "rsi_threshold_cross"
+      ],
+      "stress_1_5x_pass": false,
+      "stress_2x_pass": false,
+      "trades": 39,
+      "validation_entry_fingerprint": "f0071154fbe8324227d51b6073911fafd9708c43f0e35b8aa89e39ca76e65c91",
+      "validation_pass": false
+    },
+    {
+      "expectancy_r": -0.4369338808913591,
+      "full_structure_fingerprint": "b27154260833df55d38955bcf69f11e8ce960d2f583e1910e61e4da2ce20f5e7",
+      "genome_fingerprint": "377184ded87f9be53589",
+      "long_motifs": [
+        "atr_vs_rolling_atr",
+        "rsi_threshold_cross"
+      ],
+      "motifs": [
+        "atr_vs_rolling_atr",
+        "rsi_threshold_cross"
+      ],
+      "passed_windows": 0,
+      "profit_factor": 0.43051126057392586,
+      "rank": 15,
+      "risk_parameters": {
+        "max_holding_bars": 20,
+        "reward_risk": 1.5625,
+        "stop_atr": 1.32096875
+      },
+      "rule_structure_fingerprint": "f1e76f09b6a22ba1e46bafd0adff9f828fd5222e90355fc751974d1864564d1a",
+      "seed": 2033,
+      "short_motifs": [],
+      "stress_1_5x_pass": false,
+      "stress_2x_pass": false,
+      "trades": 33,
+      "validation_entry_fingerprint": "659caa2cfa0e17cfc604bf7767bbec9dfebf555bc0e45b38e2b657941196e020",
+      "validation_pass": false
+    },
+    {
+      "expectancy_r": -0.06415518605348343,
+      "full_structure_fingerprint": "da0e385ec16e087f7eeddfec53e42085bfaed88e8e0eb8c3afcb13f50f88beea",
+      "genome_fingerprint": "4220725bb08e706d4c0b",
+      "long_motifs": [
+        "price_vs_ema_filter",
+        "rsi_threshold_cross"
+      ],
+      "motifs": [
+        "price_vs_ema_filter",
+        "rsi_threshold_cross"
+      ],
+      "passed_windows": 1,
+      "profit_factor": 0.8835589230516117,
+      "rank": 16,
+      "risk_parameters": {
+        "max_holding_bars": 89,
+        "reward_risk": 2.6839355468750004,
+        "stop_atr": 2.9609375
+      },
+      "rule_structure_fingerprint": "be88860b0492d6f5753bff83166fb868e9f4c0b8dde719bdd3b8b72f15e846de",
+      "seed": 2033,
+      "short_motifs": [
+        "rsi_threshold_cross"
+      ],
+      "stress_1_5x_pass": false,
+      "stress_2x_pass": false,
+      "trades": 39,
+      "validation_entry_fingerprint": "7d34f0611241267698547373bfa412196791caade694f271b8d101fb5888a42a",
+      "validation_pass": false
+    },
+    {
+      "expectancy_r": -0.17901873811492525,
+      "full_structure_fingerprint": "0abf58aba85ff68e747099a6760204a662e305acdd38c243841842559939a968",
+      "genome_fingerprint": "25dfeac8311d9a55d966",
+      "long_motifs": [
+        "rsi_threshold_cross"
+      ],
+      "motifs": [
+        "price_vs_ema_filter",
+        "rsi_threshold_cross"
+      ],
+      "passed_windows": 0,
+      "profit_factor": 0.7376673472261878,
+      "rank": 17,
+      "risk_parameters": {
+        "max_holding_bars": 176,
+        "reward_risk": 1.6240493774414062,
+        "stop_atr": 1.48400419921875
+      },
+      "rule_structure_fingerprint": "fc0f5e5b0788d701009cb8dfb47934cebfbb34095fadd494272fedb00272eecc",
+      "seed": 2033,
+      "short_motifs": [
+        "price_vs_ema_filter"
+      ],
+      "stress_1_5x_pass": false,
+      "stress_2x_pass": false,
+      "trades": 74,
+      "validation_entry_fingerprint": "b753431a9ee8f31aaa7c7d675aed2108f4e0cd50bb2bb83dbc68b2afe4b8caa5",
+      "validation_pass": false
+    },
+    {
+      "expectancy_r": -0.05060168997104906,
+      "full_structure_fingerprint": "fb18ecfa9ab4f12509766882390ed7073a02e5439a5304c13b2b7a0ea2525517",
+      "genome_fingerprint": "c4187aee260b40b3071f",
+      "long_motifs": [
+        "price_vs_ema_filter",
+        "rsi_threshold_cross"
+      ],
+      "motifs": [
+        "price_vs_ema_filter",
+        "rsi_threshold_cross"
+      ],
+      "passed_windows": 1,
+      "profit_factor": 0.9122711907718158,
+      "rank": 18,
+      "risk_parameters": {
+        "max_holding_bars": 78,
+        "reward_risk": 2.6839355468750004,
+        "stop_atr": 2.9609375
+      },
+      "rule_structure_fingerprint": "f48e06cdac3ee149cb921c700c8554e1ade4a460f771449c84303e9c15f9345f",
+      "seed": 2033,
+      "short_motifs": [
+        "rsi_threshold_cross"
+      ],
+      "stress_1_5x_pass": false,
+      "stress_2x_pass": false,
+      "trades": 42,
+      "validation_entry_fingerprint": "ae60cb08730671a2c5ea807116f46a78bfb861910b951886643cf048df51a55b",
+      "validation_pass": false
+    },
+    {
+      "expectancy_r": -0.12075660908430441,
+      "full_structure_fingerprint": "ee71fdeb176ff7c1ddd13cf83a35bfc56e3c4f084f0a6d9266167bbdc916bb9c",
+      "genome_fingerprint": "657a3564103b259cfc7d",
+      "long_motifs": [
+        "rsi_threshold_cross"
+      ],
+      "motifs": [
+        "rsi_threshold_cross"
+      ],
+      "passed_windows": 1,
+      "profit_factor": 0.7946434456012405,
+      "rank": 19,
+      "risk_parameters": {
+        "max_holding_bars": 48,
+        "reward_risk": 2.150322692871094,
+        "stop_atr": 2.5415380859375
+      },
+      "rule_structure_fingerprint": "dee99e6b78e824f37723b52a82656dc6afb01b19b1fd4e93b142fc930baaac0a",
+      "seed": 2033,
+      "short_motifs": [
+        "rsi_threshold_cross"
+      ],
+      "stress_1_5x_pass": false,
+      "stress_2x_pass": false,
+      "trades": 50,
+      "validation_entry_fingerprint": "2fe4bdbc7336c14471ab753b07029f04e351e3b13e728001b9ae10630e334a40",
+      "validation_pass": false
+    },
+    {
+      "expectancy_r": -0.37829020047703915,
+      "full_structure_fingerprint": "78f7e3e406f85384601cd6365c261dbf75f6d0abb09de99829b8e5afb8f6c75e",
+      "genome_fingerprint": "bacc5c6d63aeb3ef8470",
+      "long_motifs": [
+        "atr_vs_rolling_atr",
+        "ema_direction_with_atr_regime_gate",
+        "price_vs_ema_filter",
+        "rsi_threshold_cross"
+      ],
+      "motifs": [
+        "atr_vs_rolling_atr",
+        "ema_direction_with_atr_regime_gate",
+        "price_vs_ema_filter",
+        "rsi_threshold_cross"
+      ],
+      "passed_windows": 0,
+      "profit_factor": 0.4920481416747235,
+      "rank": 20,
+      "risk_parameters": {
+        "max_holding_bars": 20,
+        "reward_risk": 1.5625,
+        "stop_atr": 1.31210859375
+      },
+      "rule_structure_fingerprint": "1ecd4a7c75450a743751be4f93eab0bbe070926a9b5ae9ff3a4df797c71e6fa9",
+      "seed": 2033,
+      "short_motifs": [],
+      "stress_1_5x_pass": false,
+      "stress_2x_pass": false,
+      "trades": 34,
+      "validation_entry_fingerprint": "e6c297a8125ccfbad1db0692c155b2abfd57ca6cd007260e52af6c64591aae81",
+      "validation_pass": false
+    },
+    {
+      "expectancy_r": -0.33260925390839263,
+      "full_structure_fingerprint": "068bbb92634122ac37db8f63275a68e2af147fd1c4189b4c204c57788e2c2e8e",
+      "genome_fingerprint": "4be6ba0d14d98a9a3e2c",
+      "long_motifs": [],
+      "motifs": [
+        "rsi_threshold_cross"
+      ],
+      "passed_windows": 0,
+      "profit_factor": 0.5244696805780488,
+      "rank": 1,
+      "risk_parameters": {
+        "max_holding_bars": 120,
+        "reward_risk": 2.9320312499999996,
+        "stop_atr": 2.883483123779297
+      },
+      "rule_structure_fingerprint": "cc4772796a293a24b6a4b45fbdcc9eb1710104f86ae8063a0c8c682bf3577f4c",
+      "seed": 2034,
+      "short_motifs": [
+        "rsi_threshold_cross"
+      ],
+      "stress_1_5x_pass": false,
+      "stress_2x_pass": false,
+      "trades": 31,
+      "validation_entry_fingerprint": "d7ca03c96c2d673f98be8c2e5e8a63f34a1d6667f362a5059b2e0b358b421a2a",
+      "validation_pass": false
+    },
+    {
+      "expectancy_r": -0.14974960741076004,
+      "full_structure_fingerprint": "2233152e4f02d51f6c0ee7142be8a17c81befc2dfedf0f03a143f3107d722295",
+      "genome_fingerprint": "a052ce09402b15807e57",
+      "long_motifs": [
+        "atr_vs_rolling_atr",
+        "rsi_threshold_cross"
+      ],
+      "motifs": [
+        "atr_vs_rolling_atr",
+        "rsi_threshold_cross"
+      ],
+      "passed_windows": 1,
+      "profit_factor": 0.7536328722896389,
+      "rank": 2,
+      "risk_parameters": {
+        "max_holding_bars": 49,
+        "reward_risk": 2.2628444671630863,
+        "stop_atr": 2.9445770263671878
+      },
+      "rule_structure_fingerprint": "c9ec0e3079247e6b95cc2b2d91ecf0279aa13fda14a840f0f99cbc7663288541",
+      "seed": 2034,
+      "short_motifs": [
+        "atr_vs_rolling_atr"
+      ],
+      "stress_1_5x_pass": false,
+      "stress_2x_pass": false,
+      "trades": 40,
+      "validation_entry_fingerprint": "5d2c21c92c815dc8325011151fc4637fbe7515be81e231df3e5a63b65c988a08",
+      "validation_pass": false
+    },
+    {
+      "expectancy_r": -0.21823288013170314,
+      "full_structure_fingerprint": "7c2818c3152b7ad72b91fece6977989bd9ecb96d1fc74c7e660e8c8f037687a5",
+      "genome_fingerprint": "77015d1425b9890ecd58",
+      "long_motifs": [
+        "atr_vs_rolling_atr",
+        "ema_pair_comparison",
+        "rsi_threshold_cross"
+      ],
+      "motifs": [
+        "atr_vs_rolling_atr",
+        "ema_pair_comparison",
+        "rsi_threshold_cross"
+      ],
+      "passed_windows": 0,
+      "profit_factor": 0.6872655810634511,
+      "rank": 3,
+      "risk_parameters": {
+        "max_holding_bars": 200,
+        "reward_risk": 3.4669921875,
+        "stop_atr": 2.984314727783203
+      },
+      "rule_structure_fingerprint": "8d8f6a93d3722defdb79bbf1b56c8349145127905795eee9fb7afb2cc8c0e7b0",
+      "seed": 2034,
+      "short_motifs": [
+        "atr_vs_rolling_atr"
+      ],
+      "stress_1_5x_pass": false,
+      "stress_2x_pass": false,
+      "trades": 23,
+      "validation_entry_fingerprint": "dfd9984a781db8e848a65b89b72cd936b3b3c752bf7ea889405f092e514c79a3",
+      "validation_pass": false
+    },
+    {
+      "expectancy_r": -0.1312625977448877,
+      "full_structure_fingerprint": "3c9b8672efa64db7109236670fb535e2002ad3faacd613e94ba13e6ab23a08a9",
+      "genome_fingerprint": "c46961039676d0f2c582",
+      "long_motifs": [
+        "atr_vs_rolling_atr",
+        "rsi_threshold_cross"
+      ],
+      "motifs": [
+        "atr_vs_rolling_atr",
+        "rsi_threshold_cross"
+      ],
+      "passed_windows": 1,
+      "profit_factor": 0.8066226899170459,
+      "rank": 4,
+      "risk_parameters": {
+        "max_holding_bars": 176,
+        "reward_risk": 2.6437038574218743,
+        "stop_atr": 2.8370243835449216
+      },
+      "rule_structure_fingerprint": "7f1ce9eedb1a18f1cb7af1c160aa889f0a92688c532dcd4d51b5f04b2c9e04bc",
+      "seed": 2034,
+      "short_motifs": [
+        "atr_vs_rolling_atr",
+        "rsi_threshold_cross"
+      ],
+      "stress_1_5x_pass": false,
+      "stress_2x_pass": false,
+      "trades": 31,
+      "validation_entry_fingerprint": "d6554d87a2b8c01b163656755673f9a01e3db96e83237cb8376fd92176630c66",
+      "validation_pass": false
+    },
+    {
+      "expectancy_r": -0.13844039120876156,
+      "full_structure_fingerprint": "0f58a7cbb0ff506d0715df600eac83cf3ee18e26eb6e90560e9a3c7bc82d7162",
+      "genome_fingerprint": "c292ae5c984597a99326",
+      "long_motifs": [
+        "atr_vs_rolling_atr",
+        "ema_pair_comparison",
+        "rsi_threshold_cross"
+      ],
+      "motifs": [
+        "atr_vs_rolling_atr",
+        "ema_pair_comparison",
+        "rsi_threshold_cross"
+      ],
+      "passed_windows": 0,
+      "profit_factor": 0.7890757818699389,
+      "rank": 5,
+      "risk_parameters": {
+        "max_holding_bars": 160,
+        "reward_risk": 2.5184643554687494,
+        "stop_atr": 3.0754333953857422
+      },
+      "rule_structure_fingerprint": "5b40e10c30ac323749d085d30e5765d6cefd4adc94f5d4a00b4aa2b62cc315a0",
+      "seed": 2034,
+      "short_motifs": [
+        "atr_vs_rolling_atr",
+        "rsi_threshold_cross"
+      ],
+      "stress_1_5x_pass": false,
+      "stress_2x_pass": false,
+      "trades": 29,
+      "validation_entry_fingerprint": "6ebd4f79610ce59e823c68d2286826aaaae8121cd12741c5096d6039f941a8eb",
+      "validation_pass": false
+    },
+    {
+      "expectancy_r": -0.14116600546817648,
+      "full_structure_fingerprint": "d236f6dce075177a3611cc037448d102bea3a2a4361eaf5b3269ce80a1386192",
+      "genome_fingerprint": "3eead88b749d726d8d04",
+      "long_motifs": [
+        "atr_vs_rolling_atr",
+        "ema_pair_comparison",
+        "rsi_threshold_cross"
+      ],
+      "motifs": [
+        "atr_vs_rolling_atr",
+        "ema_pair_comparison",
+        "rsi_threshold_cross"
+      ],
+      "passed_windows": 0,
+      "profit_factor": 0.8049843598585841,
+      "rank": 6,
+      "risk_parameters": {
+        "max_holding_bars": 144,
+        "reward_risk": 2.7817724609374994,
+        "stop_atr": 2.478537902832031
+      },
+      "rule_structure_fingerprint": "cf909eb1d7b52e006761dca2bcfdece0d3654a956a984d6b2be0d43bbdda83f9",
+      "seed": 2034,
+      "short_motifs": [
+        "atr_vs_rolling_atr",
+        "rsi_threshold_cross"
+      ],
+      "stress_1_5x_pass": false,
+      "stress_2x_pass": false,
+      "trades": 36,
+      "validation_entry_fingerprint": "e80f777f84e5663551c067b312bd249cb5ed1dbcc29e7d208f829f1216b81baf",
+      "validation_pass": false
+    },
+    {
+      "expectancy_r": -0.1390581284018196,
+      "full_structure_fingerprint": "dbb7ed4ad93fc05940695a99181386bd044bf8f6ae5f1c9a0e522903d91690da",
+      "genome_fingerprint": "f37fcf06610606e8e895",
+      "long_motifs": [
+        "atr_vs_rolling_atr",
+        "rsi_threshold_cross"
+      ],
+      "motifs": [
+        "atr_vs_rolling_atr",
+        "rsi_threshold_cross"
+      ],
+      "passed_windows": 0,
+      "profit_factor": 0.7745606429452327,
+      "rank": 7,
+      "risk_parameters": {
+        "max_holding_bars": 54,
+        "reward_risk": 2.236697490692139,
+        "stop_atr": 3.035172271728516
+      },
+      "rule_structure_fingerprint": "6a2b9ae65e7d47f96e22ff5d61c520f364f1772e7b8234cabf6f19f2a5722380",
+      "seed": 2034,
+      "short_motifs": [
+        "atr_vs_rolling_atr"
+      ],
+      "stress_1_5x_pass": false,
+      "stress_2x_pass": false,
+      "trades": 36,
+      "validation_entry_fingerprint": "ebc1f9ac88002d60c7aa6e6e8b3c5e8d18501d935af06395727dbe096833ae7b",
+      "validation_pass": false
+    },
+    {
+      "expectancy_r": -0.2002006150005832,
+      "full_structure_fingerprint": "9f78d6aac58e1955b22684a09a268719ebae04ee09769b0c3db2441dc9a88ddd",
+      "genome_fingerprint": "5240eb551c79afca6403",
+      "long_motifs": [
+        "atr_vs_rolling_atr",
+        "ema_pair_comparison",
+        "rsi_threshold_cross"
+      ],
+      "motifs": [
+        "atr_vs_rolling_atr",
+        "ema_pair_comparison",
+        "rsi_threshold_cross"
+      ],
+      "passed_windows": 1,
+      "profit_factor": 0.6858534909991542,
+      "rank": 8,
+      "risk_parameters": {
+        "max_holding_bars": 112,
+        "reward_risk": 1.973367094993591,
+        "stop_atr": 2.9149360084533695
+      },
+      "rule_structure_fingerprint": "30fc55f1c88fa160ff055bb8ba3fb911f740cf78349b8fef000d45c99005370e",
+      "seed": 2034,
+      "short_motifs": [
+        "atr_vs_rolling_atr"
+      ],
+      "stress_1_5x_pass": false,
+      "stress_2x_pass": false,
+      "trades": 42,
+      "validation_entry_fingerprint": "69a9baf1ffeb5a891a27fb001e4ce3b445105d3956e525d503eb112a68346aeb",
+      "validation_pass": false
+    },
+    {
+      "expectancy_r": -0.16490960590552217,
+      "full_structure_fingerprint": "e7991d43c08b41a0c3a044a53ced28def185854286ecca1b8226faec9512fdf5",
+      "genome_fingerprint": "28c2fc2a6ea5f58caef3",
+      "long_motifs": [
+        "atr_vs_rolling_atr",
+        "rsi_threshold_cross"
+      ],
+      "motifs": [
+        "atr_vs_rolling_atr",
+        "rsi_threshold_cross"
+      ],
+      "passed_windows": 1,
+      "profit_factor": 0.7213284903856282,
+      "rank": 9,
+      "risk_parameters": {
+        "max_holding_bars": 49,
+        "reward_risk": 2.8306350708007812,
+        "stop_atr": 2.943017578125
+      },
+      "rule_structure_fingerprint": "b41962bb912b6f9000c2134d0d287e1ec03c6866a9a745f63ba25316231fbcb4",
+      "seed": 2034,
+      "short_motifs": [
+        "atr_vs_rolling_atr"
+      ],
+      "stress_1_5x_pass": false,
+      "stress_2x_pass": false,
+      "trades": 37,
+      "validation_entry_fingerprint": "f5d796e227b6dc9d1d26d2dc70ea4077aa7a7a873172ac61606c18a7f0eb2cb2",
+      "validation_pass": false
+    },
+    {
+      "expectancy_r": -0.16455824387654291,
+      "full_structure_fingerprint": "8dcd6c49e93e1fe979c3252024bb95d049f4ac359cd5095320d3d76f0c5b48a1",
+      "genome_fingerprint": "999a7a791bd6b3eea9a8",
+      "long_motifs": [
+        "ema_pair_comparison",
+        "rsi_threshold_cross"
+      ],
+      "motifs": [
+        "atr_vs_rolling_atr",
+        "ema_pair_comparison",
+        "rsi_threshold_cross"
+      ],
+      "passed_windows": 1,
+      "profit_factor": 0.7260864295743723,
+      "rank": 10,
+      "risk_parameters": {
+        "max_holding_bars": 66,
+        "reward_risk": 1.426513671875,
+        "stop_atr": 2.932403564453125
+      },
+      "rule_structure_fingerprint": "721c984669b33e90ebd877080158c39ce79c99e3af5ed70b45de891fca96d3b1",
+      "seed": 2034,
+      "short_motifs": [
+        "atr_vs_rolling_atr"
+      ],
+      "stress_1_5x_pass": false,
+      "stress_2x_pass": false,
+      "trades": 47,
+      "validation_entry_fingerprint": "abfcf2a201717c69c89418b394033ffc72f89a8c81c061dd63c33356d529ee0a",
+      "validation_pass": false
+    },
+    {
+      "expectancy_r": -0.1572670984211837,
+      "full_structure_fingerprint": "f0292f00f51181d0c3eaac5ba902b8cd1a9c4ca9b1a115da24318b5a82656f6f",
+      "genome_fingerprint": "59cd8bce6585293d0586",
+      "long_motifs": [
+        "atr_vs_rolling_atr",
+        "ema_direction_with_atr_regime_gate",
+        "ema_pair_comparison",
+        "price_vs_ema_filter",
+        "rsi_threshold_cross"
+      ],
+      "motifs": [
+        "atr_vs_rolling_atr",
+        "ema_direction_with_atr_regime_gate",
+        "ema_pair_comparison",
+        "price_vs_ema_filter",
+        "rsi_threshold_cross"
+      ],
+      "passed_windows": 1,
+      "profit_factor": 0.7424916968599798,
+      "rank": 11,
+      "risk_parameters": {
+        "max_holding_bars": 49,
+        "reward_risk": 2.260063018798828,
+        "stop_atr": 2.798980712890625
+      },
+      "rule_structure_fingerprint": "37d6cd8185ed1f242ab7fcb2e0cbffdeb2e486dafa8a1595176f208fec92c53d",
+      "seed": 2034,
+      "short_motifs": [
+        "atr_vs_rolling_atr"
+      ],
+      "stress_1_5x_pass": false,
+      "stress_2x_pass": false,
+      "trades": 43,
+      "validation_entry_fingerprint": "30703714e242826fb861271fb209ae84077f101f91c896c88b534cabd67598fd",
+      "validation_pass": false
+    },
+    {
+      "expectancy_r": -0.1694629961448573,
+      "full_structure_fingerprint": "f397f3032511b680bbd3e596655716f535949fc719a6ac9743951a7013c7609f",
+      "genome_fingerprint": "cefc0620b6ffe22e0ace",
+      "long_motifs": [
+        "atr_vs_rolling_atr",
+        "ema_direction_with_atr_regime_gate",
+        "ema_pair_comparison",
+        "price_vs_ema_filter"
+      ],
+      "motifs": [
+        "atr_vs_rolling_atr",
+        "ema_direction_with_atr_regime_gate",
+        "ema_pair_comparison",
+        "price_vs_ema_filter"
+      ],
+      "passed_windows": 1,
+      "profit_factor": 0.719238882924451,
+      "rank": 12,
+      "risk_parameters": {
+        "max_holding_bars": 66,
+        "reward_risk": 1.421630859375,
+        "stop_atr": 2.8775344848632813
+      },
+      "rule_structure_fingerprint": "d5ffab6edb33f195904372b2942c6259c160ddb869457b757396d7908d1243fc",
+      "seed": 2034,
+      "short_motifs": [
+        "atr_vs_rolling_atr"
+      ],
+      "stress_1_5x_pass": false,
+      "stress_2x_pass": false,
+      "trades": 48,
+      "validation_entry_fingerprint": "be3a28f0a26e2827880453f96ad14d668389c07d3e650541e3c62473c69c8f71",
+      "validation_pass": false
+    },
+    {
+      "expectancy_r": 0.10637096962966583,
+      "full_structure_fingerprint": "d3e8e7915526d6af858668ba6b21962950daa5e23f0349e42839997202114b64",
+      "genome_fingerprint": "feb367c03e6954f37139",
+      "long_motifs": [
+        "price_vs_ema_filter",
+        "rsi_threshold_cross"
+      ],
+      "motifs": [
+        "price_vs_ema_filter",
+        "rsi_threshold_cross"
+      ],
+      "passed_windows": 2,
+      "profit_factor": 1.213496612800121,
+      "rank": 13,
+      "risk_parameters": {
+        "max_holding_bars": 31,
+        "reward_risk": 2.3703125,
+        "stop_atr": 2.25
+      },
+      "rule_structure_fingerprint": "a728f4066a299f5dba122cb017257123cc7f21b38667d5c26ba03c9aa04c6ca0",
+      "seed": 2034,
+      "short_motifs": [
+        "rsi_threshold_cross"
+      ],
+      "stress_1_5x_pass": true,
+      "stress_2x_pass": true,
+      "trades": 32,
+      "validation_entry_fingerprint": "1744e23927bd86a783b588d178779385f1a2112e8590bd31c4b80aaf4de1adaf",
+      "validation_pass": true
+    },
+    {
+      "expectancy_r": 0.12157170404652659,
+      "full_structure_fingerprint": "e4613b9406363aa2ff11f310b2b3f9803cbe31760688520dcb638b13ff02f928",
+      "genome_fingerprint": "6afa1c8c87a9fb657705",
+      "long_motifs": [
+        "price_vs_ema_filter",
+        "rsi_threshold_cross"
+      ],
+      "motifs": [
+        "price_vs_ema_filter",
+        "rsi_threshold_cross"
+      ],
+      "passed_windows": 2,
+      "profit_factor": 1.244005926773404,
+      "rank": 14,
+      "risk_parameters": {
+        "max_holding_bars": 31,
+        "reward_risk": 2.63046875,
+        "stop_atr": 2.25
+      },
+      "rule_structure_fingerprint": "50b18aa39d23ee5e2d807a2c691aa79edd4c8f0736decfece8b5f641220267a5",
+      "seed": 2034,
+      "short_motifs": [
+        "rsi_threshold_cross"
+      ],
+      "stress_1_5x_pass": true,
+      "stress_2x_pass": true,
+      "trades": 32,
+      "validation_entry_fingerprint": "1744e23927bd86a783b588d178779385f1a2112e8590bd31c4b80aaf4de1adaf",
+      "validation_pass": true
+    },
+    {
+      "expectancy_r": -0.1859779313881197,
+      "full_structure_fingerprint": "963e458eb4564c7096254024aa2885f7a22966a2d6fadc42344381f08ad64a39",
+      "genome_fingerprint": "9c51108a232729480b77",
+      "long_motifs": [
+        "ema_pair_comparison",
+        "price_vs_ema_filter"
+      ],
+      "motifs": [
+        "atr_vs_rolling_atr",
+        "ema_pair_comparison",
+        "price_vs_ema_filter"
+      ],
+      "passed_windows": 1,
+      "profit_factor": 0.6963006036742391,
+      "rank": 15,
+      "risk_parameters": {
+        "max_holding_bars": 66,
+        "reward_risk": 1.4594777584075929,
+        "stop_atr": 2.9123082637786863
+      },
+      "rule_structure_fingerprint": "5457caa5178e894b59b8ec8eac8213c18284c79b20dfb77ac006a3dec5f31c03",
+      "seed": 2034,
+      "short_motifs": [
+        "atr_vs_rolling_atr"
+      ],
+      "stress_1_5x_pass": false,
+      "stress_2x_pass": false,
+      "trades": 44,
+      "validation_entry_fingerprint": "775423046d2e0e24a29316185899ed9ee85c8ce70b10cd4f6be45e22702d4600",
+      "validation_pass": false
+    },
+    {
+      "expectancy_r": 0.09725084235704662,
+      "full_structure_fingerprint": "54f5ec4cbbab496fc24d1c333589d2dcd219bcc5b4b206139e64c834666f444b",
+      "genome_fingerprint": "2d9ebcee032430014437",
+      "long_motifs": [
+        "rsi_threshold_cross"
+      ],
+      "motifs": [
+        "rsi_threshold_cross"
+      ],
+      "passed_windows": 2,
+      "profit_factor": 1.4252244201106625,
+      "rank": 16,
+      "risk_parameters": {
+        "max_holding_bars": 8,
+        "reward_risk": 1.4127482986450195,
+        "stop_atr": 2.5996115922927854
+      },
+      "rule_structure_fingerprint": "714efde86eb2c273c6b9ce35e72f95af8a004a7291897a1dc5eb85905aaf58fb",
+      "seed": 2034,
+      "short_motifs": [
+        "rsi_threshold_cross"
+      ],
+      "stress_1_5x_pass": true,
+      "stress_2x_pass": true,
+      "trades": 38,
+      "validation_entry_fingerprint": "689c37547f3ded0ff83526bcb2ce6bf900b8ba02318b74a867258cfa59ec0408",
+      "validation_pass": true
+    },
+    {
+      "expectancy_r": -0.2216381010021979,
+      "full_structure_fingerprint": "10ce2ecc9e29f371959f757af4ec678de9ba2a67c29c487e22c8837acc90f9e3",
+      "genome_fingerprint": "f0c90830212be55958e7",
+      "long_motifs": [
+        "atr_vs_rolling_atr",
+        "ema_pair_comparison",
+        "rsi_threshold_cross"
+      ],
+      "motifs": [
+        "atr_vs_rolling_atr",
+        "ema_pair_comparison",
+        "rsi_threshold_cross"
+      ],
+      "passed_windows": 0,
+      "profit_factor": 0.6616370985620621,
+      "rank": 17,
+      "risk_parameters": {
+        "max_holding_bars": 160,
+        "reward_risk": 2.695867233276367,
+        "stop_atr": 3.1017333811521532
+      },
+      "rule_structure_fingerprint": "d0e42593c6db32dd99c14f94866137119a7e4ddb8fd546c20cb3afedd7943504",
+      "seed": 2034,
+      "short_motifs": [
+        "atr_vs_rolling_atr"
+      ],
+      "stress_1_5x_pass": false,
+      "stress_2x_pass": false,
+      "trades": 26,
+      "validation_entry_fingerprint": "4bf821215add6dbe0f6baaee3a530abf5813528470250d0366d036777447e7d1",
+      "validation_pass": false
+    },
+    {
+      "expectancy_r": -0.15315661351203302,
+      "full_structure_fingerprint": "eedee7f2686f1ed99cb46642692ef94868bc3918b98cd91a44444c6fd9bd70b4",
+      "genome_fingerprint": "4e6ae443afed2ff438e7",
+      "long_motifs": [],
+      "motifs": [
+        "atr_vs_rolling_atr",
+        "rsi_threshold_cross"
+      ],
+      "passed_windows": 1,
+      "profit_factor": 0.7509659061815782,
+      "rank": 18,
+      "risk_parameters": {
+        "max_holding_bars": 176,
+        "reward_risk": 2.428024002075195,
+        "stop_atr": 2.982528875231743
+      },
+      "rule_structure_fingerprint": "d5512ff305a8addacd03be099129a4397772f4e7e5e2690db07f83020d2e9e16",
+      "seed": 2034,
+      "short_motifs": [
+        "atr_vs_rolling_atr",
+        "rsi_threshold_cross"
+      ],
+      "stress_1_5x_pass": false,
+      "stress_2x_pass": false,
+      "trades": 34,
+      "validation_entry_fingerprint": "06216a63aacda886c67fe4f1b575f31a2443f8da2ca883790f4237099018a066",
+      "validation_pass": false
+    },
+    {
+      "expectancy_r": -0.10519975869742995,
+      "full_structure_fingerprint": "5ea7feb91df54f3f4663a9c1f5ebb04746eb3a635911546b5f231b2c834517f0",
+      "genome_fingerprint": "9a9c7bd4e26e5509eebf",
+      "long_motifs": [
+        "ema_pair_comparison",
+        "rsi_threshold_cross"
+      ],
+      "motifs": [
+        "ema_pair_comparison",
+        "price_vs_ema_filter",
+        "rsi_threshold_cross"
+      ],
+      "passed_windows": 1,
+      "profit_factor": 0.82361038962397,
+      "rank": 19,
+      "risk_parameters": {
+        "max_holding_bars": 73,
+        "reward_risk": 1.4973246574401855,
+        "stop_atr": 2.947082042694092
+      },
+      "rule_structure_fingerprint": "7c2879422f3e795e14e130a1b9fc53e6ebfce72d947c47cc4431e82b8732f367",
+      "seed": 2034,
+      "short_motifs": [
+        "price_vs_ema_filter"
+      ],
+      "stress_1_5x_pass": false,
+      "stress_2x_pass": false,
+      "trades": 44,
+      "validation_entry_fingerprint": "18caf83cb565501ab52a796aa5e97ae802ae15cc9188477638befd2d73c2ad01",
+      "validation_pass": false
+    },
+    {
+      "expectancy_r": -0.10760888521786034,
+      "full_structure_fingerprint": "d3eeb3f69dab080e595a5c1268b3aaf5258c06544937290d10f008e1124489b7",
+      "genome_fingerprint": "01d41ef31c1dff99ddbb",
+      "long_motifs": [
+        "ema_pair_comparison"
+      ],
+      "motifs": [
+        "atr_vs_rolling_atr",
+        "ema_pair_comparison"
+      ],
+      "passed_windows": 1,
+      "profit_factor": 0.8043474988132328,
+      "rank": 20,
+      "risk_parameters": {
+        "max_holding_bars": 66,
+        "reward_risk": 1.0964393734931948,
+        "stop_atr": 2.661164464950562
+      },
+      "rule_structure_fingerprint": "2c7be813f031a18286939fd941b2e350dd5446177bff1766816b098d7335da1f",
+      "seed": 2034,
+      "short_motifs": [
+        "atr_vs_rolling_atr"
+      ],
+      "stress_1_5x_pass": false,
+      "stress_2x_pass": false,
+      "trades": 60,
+      "validation_entry_fingerprint": "f945bbeaab25ab47584eb0aacb238e9c6bbcabf389c7508cb174dc6d157ed5c7",
+      "validation_pass": false
+    },
+    {
+      "expectancy_r": -0.21022257408479805,
+      "full_structure_fingerprint": "012d05cdcd4316f833db4ce43f495d3f8d945df15e85b4cfb5c16d24cbec0fef",
+      "genome_fingerprint": "80e192ce4d67e77132c1",
+      "long_motifs": [],
+      "motifs": [
+        "rsi_threshold_cross"
+      ],
+      "passed_windows": 0,
+      "profit_factor": 0.6729749123359777,
+      "rank": 1,
+      "risk_parameters": {
+        "max_holding_bars": 60,
+        "reward_risk": 1.5171679687500002,
+        "stop_atr": 2.17875
+      },
+      "rule_structure_fingerprint": "e7c42ce260c123b5519e472012d459bcef9d0294f7eef8c1fe8de6c2bec13fa4",
+      "seed": 2035,
+      "short_motifs": [
+        "rsi_threshold_cross"
+      ],
+      "stress_1_5x_pass": false,
+      "stress_2x_pass": false,
+      "trades": 21,
+      "validation_entry_fingerprint": "f23f8ac2c3b8606efa178517323f47984e4e55117e5ce6bd823ae3c3fec15637",
+      "validation_pass": false
+    },
+    {
+      "expectancy_r": -0.3063459712765239,
+      "full_structure_fingerprint": "cef5bd778dc3443d8cc84c526f68d3fd288a44eee9659536d3926aa8abb4dc2a",
+      "genome_fingerprint": "436189dc061c3a97d4e4",
+      "long_motifs": [],
+      "motifs": [
+        "rsi_threshold_cross"
+      ],
+      "passed_windows": 0,
+      "profit_factor": 0.5342939545991274,
+      "rank": 2,
+      "risk_parameters": {
+        "max_holding_bars": 48,
+        "reward_risk": 1.479232177734375,
+        "stop_atr": 2.1569531250000002
+      },
+      "rule_structure_fingerprint": "b7e84a03fd19e0d715109b28d647844dfc0c98e3bd854ae10eb885ceb8199a67",
+      "seed": 2035,
+      "short_motifs": [
+        "rsi_threshold_cross"
+      ],
+      "stress_1_5x_pass": false,
+      "stress_2x_pass": false,
+      "trades": 21,
+      "validation_entry_fingerprint": "f23f8ac2c3b8606efa178517323f47984e4e55117e5ce6bd823ae3c3fec15637",
+      "validation_pass": false
+    },
+    {
+      "expectancy_r": -0.3063459712765239,
+      "full_structure_fingerprint": "8ae691314e939cddf7121b187e33835758c94449ff67cb12e38d6eaff34f067e",
+      "genome_fingerprint": "af2b5b5567f20fd79048",
+      "long_motifs": [],
+      "motifs": [
+        "rsi_threshold_cross"
+      ],
+      "passed_windows": 0,
+      "profit_factor": 0.5342939545991274,
+      "rank": 3,
+      "risk_parameters": {
+        "max_holding_bars": 48,
+        "reward_risk": 1.479232177734375,
+        "stop_atr": 2.1569531250000002
+      },
+      "rule_structure_fingerprint": "9883f3c4f5528420abd292034b58122dcc5c9f03270f740187e530bb3dcfbcd5",
+      "seed": 2035,
+      "short_motifs": [
+        "rsi_threshold_cross"
+      ],
+      "stress_1_5x_pass": false,
+      "stress_2x_pass": false,
+      "trades": 21,
+      "validation_entry_fingerprint": "f23f8ac2c3b8606efa178517323f47984e4e55117e5ce6bd823ae3c3fec15637",
+      "validation_pass": false
+    },
+    {
+      "expectancy_r": -0.13885289926659522,
+      "full_structure_fingerprint": "4fac59ffa685fb471fb4a78461ddee722a389c692a9e58dd156706e3d9ac4e59",
+      "genome_fingerprint": "9226cdaaa95486e3a72d",
+      "long_motifs": [
+        "rsi_threshold_cross"
+      ],
+      "motifs": [
+        "rsi_threshold_cross"
+      ],
+      "passed_windows": 0,
+      "profit_factor": 0.7627018553909433,
+      "rank": 4,
+      "risk_parameters": {
+        "max_holding_bars": 160,
+        "reward_risk": 1.5149658203125,
+        "stop_atr": 3.3734765625000005
+      },
+      "rule_structure_fingerprint": "4f51a6859eff2ed74e12d01ce8eed33fd92f20abbe69efa35c753188a36e9f64",
+      "seed": 2035,
+      "short_motifs": [],
+      "stress_1_5x_pass": false,
+      "stress_2x_pass": false,
+      "trades": 16,
+      "validation_entry_fingerprint": "24646899ee90cb209781d887c39e9ca64be218def2e9f626dd71245762e84e62",
+      "validation_pass": false
+    },
+    {
+      "expectancy_r": -0.2047285825732674,
+      "full_structure_fingerprint": "d91246e0a1a2f50e0f8d0c5ad721b2d3e5b7dd173a2499d9333abc4f5f19c8ff",
+      "genome_fingerprint": "cb51068938823e522e15",
+      "long_motifs": [],
+      "motifs": [
+        "atr_vs_rolling_atr"
+      ],
+      "passed_windows": 1,
+      "profit_factor": 0.7046849899079367,
+      "rank": 5,
+      "risk_parameters": {
+        "max_holding_bars": 54,
+        "reward_risk": 2.8078384399414062,
+        "stop_atr": 2.329150390625
+      },
+      "rule_structure_fingerprint": "aae606f2fe9df369b3d8de083dc1340313f1a74f06998d30d70b4ef8e9b819ea",
+      "seed": 2035,
+      "short_motifs": [
+        "atr_vs_rolling_atr"
+      ],
+      "stress_1_5x_pass": false,
+      "stress_2x_pass": false,
+      "trades": 45,
+      "validation_entry_fingerprint": "ff75487236c92efd2a3fc94c715133596549d64437de6215396c1c13fe75ec27",
+      "validation_pass": false
+    },
+    {
+      "expectancy_r": -0.15742760281198054,
+      "full_structure_fingerprint": "8481586b5034c49b0446602c517107d6323dc77ae56e4c55e4f70e8412879173",
+      "genome_fingerprint": "3b27415dea7135412fd5",
+      "long_motifs": [],
+      "motifs": [
+        "atr_vs_rolling_atr",
+        "ema_direction_with_atr_regime_gate",
+        "price_vs_ema_filter"
+      ],
+      "passed_windows": 0,
+      "profit_factor": 0.7772171407724887,
+      "rank": 6,
+      "risk_parameters": {
+        "max_holding_bars": 22,
+        "reward_risk": 2.6519531250000004,
+        "stop_atr": 1.33056640625
+      },
+      "rule_structure_fingerprint": "07909db69740fe1d2b82e35632a9cb7d0e2bb41706f5ecbceb6c863f4d54a6dc",
+      "seed": 2035,
+      "short_motifs": [
+        "atr_vs_rolling_atr",
+        "ema_direction_with_atr_regime_gate",
+        "price_vs_ema_filter"
+      ],
+      "stress_1_5x_pass": false,
+      "stress_2x_pass": false,
+      "trades": 51,
+      "validation_entry_fingerprint": "e4b60f791690a4d2ea5aca470d34079ca7a01d87186a9d52456466bd047f1d52",
+      "validation_pass": false
+    },
+    {
+      "expectancy_r": -0.21370893629809726,
+      "full_structure_fingerprint": "22b6b698ef6e9d7e1070cedda62ab5a0da7cddbad10b5191005a5856f8ffcbd8",
+      "genome_fingerprint": "407cd2ace7a008fd3512",
+      "long_motifs": [
+        "rsi_threshold_cross"
+      ],
+      "motifs": [
+        "rsi_threshold_cross"
+      ],
+      "passed_windows": 0,
+      "profit_factor": 0.6565611231722511,
+      "rank": 7,
+      "risk_parameters": {
+        "max_holding_bars": 60,
+        "reward_risk": 1.5551037597656252,
+        "stop_atr": 2.200546875
+      },
+      "rule_structure_fingerprint": "047f731eaee43cad71ac67f287be808223386a2027f7ce1d06471a0cae5f0b6f",
+      "seed": 2035,
+      "short_motifs": [
+        "rsi_threshold_cross"
+      ],
+      "stress_1_5x_pass": false,
+      "stress_2x_pass": false,
+      "trades": 22,
+      "validation_entry_fingerprint": "8dbb2441c01193024eff5ea1d04d867945605745fade4d39f811731d7c8d74a8",
+      "validation_pass": false
+    },
+    {
+      "expectancy_r": -0.299519479457336,
+      "full_structure_fingerprint": "d59b59d6793ed266397472c7e740984357d923f1215fad7377e198dc28387c0b",
+      "genome_fingerprint": "6cc737e285c2098eb5af",
+      "long_motifs": [
+        "rsi_threshold_cross"
+      ],
+      "motifs": [
+        "rsi_threshold_cross"
+      ],
+      "passed_windows": 0,
+      "profit_factor": 0.5551438130854732,
+      "rank": 8,
+      "risk_parameters": {
+        "max_holding_bars": 69,
+        "reward_risk": 1.497971085548401,
+        "stop_atr": 2.335904235839844
+      },
+      "rule_structure_fingerprint": "62e89697424f8ffe4e68550c7da3f1c3496596e3a6dadd250f686f2667d9dce9",
+      "seed": 2035,
+      "short_motifs": [
+        "rsi_threshold_cross"
+      ],
+      "stress_1_5x_pass": false,
+      "stress_2x_pass": false,
+      "trades": 20,
+      "validation_entry_fingerprint": "acd1a80631463641a68d311c2adf8e7f66f2a69794bf08ed7768604a762b04f9",
+      "validation_pass": false
+    },
+    {
+      "expectancy_r": -0.19041784619031182,
+      "full_structure_fingerprint": "f86a55442974a9d9dd586f4169194c2b167a3adfd06e7d6c0fd8aec173d8775a",
+      "genome_fingerprint": "a2a9de97d4b3fada8438",
+      "long_motifs": [
+        "rsi_threshold_cross"
+      ],
+      "motifs": [
+        "rsi_threshold_cross"
+      ],
+      "passed_windows": 0,
+      "profit_factor": 0.6392092450010965,
+      "rank": 9,
+      "risk_parameters": {
+        "max_holding_bars": 176,
+        "reward_risk": 1.2896146545410159,
+        "stop_atr": 3.710824218750001
+      },
+      "rule_structure_fingerprint": "2f1bff920d58417952dc99c64ff4a50965988be3d8da5725bb0ea7d9253a0bd5",
+      "seed": 2035,
+      "short_motifs": [],
+      "stress_1_5x_pass": false,
+      "stress_2x_pass": false,
+      "trades": 16,
+      "validation_entry_fingerprint": "6fed9266a4492341ecc16be831c792907f16c3c4d0f04646f479e9e6c3c19e66",
+      "validation_pass": false
+    },
+    {
+      "expectancy_r": -0.16732085257014834,
+      "full_structure_fingerprint": "47d4886edb332d560c94cd9021bbfa2843436350b8cc928dac873466d2cb47a0",
+      "genome_fingerprint": "c982a2f27f4d4049a785",
+      "long_motifs": [
+        "rsi_threshold_cross"
+      ],
+      "motifs": [
+        "rsi_threshold_cross"
+      ],
+      "passed_windows": 0,
+      "profit_factor": 0.7228844277131061,
+      "rank": 10,
+      "risk_parameters": {
+        "max_holding_bars": 60,
+        "reward_risk": 1.5930395507812503,
+        "stop_atr": 2.2223437500000003
+      },
+      "rule_structure_fingerprint": "5f5a49411ca0c522d27701778ec11e4c4182c9277520f1cd3ebbad10b8ab7f58",
+      "seed": 2035,
+      "short_motifs": [
+        "rsi_threshold_cross"
+      ],
+      "stress_1_5x_pass": false,
+      "stress_2x_pass": false,
+      "trades": 21,
+      "validation_entry_fingerprint": "2c46a90046fcb2b9c56e45d4d9be61c3dd00921b785cf3d94ed73e5dcd158c92",
+      "validation_pass": false
+    },
+    {
+      "expectancy_r": -0.20962910848848101,
+      "full_structure_fingerprint": "936c1ef02f538e502f5ecb3d1ca3bb3d0e83cd54a2c2406a409a0f8b172a79f2",
+      "genome_fingerprint": "f4a01fdd6cc42c265134",
+      "long_motifs": [],
+      "motifs": [
+        "rsi_threshold_cross"
+      ],
+      "passed_windows": 0,
+      "profit_factor": 0.6632872975452425,
+      "rank": 11,
+      "risk_parameters": {
+        "max_holding_bars": 60,
+        "reward_risk": 1.5171679687500002,
+        "stop_atr": 2.17875
+      },
+      "rule_structure_fingerprint": "2dadcb7dc9cb5814c738a570432ca10960d721c26660bbe71d4cd4b7c034d58a",
+      "seed": 2035,
+      "short_motifs": [
+        "rsi_threshold_cross"
+      ],
+      "stress_1_5x_pass": false,
+      "stress_2x_pass": false,
+      "trades": 22,
+      "validation_entry_fingerprint": "8dbb2441c01193024eff5ea1d04d867945605745fade4d39f811731d7c8d74a8",
+      "validation_pass": false
+    },
+    {
+      "expectancy_r": -0.2442646148573187,
+      "full_structure_fingerprint": "31871fe9353e527c6af3a6f8b5ab5193302161133809de2d3f94aa8ccbe85e9b",
+      "genome_fingerprint": "eaa389f5498df4a4b415",
+      "long_motifs": [
+        "rsi_threshold_cross"
+      ],
+      "motifs": [
+        "rsi_threshold_cross"
+      ],
+      "passed_windows": 0,
+      "profit_factor": 0.604958887749875,
+      "rank": 12,
+      "risk_parameters": {
+        "max_holding_bars": 48,
+        "reward_risk": 1.5740716552734377,
+        "stop_atr": 2.2114453125000004
+      },
+      "rule_structure_fingerprint": "734d043e5d3b3ac7a96e089bd86d3c128e9f81ba7d708dc6ef78be4296d14c95",
+      "seed": 2035,
+      "short_motifs": [
+        "rsi_threshold_cross"
+      ],
+      "stress_1_5x_pass": false,
+      "stress_2x_pass": false,
+      "trades": 21,
+      "validation_entry_fingerprint": "2c46a90046fcb2b9c56e45d4d9be61c3dd00921b785cf3d94ed73e5dcd158c92",
+      "validation_pass": false
+    },
+    {
+      "expectancy_r": -0.3501131899090629,
+      "full_structure_fingerprint": "4a12e735817cee223c8674d9c4feccbcc94e967e03a7cfa6720797ef3e9d1e67",
+      "genome_fingerprint": "e2329e3fefecbc521c13",
+      "long_motifs": [
+        "rsi_threshold_cross"
+      ],
+      "motifs": [
+        "rsi_threshold_cross"
+      ],
+      "passed_windows": 0,
+      "profit_factor": 0.46878608255506343,
+      "rank": 13,
+      "risk_parameters": {
+        "max_holding_bars": 48,
+        "reward_risk": 1.5478897094726562,
+        "stop_atr": 2.22607421875
+      },
+      "rule_structure_fingerprint": "c5add93237c70763ced355cfd994f3c49f26b77112061564b42190b780e39d62",
+      "seed": 2035,
+      "short_motifs": [
+        "rsi_threshold_cross"
+      ],
+      "stress_1_5x_pass": false,
+      "stress_2x_pass": false,
+      "trades": 20,
+      "validation_entry_fingerprint": "acd1a80631463641a68d311c2adf8e7f66f2a69794bf08ed7768604a762b04f9",
+      "validation_pass": false
+    },
+    {
+      "expectancy_r": -0.06460671893728069,
+      "full_structure_fingerprint": "49fc51487f4488055964051c01ad3372d64e885dd41bc03fc006802a3df0fa42",
+      "genome_fingerprint": "f5c9f9bd80a5ae4633ab",
+      "long_motifs": [
+        "rsi_threshold_cross"
+      ],
+      "motifs": [
+        "rsi_threshold_cross"
+      ],
+      "passed_windows": 1,
+      "profit_factor": 0.8657261727072774,
+      "rank": 14,
+      "risk_parameters": {
+        "max_holding_bars": 30,
+        "reward_risk": 1.5723731536865235,
+        "stop_atr": 2.9161842041015626
+      },
+      "rule_structure_fingerprint": "547a0320cdef9294532a722bb6ede3a3390bfc33180895a470a647033557378e",
+      "seed": 2035,
+      "short_motifs": [],
+      "stress_1_5x_pass": false,
+      "stress_2x_pass": false,
+      "trades": 30,
+      "validation_entry_fingerprint": "2a8c1b86efc4411ca6fa1d59d2e77a9604ee5e85885ef18f49830bccb368a3db",
+      "validation_pass": false
+    },
+    {
+      "expectancy_r": -0.10575432014862608,
+      "full_structure_fingerprint": "4630576b2acfe9b47c7f702e7879397fd1be83571f82e9088caf033567555690",
+      "genome_fingerprint": "3ef1a267f2987bb9f013",
+      "long_motifs": [],
+      "motifs": [
+        "atr_vs_rolling_atr",
+        "ema_direction_with_atr_regime_gate",
+        "price_vs_ema_filter"
+      ],
+      "passed_windows": 0,
+      "profit_factor": 0.8425837947756804,
+      "rank": 15,
+      "risk_parameters": {
+        "max_holding_bars": 22,
+        "reward_risk": 2.6519531250000004,
+        "stop_atr": 1.33056640625
+      },
+      "rule_structure_fingerprint": "fba9607631d8de232eebf75bf8c5681154c0b0b67b30cafb561e2165b0f8133c",
+      "seed": 2035,
+      "short_motifs": [
+        "atr_vs_rolling_atr",
+        "ema_direction_with_atr_regime_gate",
+        "price_vs_ema_filter"
+      ],
+      "stress_1_5x_pass": false,
+      "stress_2x_pass": false,
+      "trades": 64,
+      "validation_entry_fingerprint": "9c1ef06d651428f05bd53f6f7602153f4310b07f641b3eb8f12a94db7490b778",
+      "validation_pass": false
+    },
+    {
+      "expectancy_r": -0.2217292396464678,
+      "full_structure_fingerprint": "94ea5e3af234e2824901fa2aa41661e98d878d580c428bee785f0fe53f0b8d61",
+      "genome_fingerprint": "a7f076cb5b058f1f35ad",
+      "long_motifs": [],
+      "motifs": [
+        "atr_vs_rolling_atr"
+      ],
+      "passed_windows": 1,
+      "profit_factor": 0.6482066614133981,
+      "rank": 16,
+      "risk_parameters": {
+        "max_holding_bars": 48,
+        "reward_risk": 1.5161231553554537,
+        "stop_atr": 2.4554577941894533
+      },
+      "rule_structure_fingerprint": "be59c63c6df081c9f6f82be797f3310b2e4df777fc932607e7363a378b77b7ce",
+      "seed": 2035,
+      "short_motifs": [
+        "atr_vs_rolling_atr"
+      ],
+      "stress_1_5x_pass": false,
+      "stress_2x_pass": false,
+      "trades": 64,
+      "validation_entry_fingerprint": "8f21615ec620f82955458dde5826bd53ef7514bb2faa7ec40019e2e45c6d845e",
+      "validation_pass": false
+    },
+    {
+      "expectancy_r": -0.20635971411974377,
+      "full_structure_fingerprint": "55c8451a551072bcbe89c908d53a9f24d9aa703b44b1fbd8ea869b939e5e238c",
+      "genome_fingerprint": "8d072c82995979545fc9",
+      "long_motifs": [
+        "atr_vs_rolling_atr",
+        "ema_direction_with_atr_regime_gate",
+        "price_vs_ema_filter"
+      ],
+      "motifs": [
+        "atr_vs_rolling_atr",
+        "ema_direction_with_atr_regime_gate",
+        "price_vs_ema_filter"
+      ],
+      "passed_windows": 1,
+      "profit_factor": 0.5769097752581585,
+      "rank": 17,
+      "risk_parameters": {
+        "max_holding_bars": 100,
+        "reward_risk": 2.1215820312500004,
+        "stop_atr": 2.5625
+      },
+      "rule_structure_fingerprint": "5096b819c7fcd92dd2cd5f8d7122e9b0ce58b26e816521f26b93cdd54af01c8b",
+      "seed": 2035,
+      "short_motifs": [
+        "atr_vs_rolling_atr",
+        "ema_direction_with_atr_regime_gate",
+        "price_vs_ema_filter"
+      ],
+      "stress_1_5x_pass": false,
+      "stress_2x_pass": false,
+      "trades": 37,
+      "validation_entry_fingerprint": "5370cc96122f939d97ab61ff677b4a129180fa83588c8816fd7be4bb54ef8229",
+      "validation_pass": false
+    },
+    {
+      "expectancy_r": -0.15808236442883133,
+      "full_structure_fingerprint": "82fcea127fad96769059ac1673aba1187c33ad3bb0263500cd93e32c4f214323",
+      "genome_fingerprint": "3d3313a288f67b0b82d9",
+      "long_motifs": [
+        "atr_vs_rolling_atr",
+        "ema_direction_with_atr_regime_gate",
+        "price_vs_ema_filter"
+      ],
+      "motifs": [
+        "atr_vs_rolling_atr",
+        "ema_direction_with_atr_regime_gate",
+        "price_vs_ema_filter"
+      ],
+      "passed_windows": 1,
+      "profit_factor": 0.5905259542642516,
+      "rank": 18,
+      "risk_parameters": {
+        "max_holding_bars": 100,
+        "reward_risk": 2.1565246582031254,
+        "stop_atr": 3.1023046875
+      },
+      "rule_structure_fingerprint": "6b4f0e3b55ead0956415feb927c64424be589e23d87e21f2d433371c4aa42a61",
+      "seed": 2035,
+      "short_motifs": [
+        "atr_vs_rolling_atr",
+        "ema_direction_with_atr_regime_gate",
+        "price_vs_ema_filter"
+      ],
+      "stress_1_5x_pass": false,
+      "stress_2x_pass": false,
+      "trades": 32,
+      "validation_entry_fingerprint": "09f0b39e327085e37eaf4480c5dadf6f1dcd0c20115a1235c9243731e5da8091",
+      "validation_pass": false
+    },
+    {
+      "expectancy_r": 0.054000977188965814,
+      "full_structure_fingerprint": "8b8e561307eee16e8fd8393fe26ed5a75dde18990611bfa7d1aeb91d4ef7e30e",
+      "genome_fingerprint": "1f381ca6115e39a9a580",
+      "long_motifs": [
+        "rsi_threshold_cross"
+      ],
+      "motifs": [
+        "rsi_threshold_cross"
+      ],
+      "passed_windows": 1,
+      "profit_factor": 1.1181779074251599,
+      "rank": 19,
+      "risk_parameters": {
+        "max_holding_bars": 160,
+        "reward_risk": 1.3710440673828126,
+        "stop_atr": 3.3734765625000005
+      },
+      "rule_structure_fingerprint": "7f21f15ec32b9699dccb871d637861d8f73befeb23babaa548d3cc6c73c8019e",
+      "seed": 2035,
+      "short_motifs": [],
+      "stress_1_5x_pass": true,
+      "stress_2x_pass": true,
+      "trades": 28,
+      "validation_entry_fingerprint": "e60f977cad60d4f3d77ab15c5ed740fb0ed5ebba6e7a9c25e3deef4380236e1f",
+      "validation_pass": false
+    },
+    {
+      "expectancy_r": -0.11636236493987767,
+      "full_structure_fingerprint": "bfdcb27ae3f156e8cecd965c9774ff7a310852e876cfc922d5e055a90fa42f20",
+      "genome_fingerprint": "d3337561722f56a7e773",
+      "long_motifs": [
+        "ema_pair_comparison",
+        "rsi_threshold_cross"
+      ],
+      "motifs": [
+        "ema_pair_comparison",
+        "rsi_threshold_cross"
+      ],
+      "passed_windows": 0,
+      "profit_factor": 0.7111561245163259,
+      "rank": 20,
+      "risk_parameters": {
+        "max_holding_bars": 30,
+        "reward_risk": 1.7737022399902345,
+        "stop_atr": 3.3022609863281254
+      },
+      "rule_structure_fingerprint": "a5975cb28608aa2dbe442a713b911b1518a590b3ba88b421528a8c56ccabf43f",
+      "seed": 2035,
+      "short_motifs": [],
+      "stress_1_5x_pass": false,
+      "stress_2x_pass": false,
+      "trades": 19,
+      "validation_entry_fingerprint": "525ad6a1930fc94be1af82419b1083c50bb6e45df3c75ee7a019fddf52c99863",
+      "validation_pass": false
+    }
+  ],
+  "exact_cross_seed_rule_matches": [],
+  "exact_cross_seed_validation_entry_matches": [],
+  "limitations": [
+    "Validation entry events are represented by SHA-256 fingerprints in the source reports. Equality detects exact matches only; approximate cross-seed Jaccard overlap cannot be reconstructed.",
+    "Motif labels are coarse structural indicators and do not establish equivalent trading behaviour.",
+    "The validation partition has been repeatedly examined during development and is not an independent performance estimate.",
+    "A structural match across seeds is descriptive evidence only and does not justify changing selection or validation thresholds."
+  ],
+  "per_seed_candidate_motifs": {
+    "2033": {
+      "candidate_count": 20,
+      "motif_candidate_counts": {
+        "atr_vs_rolling_atr": 3,
+        "ema_direction_with_atr_regime_gate": 2,
+        "ema_pair_comparison": 1,
+        "price_vs_ema_filter": 13,
+        "rsi_threshold_cross": 20
+      },
+      "qualified_count": 3
+    },
+    "2034": {
+      "candidate_count": 20,
+      "motif_candidate_counts": {
+        "atr_vs_rolling_atr": 15,
+        "ema_direction_with_atr_regime_gate": 2,
+        "ema_pair_comparison": 11,
+        "price_vs_ema_filter": 6,
+        "rsi_threshold_cross": 17
+      },
+      "qualified_count": 3
+    },
+    "2035": {
+      "candidate_count": 20,
+      "motif_candidate_counts": {
+        "atr_vs_rolling_atr": 6,
+        "ema_direction_with_atr_regime_gate": 4,
+        "ema_pair_comparison": 1,
+        "price_vs_ema_filter": 4,
+        "rsi_threshold_cross": 14
+      },
+      "qualified_count": 0
+    }
+  },
+  "qualified_candidate_motif_counts": {
+    "price_vs_ema_filter": 2,
+    "rsi_threshold_cross": 6
+  },
+  "run_summaries": [
+    {
+      "candidate_count": 20,
+      "exclusive_family_counts": {
+        "breakout": 12,
+        "mean_reversion": 30,
+        "other": 56,
+        "trend": 11,
+        "volatility_contraction": 8,
+        "volatility_expansion": 11
+      },
+      "generation": 30,
+      "motif_population_counts": {
+        "atr_vs_rolling_atr": 38,
+        "donchian_high_breakout": 14,
+        "donchian_low_breakout": 28,
+        "ema_direction_with_atr_regime_gate": 29,
+        "ema_pair_comparison": 26,
+        "price_vs_ema_filter": 48,
+        "rsi_threshold_cross": 97
+      },
+      "seed": 2033,
+      "status": "validated_candidate",
+      "unique_behaviours": 125,
+      "unique_genomes": 125,
+      "unique_signal_streams": 72,
+      "validated_candidate_count": 3
+    },
+    {
+      "candidate_count": 20,
+      "exclusive_family_counts": {
+        "breakout": 8,
+        "hybrid": 1,
+        "mean_reversion": 27,
+        "other": 61,
+        "trend": 13,
+        "volatility_contraction": 10,
+        "volatility_expansion": 8
+      },
+      "generation": 30,
+      "motif_population_counts": {
+        "atr_vs_rolling_atr": 88,
+        "donchian_high_breakout": 8,
+        "donchian_low_breakout": 8,
+        "ema_direction_with_atr_regime_gate": 34,
+        "ema_pair_comparison": 50,
+        "price_vs_ema_filter": 39,
+        "rsi_threshold_cross": 93
+      },
+      "seed": 2034,
+      "status": "validated_candidate",
+      "unique_behaviours": 126,
+      "unique_genomes": 126,
+      "unique_signal_streams": 61,
+      "validated_candidate_count": 3
+    },
+    {
+      "candidate_count": 20,
+      "exclusive_family_counts": {
+        "breakout": 8,
+        "hybrid": 3,
+        "mean_reversion": 36,
+        "other": 49,
+        "trend": 11,
+        "volatility_contraction": 8,
+        "volatility_expansion": 13
+      },
+      "generation": 30,
+      "motif_population_counts": {
+        "atr_vs_rolling_atr": 61,
+        "donchian_high_breakout": 8,
+        "donchian_low_breakout": 8,
+        "ema_direction_with_atr_regime_gate": 42,
+        "ema_pair_comparison": 17,
+        "price_vs_ema_filter": 50,
+        "rsi_threshold_cross": 78
+      },
+      "seed": 2035,
+      "status": "no_robust_candidate",
+      "unique_behaviours": 125,
+      "unique_genomes": 125,
+      "unique_signal_streams": 67,
+      "validated_candidate_count": 0
+    }
+  ],
+  "scope": {
+    "candidates_per_seed": {
+      "2033": 20,
+      "2034": 20,
+      "2035": 20
+    },
+    "final_test_evaluated": false,
+    "seeds": [
+      2033,
+      2034,
+      2035
+    ],
+    "selection_or_validation_gates_modified": false,
+    "symbol": "EURUSD",
+    "timeframe": "H4"
+  },
+  "top_cross_seed_motif_similarities": [
+    {
+      "motif_jaccard": 1.0,
+      "rank_a": 1,
+      "rank_b": 13,
+      "same_full_structure": false,
+      "same_rule_structure": false,
+      "same_validation_entry_set": false,
+      "seed_a": 2033,
+      "seed_b": 2034,
+      "shared_motifs": [
+        "price_vs_ema_filter",
+        "rsi_threshold_cross"
+      ]
+    },
+    {
+      "motif_jaccard": 1.0,
+      "rank_a": 1,
+      "rank_b": 14,
+      "same_full_structure": false,
+      "same_rule_structure": false,
+      "same_validation_entry_set": false,
+      "seed_a": 2033,
+      "seed_b": 2034,
+      "shared_motifs": [
+        "price_vs_ema_filter",
+        "rsi_threshold_cross"
+      ]
+    },
+    {
+      "motif_jaccard": 1.0,
+      "rank_a": 2,
+      "rank_b": 19,
+      "same_full_structure": false,
+      "same_rule_structure": false,
+      "same_validation_entry_set": false,
+      "seed_a": 2033,
+      "seed_b": 2034,
+      "shared_motifs": [
+        "ema_pair_comparison",
+        "price_vs_ema_filter",
+        "rsi_threshold_cross"
+      ]
+    },
+    {
+      "motif_jaccard": 1.0,
+      "rank_a": 3,
+      "rank_b": 13,
+      "same_full_structure": false,
+      "same_rule_structure": false,
+      "same_validation_entry_set": false,
+      "seed_a": 2033,
+      "seed_b": 2034,
+      "shared_motifs": [
+        "price_vs_ema_filter",
+        "rsi_threshold_cross"
+      ]
+    },
+    {
+      "motif_jaccard": 1.0,
+      "rank_a": 3,
+      "rank_b": 14,
+      "same_full_structure": false,
+      "same_rule_structure": false,
+      "same_validation_entry_set": false,
+      "seed_a": 2033,
+      "seed_b": 2034,
+      "shared_motifs": [
+        "price_vs_ema_filter",
+        "rsi_threshold_cross"
+      ]
+    },
+    {
+      "motif_jaccard": 1.0,
+      "rank_a": 4,
+      "rank_b": 13,
+      "same_full_structure": false,
+      "same_rule_structure": false,
+      "same_validation_entry_set": false,
+      "seed_a": 2033,
+      "seed_b": 2034,
+      "shared_motifs": [
+        "price_vs_ema_filter",
+        "rsi_threshold_cross"
+      ]
+    },
+    {
+      "motif_jaccard": 1.0,
+      "rank_a": 4,
+      "rank_b": 14,
+      "same_full_structure": false,
+      "same_rule_structure": false,
+      "same_validation_entry_set": false,
+      "seed_a": 2033,
+      "seed_b": 2034,
+      "shared_motifs": [
+        "price_vs_ema_filter",
+        "rsi_threshold_cross"
+      ]
+    },
+    {
+      "motif_jaccard": 1.0,
+      "rank_a": 5,
+      "rank_b": 13,
+      "same_full_structure": false,
+      "same_rule_structure": false,
+      "same_validation_entry_set": false,
+      "seed_a": 2033,
+      "seed_b": 2034,
+      "shared_motifs": [
+        "price_vs_ema_filter",
+        "rsi_threshold_cross"
+      ]
+    },
+    {
+      "motif_jaccard": 1.0,
+      "rank_a": 5,
+      "rank_b": 14,
+      "same_full_structure": false,
+      "same_rule_structure": false,
+      "same_validation_entry_set": false,
+      "seed_a": 2033,
+      "seed_b": 2034,
+      "shared_motifs": [
+        "price_vs_ema_filter",
+        "rsi_threshold_cross"
+      ]
+    },
+    {
+      "motif_jaccard": 1.0,
+      "rank_a": 6,
+      "rank_b": 13,
+      "same_full_structure": false,
+      "same_rule_structure": false,
+      "same_validation_entry_set": false,
+      "seed_a": 2033,
+      "seed_b": 2034,
+      "shared_motifs": [
+        "price_vs_ema_filter",
+        "rsi_threshold_cross"
+      ]
+    },
+    {
+      "motif_jaccard": 1.0,
+      "rank_a": 6,
+      "rank_b": 14,
+      "same_full_structure": false,
+      "same_rule_structure": false,
+      "same_validation_entry_set": false,
+      "seed_a": 2033,
+      "seed_b": 2034,
+      "shared_motifs": [
+        "price_vs_ema_filter",
+        "rsi_threshold_cross"
+      ]
+    },
+    {
+      "motif_jaccard": 1.0,
+      "rank_a": 7,
+      "rank_b": 13,
+      "same_full_structure": false,
+      "same_rule_structure": false,
+      "same_validation_entry_set": false,
+      "seed_a": 2033,
+      "seed_b": 2034,
+      "shared_motifs": [
+        "price_vs_ema_filter",
+        "rsi_threshold_cross"
+      ]
+    },
+    {
+      "motif_jaccard": 1.0,
+      "rank_a": 7,
+      "rank_b": 14,
+      "same_full_structure": false,
+      "same_rule_structure": false,
+      "same_validation_entry_set": false,
+      "seed_a": 2033,
+      "seed_b": 2034,
+      "shared_motifs": [
+        "price_vs_ema_filter",
+        "rsi_threshold_cross"
+      ]
+    },
+    {
+      "motif_jaccard": 1.0,
+      "rank_a": 8,
+      "rank_b": 1,
+      "same_full_structure": false,
+      "same_rule_structure": false,
+      "same_validation_entry_set": false,
+      "seed_a": 2033,
+      "seed_b": 2034,
+      "shared_motifs": [
+        "rsi_threshold_cross"
+      ]
+    },
+    {
+      "motif_jaccard": 1.0,
+      "rank_a": 8,
+      "rank_b": 16,
+      "same_full_structure": false,
+      "same_rule_structure": false,
+      "same_validation_entry_set": false,
+      "seed_a": 2033,
+      "seed_b": 2034,
+      "shared_motifs": [
+        "rsi_threshold_cross"
+      ]
+    },
+    {
+      "motif_jaccard": 1.0,
+      "rank_a": 8,
+      "rank_b": 1,
+      "same_full_structure": false,
+      "same_rule_structure": false,
+      "same_validation_entry_set": false,
+      "seed_a": 2033,
+      "seed_b": 2035,
+      "shared_motifs": [
+        "rsi_threshold_cross"
+      ]
+    },
+    {
+      "motif_jaccard": 1.0,
+      "rank_a": 8,
+      "rank_b": 2,
+      "same_full_structure": false,
+      "same_rule_structure": false,
+      "same_validation_entry_set": false,
+      "seed_a": 2033,
+      "seed_b": 2035,
+      "shared_motifs": [
+        "rsi_threshold_cross"
+      ]
+    },
+    {
+      "motif_jaccard": 1.0,
+      "rank_a": 8,
+      "rank_b": 3,
+      "same_full_structure": false,
+      "same_rule_structure": false,
+      "same_validation_entry_set": false,
+      "seed_a": 2033,
+      "seed_b": 2035,
+      "shared_motifs": [
+        "rsi_threshold_cross"
+      ]
+    },
+    {
+      "motif_jaccard": 1.0,
+      "rank_a": 8,
+      "rank_b": 4,
+      "same_full_structure": false,
+      "same_rule_structure": false,
+      "same_validation_entry_set": false,
+      "seed_a": 2033,
+      "seed_b": 2035,
+      "shared_motifs": [
+        "rsi_threshold_cross"
+      ]
+    },
+    {
+      "motif_jaccard": 1.0,
+      "rank_a": 8,
+      "rank_b": 7,
+      "same_full_structure": false,
+      "same_rule_structure": false,
+      "same_validation_entry_set": false,
+      "seed_a": 2033,
+      "seed_b": 2035,
+      "shared_motifs": [
+        "rsi_threshold_cross"
+      ]
+    },
+    {
+      "motif_jaccard": 1.0,
+      "rank_a": 8,
+      "rank_b": 8,
+      "same_full_structure": false,
+      "same_rule_structure": false,
+      "same_validation_entry_set": false,
+      "seed_a": 2033,
+      "seed_b": 2035,
+      "shared_motifs": [
+        "rsi_threshold_cross"
+      ]
+    },
+    {
+      "motif_jaccard": 1.0,
+      "rank_a": 8,
+      "rank_b": 9,
+      "same_full_structure": false,
+      "same_rule_structure": false,
+      "same_validation_entry_set": false,
+      "seed_a": 2033,
+      "seed_b": 2035,
+      "shared_motifs": [
+        "rsi_threshold_cross"
+      ]
+    },
+    {
+      "motif_jaccard": 1.0,
+      "rank_a": 8,
+      "rank_b": 10,
+      "same_full_structure": false,
+      "same_rule_structure": false,
+      "same_validation_entry_set": false,
+      "seed_a": 2033,
+      "seed_b": 2035,
+      "shared_motifs": [
+        "rsi_threshold_cross"
+      ]
+    },
+    {
+      "motif_jaccard": 1.0,
+      "rank_a": 8,
+      "rank_b": 11,
+      "same_full_structure": false,
+      "same_rule_structure": false,
+      "same_validation_entry_set": false,
+      "seed_a": 2033,
+      "seed_b": 2035,
+      "shared_motifs": [
+        "rsi_threshold_cross"
+      ]
+    },
+    {
+      "motif_jaccard": 1.0,
+      "rank_a": 8,
+      "rank_b": 12,
+      "same_full_structure": false,
+      "same_rule_structure": false,
+      "same_validation_entry_set": false,
+      "seed_a": 2033,
+      "seed_b": 2035,
+      "shared_motifs": [
+        "rsi_threshold_cross"
+      ]
+    },
+    {
+      "motif_jaccard": 1.0,
+      "rank_a": 8,
+      "rank_b": 13,
+      "same_full_structure": false,
+      "same_rule_structure": false,
+      "same_validation_entry_set": false,
+      "seed_a": 2033,
+      "seed_b": 2035,
+      "shared_motifs": [
+        "rsi_threshold_cross"
+      ]
+    },
+    {
+      "motif_jaccard": 1.0,
+      "rank_a": 8,
+      "rank_b": 14,
+      "same_full_structure": false,
+      "same_rule_structure": false,
+      "same_validation_entry_set": false,
+      "seed_a": 2033,
+      "seed_b": 2035,
+      "shared_motifs": [
+        "rsi_threshold_cross"
+      ]
+    },
+    {
+      "motif_jaccard": 1.0,
+      "rank_a": 8,
+      "rank_b": 19,
+      "same_full_structure": false,
+      "same_rule_structure": false,
+      "same_validation_entry_set": false,
+      "seed_a": 2033,
+      "seed_b": 2035,
+      "shared_motifs": [
+        "rsi_threshold_cross"
+      ]
+    },
+    {
+      "motif_jaccard": 1.0,
+      "rank_a": 9,
+      "rank_b": 1,
+      "same_full_structure": false,
+      "same_rule_structure": false,
+      "same_validation_entry_set": false,
+      "seed_a": 2033,
+      "seed_b": 2034,
+      "shared_motifs": [
+        "rsi_threshold_cross"
+      ]
+    },
+    {
+      "motif_jaccard": 1.0,
+      "rank_a": 9,
+      "rank_b": 16,
+      "same_full_structure": false,
+      "same_rule_structure": false,
+      "same_validation_entry_set": false,
+      "seed_a": 2033,
+      "seed_b": 2034,
+      "shared_motifs": [
+        "rsi_threshold_cross"
+      ]
+    }
+  ],
+  "unqualified_candidate_motif_counts": {
+    "atr_vs_rolling_atr": 24,
+    "ema_direction_with_atr_regime_gate": 8,
+    "ema_pair_comparison": 13,
+    "price_vs_ema_filter": 21,
+    "rsi_threshold_cross": 45
+  }
+}
