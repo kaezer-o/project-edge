@@ -148,6 +148,97 @@ def random_expression(
     return canonicalize_expr(fallback)
 
 
+
+STRATEGY_FAMILY_REQUIREMENTS = {
+    "trend": {"ema_10", "ema_40"},
+    "mean_reversion": {"rsi_14"},
+    "breakout": {"close", "donchian_high_20", "donchian_low_20"},
+    "volatility_expansion": {"atr_14", "ema_40", "close"},
+    "volatility_contraction": {"atr_14", "ema_20", "close"},
+}
+
+
+def available_strategy_families(
+    features: tuple[str, ...] | list[str],
+) -> tuple[str, ...]:
+    """Return strategy templates supported by the available market features."""
+    available = set(features)
+    return tuple(
+        family for family, required in STRATEGY_FAMILY_REQUIREMENTS.items()
+        if required.issubset(available)
+    )
+
+
+def strategy_family_program(
+    family: str,
+    features: tuple[str, ...] | list[str],
+    rng: np.random.Generator,
+) -> StrategyProgram:
+    """Create a valid, interpretable seed from a distinct strategy-family template."""
+    available = set(features)
+    required = STRATEGY_FAMILY_REQUIREMENTS.get(family)
+    if required is None:
+        raise ValueError(f"Unsupported strategy family: {family}")
+    if not required.issubset(available):
+        missing = sorted(required - available)
+        raise ValueError(
+            f"Strategy family {family} requires unavailable features: {missing}"
+        )
+
+    def feature(name: str) -> Expr:
+        return Expr("feature", value=name)
+
+    def compare(op: str, left: Expr, right: Expr) -> Expr:
+        return Expr(op, (left, right))
+
+    if family == "trend":
+        long_entry = compare("gt", feature("ema_10"), feature("ema_40"))
+        short_entry = compare("lt", feature("ema_10"), feature("ema_40"))
+    elif family == "mean_reversion":
+        lower = float(rng.choice((25.0, 30.0, 35.0)))
+        upper = float(rng.choice((65.0, 70.0, 75.0)))
+        long_entry = compare(
+            "cross_above", feature("rsi_14"), Expr("const", value=lower)
+        )
+        short_entry = compare(
+            "cross_below", feature("rsi_14"), Expr("const", value=upper)
+        )
+    elif family == "breakout":
+        long_entry = compare(
+            "gt", feature("close"), feature("donchian_high_20")
+        )
+        short_entry = compare(
+            "lt", feature("close"), feature("donchian_low_20")
+        )
+    else:
+        lookback = int(rng.choice((10, 20, 30)))
+        atr_mean = Expr(
+            "rolling_mean", (feature("atr_14"),), value=lookback
+        )
+        if family == "volatility_expansion":
+            volatility_gate_long = compare("gt", feature("atr_14"), atr_mean)
+            volatility_gate_short = compare("gt", feature("atr_14"), atr_mean)
+        else:
+            volatility_gate_long = compare("lt", feature("atr_14"), atr_mean)
+            volatility_gate_short = compare("lt", feature("atr_14"), atr_mean)
+        trend_long = compare("gt", feature("close"), feature(
+            "ema_40" if family == "volatility_expansion" else "ema_20"
+        ))
+        trend_short = compare("lt", feature("close"), feature(
+            "ema_40" if family == "volatility_expansion" else "ema_20"
+        ))
+        long_entry = Expr("and", (volatility_gate_long, trend_long))
+        short_entry = Expr("and", (volatility_gate_short, trend_short))
+
+    return StrategyProgram(
+        long_entry=canonicalize_expr(long_entry),
+        short_entry=canonicalize_expr(short_entry),
+        stop_atr=float(rng.choice((0.75, 1.0, 1.25, 1.5, 2.0, 2.5, 3.0))),
+        reward_risk=float(rng.choice((0.75, 1.0, 1.25, 1.5, 2.0, 2.5, 3.0))),
+        max_holding_bars=int(rng.choice((5, 10, 20, 40, 80, 160))),
+    )
+
+
 def _node_type(node: Expr) -> str:
     for expected in ("number", "bool"):
         try:
