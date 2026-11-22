@@ -293,6 +293,7 @@ def _parser() -> argparse.ArgumentParser:
     evolve_islands.add_argument("--migration-interval", type=int, default=10)
     evolve_islands.add_argument("--migrants-per-island", type=int, default=2)
     evolve_islands.add_argument("--novelty-weight", type=float, default=0.25)
+    evolve_islands.add_argument("--minimum-family-elites", type=int, default=2, help="minimum retained representatives per recognizable strategy family in each island")
     evolve_islands.add_argument("--seed", type=int, default=2026)
     evolve_islands.add_argument("--min-train-trades", type=int, default=30)
     evolve_islands.add_argument("--min-validation-trades", type=int, default=30)
@@ -396,6 +397,7 @@ def main() -> None:
             migration_interval=args.migration_interval,
             migrants_per_island=args.migrants_per_island,
             novelty_weight=args.novelty_weight,
+            minimum_family_elites=args.minimum_family_elites,
         )
         report = run_island_program_research(
             frame,

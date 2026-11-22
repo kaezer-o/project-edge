@@ -29,6 +29,7 @@ class IslandEvolutionConfig:
     migrants_per_island: int = 2
     archive_capacity: int = 256
     novelty_weight: float = 0.25
+    minimum_family_elites: int = 2
 
     def __post_init__(self) -> None:
         if self.islands < 2:
@@ -45,6 +46,8 @@ class IslandEvolutionConfig:
             raise ValueError("archive_capacity must be positive")
         if not 0.0 <= self.novelty_weight <= 1.0:
             raise ValueError("novelty_weight must be between 0 and 1")
+        if self.minimum_family_elites < 0:
+            raise ValueError("minimum_family_elites must be non-negative")
 
 
 @dataclass
@@ -67,6 +70,7 @@ def _config_payload(config: IslandEvolutionConfig) -> dict[str, object]:
         "migrants_per_island": config.migrants_per_island,
         "archive_capacity": config.archive_capacity,
         "novelty_weight": config.novelty_weight,
+        "minimum_family_elites": config.minimum_family_elites,
     }
 
 
@@ -413,6 +417,7 @@ def run_island_evolution(
         # follows the same deterministic RNG trajectory as an uninterrupted run.
         reproduction_started = time.perf_counter()
         next_islands: list[list[Genome]] = []
+        protected_elite_counts: list[int] = []
         for rows, rng in zip(evaluated_islands, rngs):
             ranked = sorted(
                 rows, key=lambda row: float(row["selection_score"]), reverse=True
@@ -422,13 +427,46 @@ def run_island_evolution(
             )
             next_population: list[Genome] = []
             next_behaviours: set[str] = set()
-            for row in elites:
+            family_elite_counts: dict[str, int] = {}
+
+            def retain_elite(row: dict[str, object]) -> None:
                 behaviour = str(row["descriptor"]["behaviour_fingerprint"])
-                if behaviour not in next_behaviours:
-                    next_population.append(_json_copy(row["genome"]))
-                    next_behaviours.add(behaviour)
+                if behaviour in next_behaviours:
+                    return
+                next_population.append(_json_copy(row["genome"]))
+                next_behaviours.add(behaviour)
+                for family in row["descriptor"]["families"]:
+                    if family not in {"hybrid_or_other", "other", "random_fallback"}:
+                        family_elite_counts[family] = family_elite_counts.get(family, 0) + 1
+
+            # Preserve the strongest overall behaviours first.
+            for row in elites:
+                retain_elite(row)
                 if len(next_population) >= config.elite_count:
                     break
+
+            # Then reserve a small per-island floor for each recognizable family.
+            # This prevents selection pressure from deleting an entire family in
+            # one generation while leaving the remaining slots free to evolve.
+            if config.minimum_family_elites:
+                families = sorted({
+                    family
+                    for row in rows
+                    for family in row["descriptor"]["families"]
+                    if family not in {"hybrid_or_other", "other", "random_fallback"}
+                })
+                for family in families:
+                    for row in elites:
+                        if family_elite_counts.get(family, 0) >= config.minimum_family_elites:
+                            break
+                        if family in row["descriptor"]["families"]:
+                            retain_elite(row)
+                        if len(next_population) >= config.population_per_island:
+                            break
+                    if len(next_population) >= config.population_per_island:
+                        break
+
+            protected_elite_counts.append(len(next_population))
 
             def select_parent() -> Genome:
                 count = min(config.tournament_size, len(ranked))
@@ -477,7 +515,11 @@ def run_island_evolution(
                     str(cached_evaluation(genome)[1]["behaviour_fingerprint"])
                     for genome in target_population
                 }
-                replaceable = list(range(len(target_population) - 1, config.elite_count - 1, -1))
+                replaceable = list(range(
+                    len(target_population) - 1,
+                    protected_elite_counts[target_index] - 1,
+                    -1,
+                ))
                 for migrant in incoming:
                     if not replaceable:
                         break

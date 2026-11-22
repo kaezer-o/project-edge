@@ -124,6 +124,7 @@ def test_run_signature_prevents_cross_dataset_resume(tmp_path):
     {"population_per_island": 3},
     {"elite_count": 4, "population_per_island": 4},
     {"novelty_weight": 1.1},
+    {"minimum_family_elites": -1},
 ])
 def test_invalid_island_configuration(kwargs):
     values = {"islands": 2, "population_per_island": 4}
@@ -327,3 +328,53 @@ def test_optimized_novelty_scores_match_descriptor_distance_reference():
         ]
         reference.append(float(np.mean(np.partition(distances, 2)[:3])))
     assert actual == pytest.approx(reference)
+
+
+def test_minimum_family_elites_prevent_family_extinction(tmp_path):
+    config = IslandEvolutionConfig(
+        islands=2,
+        population_per_island=12,
+        elite_count=2,
+        migration_interval=1,
+        migrants_per_island=1,
+        minimum_family_elites=2,
+    )
+    initial = [
+        [
+            {"family": family, "id": island * 100 + index}
+            for family in ("trend", "breakout", "mean_reversion")
+            for index in range(4)
+        ]
+        for island in range(config.islands)
+    ]
+
+    def family_evaluator(genome):
+        family = str(genome["family"])
+        identifier = int(genome["id"])
+        fitness = 10.0 if family == "trend" else 1.0
+        return fitness, {
+            "rates": [identifier / 1000.0],
+            "trades": [f"entry-{identifier}"],
+            "signal_fingerprint": f"signal-{identifier}",
+            "behaviour_fingerprint": f"behaviour-{identifier}",
+            "families": [family],
+        }
+
+    def trend_only_reproducer(_first, _second, rng):
+        return {"family": "trend", "id": int(rng.integers(10_000, 1_000_000))}
+
+    result = run_island_evolution(
+        initial,
+        evaluate=family_evaluator,
+        reproduce=trend_only_reproducer,
+        config=config,
+        seed=2026,
+        generations=2,
+        checkpoint_path=tmp_path / "family-preservation.json",
+        run_signature="family-preservation-test",
+    )
+
+    counts = result.history[1]["strategy_family_population_counts"]
+    assert counts["trend"] >= 2
+    assert counts["breakout"] >= 4
+    assert counts["mean_reversion"] >= 4
