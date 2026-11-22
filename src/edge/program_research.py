@@ -261,7 +261,7 @@ def _validation_check(
 
     def event_diagnostics(trades: pd.DataFrame) -> dict[str, object]:
         events = entry_events(trades)
-        encoded = "\\n".join(sorted(events)).encode("utf-8")
+        encoded = "\n".join(sorted(events)).encode("utf-8")
         directions = [event.rsplit("|", 1)[-1] for event in events]
         return {
             "entry_event_fingerprint": hashlib.sha256(encoded).hexdigest(),
