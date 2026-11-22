@@ -341,8 +341,8 @@ def test_minimum_family_elites_prevent_family_extinction(tmp_path):
     )
     initial = [
         [
-            {"family": family, "id": island * 100 + index}
-            for family in ("trend", "breakout", "mean_reversion")
+            {"family": family, "id": island * 100 + family_index * 10 + index}
+            for family_index, family in enumerate(("trend", "breakout", "mean_reversion"))
             for index in range(4)
         ]
         for island in range(config.islands)
@@ -355,8 +355,8 @@ def test_minimum_family_elites_prevent_family_extinction(tmp_path):
         return fitness, {
             "rates": [identifier / 1000.0],
             "trades": [f"entry-{identifier}"],
-            "signal_fingerprint": f"signal-{identifier}",
-            "behaviour_fingerprint": f"behaviour-{identifier}",
+            "signal_fingerprint": f"signal-{genome['family']}-{identifier}",
+            "behaviour_fingerprint": f"behaviour-{genome['family']}-{identifier}",
             "families": [family],
         }
 
