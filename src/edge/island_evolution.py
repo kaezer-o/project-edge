@@ -459,7 +459,7 @@ def run_island_evolution(
                     family
                     for row in rows
                     for family in row["descriptor"]["families"]
-                    if family not in {"hybrid_or_other", "other", "random_fallback"}
+                    if family not in {"hybrid", "hybrid_or_other", "other", "random_fallback"}
                 })
                 family_quotas = {
                     family: config.minimum_family_elites for family in families
