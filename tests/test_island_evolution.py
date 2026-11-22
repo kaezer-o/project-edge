@@ -375,6 +375,9 @@ def test_minimum_family_elites_prevent_family_extinction(tmp_path):
     )
 
     counts = result.history[1]["strategy_family_population_counts"]
-    assert counts["trend"] >= 2
+    # Both non-leading families retain their two-per-island floor.
     assert counts["breakout"] >= 4
     assert counts["mean_reversion"] >= 4
+    # The strongest family receives an additional protected representative
+    # per island based only on its training selection score.
+    assert counts["trend"] >= 6
