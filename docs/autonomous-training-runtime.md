@@ -54,21 +54,6 @@ to validation or final-test outcomes.
      unique signal streams, per-island uniqueness and inferred strategy-family
      counts. Family labels
      describe feature usage and do not prove a strategy belongs to a family.
-   - Expression trees are canonicalized after generation, mutation and
-     crossover. Safe rewrites include double-negation removal, duplicate
-     logical operands, identical min/max operands, commutative logical operand
-     ordering and absolute value of raw positive FX price-level features.
-   - A semantic fingerprint hashes the exact per-bar directional signal stream
-     on training data. Equal fingerprints receive zero behavioural distance,
-     regardless of syntactic differences.
-   - Next-generation construction rejects duplicate behavioural fingerprints
-     while alternatives are available. Migration skips behaviours already
-     present in the receiving island. Retries are bounded to avoid infinite
-     reproduction loops.
-   - Generation telemetry records unique genomes, unique signal behaviours,
-     per-island uniqueness and inferred strategy-family counts. Family labels
-     are descriptive indicators of feature usage, not proof that a rule is a
-     valid strategy from that family.
 
 4. **Search grammar**
    - Expand strategy primitives by family: trend, mean reversion, breakout,
