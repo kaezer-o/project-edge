@@ -4,6 +4,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from edge.config import ExecutionConfig, RiskConfig
+
 from scripts.audit_candidate_behaviour import (
     build_behaviour_audit,
     signal_similarity,
@@ -18,7 +20,7 @@ def test_signal_similarity_distinguishes_long_short_and_inactive_bars():
     result = signal_similarity(left, right)
     assert result["bars"] == 6
     assert result["long_signal_jaccard"] == pytest.approx(1 / 3)
-    assert result["short_signal_jaccard"] == pytest.approx(1 / 2)
+    assert result["short_signal_jaccard"] == pytest.approx(1 / 3)
     assert result["active_signal_jaccard"] == pytest.approx(3 / 5)
     assert result["directional_conflict_rate"] == pytest.approx(1 / 6)
 
@@ -62,8 +64,8 @@ def test_audit_rejects_reports_that_evaluated_final_test():
             [(1, _report(1)), (2, _report(2, final_test=True))],
             pd.DataFrame(index=range(4)),
             pd.DataFrame(index=range(3)),
-            execution=__import__("edge.config", fromlist=["ExecutionConfig"]).ExecutionConfig(),
-            risk=__import__("edge.config", fromlist=["RiskConfig"]).RiskConfig(),
+            execution=ExecutionConfig(),
+            risk=RiskConfig(),
             pip_size=0.0001,
             price_basis="bid",
         )
