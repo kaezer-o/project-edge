@@ -605,6 +605,7 @@ def run_island_program_research(
             "migration_interval": config.migration_interval,
             "migrants_per_island": config.migrants_per_island,
             "novelty_weight": config.novelty_weight,
+            "minimum_family_elites": config.minimum_family_elites,
             "initial_strategy_family_counts": initial_family_counts,
             "available_strategy_families": list(available_strategy_families(features)),
             "generation_performance": result.runtime_metrics,
