@@ -167,6 +167,7 @@ def _validate_descriptor(descriptor: BehaviourDescriptor) -> BehaviourDescriptor
             "fingerprint", "long_nodes", "short_nodes", "long_depth",
             "short_depth", "operator_counts", "features", "lookbacks",
             "long_only_features", "short_only_features",
+            "long_motifs", "short_motifs", "motifs",
         }
         if (
             not isinstance(structure, dict)
