@@ -432,11 +432,13 @@ def _directional_signal_jaccard(left: np.ndarray, right: np.ndarray) -> float:
     return len(left_active & right_active) / len(union) if union else 0.0
 
 
-def _training_trade_path_events(trades: pd.DataFrame) -> set[str]:
-    """Fingerprint executed training trades using entry and exit behaviour."""
+def _training_trade_path_events(
+    trades: pd.DataFrame,
+) -> set[tuple[int, str, int, str]]:
+    """Fingerprint executed training trades with compact UTC nanosecond events."""
     if trades.empty:
         return set()
-    events: set[str] = set()
+    events: set[tuple[int, str, int, str]] = set()
     for trade in trades.itertuples(index=False):
         entry_time = pd.Timestamp(trade.entry_time)
         exit_time = pd.Timestamp(trade.exit_time)
@@ -448,16 +450,18 @@ def _training_trade_path_events(trades: pd.DataFrame) -> set[str]:
             exit_time = exit_time.tz_localize("UTC")
         else:
             exit_time = exit_time.tz_convert("UTC")
-        events.add(
-            f"{entry_time.isoformat()}|{str(trade.direction).lower()}|"
-            f"{exit_time.isoformat()}|{str(trade.exit_reason).lower()}"
-        )
+        events.add((
+            int(entry_time.value),
+            str(trade.direction).lower(),
+            int(exit_time.value),
+            str(trade.exit_reason).lower(),
+        ))
     return events
 
 
-def _set_jaccard(left: set[str], right: set[str]) -> float:
-    union = left | right
-    return len(left & right) / len(union) if union else 0.0
+def _set_jaccard(left: set, right: set) -> float:
+    union_size = len(left) + len(right) - len(left & right)
+    return len(left & right) / union_size if union_size else 0.0
 
 
 def _risk_profile_similarity(left: StrategyProgram, right: StrategyProgram) -> float:
@@ -472,10 +476,10 @@ def _risk_profile_similarity(left: StrategyProgram, right: StrategyProgram) -> f
         float(right.reward_risk),
         float(right.max_holding_bars),
     )
-    differences = [
+    differences = (
         abs(a - b) / max(abs(a), abs(b), 1e-12)
         for a, b in zip(left_values, right_values)
-    ]
+    )
     return max(0.0, 1.0 - max(differences, default=0.0))
 
 
@@ -490,14 +494,19 @@ def _training_signal_diverse_shortlist(
     pip_size: float,
     price_basis: str,
 ) -> tuple[list[tuple[float, StrategyProgram, dict[str, object], dict[str, object]]], dict[str, object]]:
-    """Filter finalists only when both signals and executed training trade paths are redundant."""
+    """Filter finalists using cached training behaviour and exact greedy ranking."""
     if not 0.0 <= similarity_threshold <= 1.0:
         raise ValueError("finalist similarity threshold must be between zero and one")
+
     signals: dict[str, np.ndarray] = {}
-    trade_paths: dict[str, set[str]] = {}
+    trade_paths: dict[str, set[tuple[int, str, int, str]]] = {}
+    programs_by_fingerprint: dict[str, StrategyProgram] = {}
     for item in ranked:
         program = item[1]
         fingerprint = program.fingerprint()
+        if fingerprint in programs_by_fingerprint:
+            continue
+        programs_by_fingerprint[fingerprint] = program
         signal = np.asarray(evaluate_program(program, frame), dtype=np.int8)
         _, trades = _evaluate(
             frame,
@@ -519,51 +528,57 @@ def _training_signal_diverse_shortlist(
         if len(selected) >= limit:
             break
         fingerprint = item[1].fingerprint()
-        comparisons = []
+        best_comparison = None
         for selected_rank, selected_fingerprint in zip(
             selected_ranks, selected_fingerprints
         ):
             signal_similarity = _directional_signal_jaccard(
                 signals[fingerprint], signals[selected_fingerprint]
             )
+            # The combined score is the minimum of the three similarities.
+            # A signal score no greater than the current best cannot improve it.
+            if (
+                best_comparison is not None
+                and signal_similarity <= best_comparison["combined_similarity"]
+            ):
+                continue
             trade_similarity = _set_jaccard(
                 trade_paths[fingerprint], trade_paths[selected_fingerprint]
             )
+            if (
+                best_comparison is not None
+                and trade_similarity <= best_comparison["combined_similarity"]
+            ):
+                continue
             risk_similarity = _risk_profile_similarity(
-                item[1], next(
-                    prior[1] for prior in ranked
-                    if prior[1].fingerprint() == selected_fingerprint
-                )
+                item[1], programs_by_fingerprint[selected_fingerprint]
             )
-            # A candidate is redundant only when its directional signals,
-            # realized entry/exit paths and risk profile are all highly similar.
             combined_similarity = min(
                 signal_similarity, trade_similarity, risk_similarity
             )
-            comparisons.append({
-                "fitness_rank": selected_rank,
-                "directional_signal_jaccard": signal_similarity,
-                "training_trade_path_jaccard": trade_similarity,
-                "risk_profile_similarity": risk_similarity,
-                "combined_similarity": combined_similarity,
-            })
-        most_similar = max(
-            comparisons,
-            key=lambda row: row["combined_similarity"],
-            default=None,
-        )
+            if (
+                best_comparison is None
+                or combined_similarity > best_comparison["combined_similarity"]
+            ):
+                best_comparison = {
+                    "fitness_rank": selected_rank,
+                    "directional_signal_jaccard": signal_similarity,
+                    "training_trade_path_jaccard": trade_similarity,
+                    "risk_profile_similarity": risk_similarity,
+                    "combined_similarity": combined_similarity,
+                }
         if (
-            most_similar is not None
-            and most_similar["combined_similarity"] >= similarity_threshold
+            best_comparison is not None
+            and best_comparison["combined_similarity"] >= similarity_threshold
         ):
             rejected.append({
                 "fitness_rank": rank,
                 "training_fitness": float(item[0]),
-                "most_similar_selected_fitness_rank": most_similar["fitness_rank"],
-                "max_directional_signal_jaccard": most_similar["directional_signal_jaccard"],
-                "max_training_trade_path_jaccard": most_similar["training_trade_path_jaccard"],
-                "max_risk_profile_similarity": most_similar["risk_profile_similarity"],
-                "max_combined_similarity": most_similar["combined_similarity"],
+                "most_similar_selected_fitness_rank": best_comparison["fitness_rank"],
+                "max_directional_signal_jaccard": best_comparison["directional_signal_jaccard"],
+                "max_training_trade_path_jaccard": best_comparison["training_trade_path_jaccard"],
+                "max_risk_profile_similarity": best_comparison["risk_profile_similarity"],
+                "max_combined_similarity": best_comparison["combined_similarity"],
             })
             continue
         selected.append(item)
