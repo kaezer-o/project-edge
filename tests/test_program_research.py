@@ -142,8 +142,12 @@ def test_cost_stress_report_explains_trade_set_changes(monkeypatch):
     index = pd.date_range("2025-01-01", periods=30, freq="4h", tz="UTC")
     frame = pd.DataFrame({"close": np.ones(30)}, index=index)
     program = StrategyProgram(
-        long_entry=Expr("const", value=True),
-        short_entry=Expr("const", value=False),
+        long_entry=Expr(
+            "gt", (Expr("feature", value="ema_gap_atr"), Expr("const", value=0.0))
+        ),
+        short_entry=Expr(
+            "lt", (Expr("feature", value="rsi_14"), Expr("const", value=30.0))
+        ),
     )
 
     def fake_evaluate(candidate_frame, candidate_program, *, execution, risk, pip_size, price_basis):
