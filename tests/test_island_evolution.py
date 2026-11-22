@@ -335,7 +335,7 @@ def test_minimum_family_elites_prevent_family_extinction(tmp_path):
         islands=2,
         population_per_island=12,
         elite_count=2,
-        migration_interval=10,
+        migration_interval=1,
         migrants_per_island=1,
         minimum_family_elites=2,
     )
