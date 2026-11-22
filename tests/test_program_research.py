@@ -1,5 +1,6 @@
 import json
 
+import pytest
 import numpy as np
 import pandas as pd
 
@@ -9,6 +10,7 @@ from edge.program_research import (
     _diverse_ranked,
     _minimum_window_trades,
     _program_structure,
+    _validation_check,
     run_program_research,
 )
 
@@ -130,3 +132,91 @@ def test_training_minimum_trades_are_distributed_across_windows():
     assert _minimum_window_trades(30, 3) == 10
     assert _minimum_window_trades(15, 3) == 5
     assert _minimum_window_trades(1, 3) == 5
+
+
+def test_training_fitness_reuses_precomputed_aggregate_result(monkeypatch):
+    import edge.program_research as research
+    from edge.program import Expr, StrategyProgram
+
+    frame = pd.DataFrame(
+        {"ema_gap_atr": np.zeros(90), "rsi_14": np.full(90, 50.0)},
+        index=pd.date_range("2025-01-01", periods=90, freq="h", tz="UTC"),
+    )
+    program = StrategyProgram(
+        long_entry=Expr("gt", (Expr("feature", value="ema_gap_atr"), Expr("const", value=0.0))),
+        short_entry=Expr("lt", (Expr("feature", value="rsi_14"), Expr("const", value=30.0))),
+    )
+    aggregate_metrics = {
+        "trades": 30, "expectancy_r": 0.1,
+        "max_realized_drawdown_pct": 0.01, "profit_factor": 1.2,
+    }
+    calls = []
+
+    def fake_evaluate(candidate_frame, candidate_program, **kwargs):
+        calls.append(len(candidate_frame))
+        return aggregate_metrics, pd.DataFrame()
+
+    monkeypatch.setattr(research, "_evaluate", fake_evaluate)
+    score, metrics, robustness = research._training_fitness(
+        frame, program, execution=ExecutionConfig(), risk=RiskConfig(),
+        pip_size=0.0001, price_basis="mid", min_train_trades=3,
+        aggregate_result=(aggregate_metrics, pd.DataFrame()),
+    )
+    assert len(calls) == 3
+    assert calls == [30, 30, 30]
+    assert metrics is aggregate_metrics
+    assert robustness["aggregate_fitness"] > -1e8
+    assert score > -1e8
+
+
+
+def test_cost_stress_report_explains_trade_set_changes(monkeypatch):
+    import edge.program_research as research
+    from edge.program import Expr, StrategyProgram
+
+    index = pd.date_range("2025-01-01", periods=30, freq="4h", tz="UTC")
+    frame = pd.DataFrame({"close": np.ones(30)}, index=index)
+    program = StrategyProgram(
+        long_entry=Expr(
+            "gt", (Expr("feature", value="ema_gap_atr"), Expr("const", value=0.0))
+        ),
+        short_entry=Expr(
+            "lt", (Expr("feature", value="rsi_14"), Expr("const", value=30.0))
+        ),
+    )
+
+    def fake_evaluate(candidate_frame, candidate_program, *, execution, risk, pip_size, price_basis):
+        stressed = execution.spread_pips > 0.8
+        entry_positions = (1, 3) if stressed else (1, 2)
+        trades = pd.DataFrame({
+            "entry_time": [index[position] for position in entry_positions],
+            "direction": ["long", "short"],
+        })
+        metrics = {
+            "trades": 2,
+            "expectancy_r": 0.12 if stressed else 0.10,
+            "profit_factor": 1.2 if stressed else 1.1,
+            "max_realized_drawdown_pct": 0.01,
+        }
+        return metrics, trades
+
+    monkeypatch.setattr(research, "_evaluate", fake_evaluate)
+    result = _validation_check(
+        frame,
+        program,
+        execution=ExecutionConfig(spread_pips=0.8),
+        risk=RiskConfig(),
+        pip_size=0.0001,
+        price_basis="bid",
+        min_trades=1,
+    )
+
+    diagnostic = result["cost_stress"][0]["trade_set_diagnostics"]
+    assert diagnostic["baseline_trade_count"] == 2
+    assert diagnostic["stressed_trade_count"] == 2
+    assert diagnostic["shared_entry_events"] == 1
+    assert diagnostic["baseline_only_entry_events"] == 1
+    assert diagnostic["stress_only_entry_events"] == 1
+    assert diagnostic["entry_event_jaccard_similarity"] == pytest.approx(1 / 3)
+    assert diagnostic["expectancy_delta_r"] == pytest.approx(0.02)
+    assert diagnostic["profit_factor_delta"] == pytest.approx(0.1)

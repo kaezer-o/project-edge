@@ -8,6 +8,9 @@ from edge.program import (
     evaluate_expr,
     evaluate_program,
     validate_expr,
+    canonicalize_expr,
+    canonicalize_program,
+    semantic_fingerprint,
 )
 
 
@@ -306,3 +309,23 @@ def test_rolling_mean_of_price_level_remains_price_level():
         Expr("gt", (average, feature("ema_200"))),
         expected="bool",
     )
+
+
+def test_canonicalization_removes_double_negation_and_duplicate_terms():
+    positive = Expr("gt", (feature("x"), const(0.0)))
+    redundant = Expr("not", (Expr("not", (Expr("and", (positive, positive)),)),))
+    assert canonicalize_expr(redundant) == positive
+
+
+def test_canonicalization_removes_identical_min_and_positive_price_abs():
+    assert canonicalize_expr(Expr("min", (feature("ema_10"), feature("ema_10")))) == feature("ema_10")
+    assert canonicalize_expr(Expr("abs", (feature("close"),))) == feature("close")
+
+
+def test_canonical_program_and_semantic_fingerprint():
+    frame = pd.DataFrame({"x": [1.0, -1.0, 2.0]})
+    rule = Expr("gt", (feature("x"), const(0.0)))
+    first = StrategyProgram(long_entry=rule, short_entry=Expr("lt", (feature("x"), const(0.0))))
+    second = StrategyProgram(long_entry=Expr("not", (Expr("not", (rule,)),)), short_entry=first.short_entry)
+    assert canonicalize_program(second) == first
+    assert semantic_fingerprint(first, frame) == semantic_fingerprint(second, frame)
