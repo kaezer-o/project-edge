@@ -270,3 +270,26 @@ def test_final_population_reuses_cached_evaluations(tmp_path):
     # must be served from the generation cache.
     assert len(evaluated) == 8
     assert len(set(evaluated)) == 8
+
+
+def test_runtime_metrics_measure_generation_and_checkpoint(tmp_path):
+    config = IslandEvolutionConfig(islands=2, population_per_island=4)
+    result = run_island_evolution(
+        initial_populations(config),
+        evaluate=evaluator,
+        reproduce=reproducer,
+        config=config,
+        seed=456,
+        generations=2,
+        checkpoint_path=tmp_path / "runtime-metrics.json",
+        run_signature="runtime-metrics-test",
+    )
+
+    assert len(result.runtime_metrics) == 2
+    for row in result.runtime_metrics:
+        assert row["generation_wall_seconds"] > 0
+        assert row["evaluation_seconds"] > 0
+        assert row["checkpoint_seconds"] > 0
+        assert row["other_seconds"] >= 0
+        assert row["evaluator_calls"] > 0
+        assert row["evaluation_cache_hits"] >= 0
