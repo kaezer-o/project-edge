@@ -131,6 +131,51 @@ def _summarize_other_structures(
     }
 
 
+
+def _strategy_family_class(families: set[str]) -> str:
+    """Return one mutually exclusive class for a genome's family labels."""
+    recognized = families - {
+        "hybrid", "hybrid_or_other", "other", "random_fallback"
+    }
+    if "hybrid" in families or len(recognized) > 1:
+        return "hybrid"
+    if len(recognized) == 1:
+        return next(iter(recognized))
+    if "random_fallback" in families:
+        return "random_fallback"
+    return "other"
+
+
+def _summarize_population_motifs(
+    rows: list[dict[str, object]],
+) -> dict[str, object]:
+    """Count structural motifs across every genome and exclusive family class."""
+    motif_counts: dict[str, int] = {}
+    class_motif_counts: dict[str, dict[str, int]] = {}
+    genomes_with_structure = 0
+    for row in rows:
+        descriptor = row["descriptor"]
+        strategy_class = _strategy_family_class(set(descriptor["families"]))
+        structure = descriptor.get("structure")
+        if not isinstance(structure, dict):
+            continue
+        genomes_with_structure += 1
+        motifs = sorted(set(structure.get("motifs", [])))
+        class_counts = class_motif_counts.setdefault(strategy_class, {})
+        for motif in motifs:
+            motif_counts[motif] = motif_counts.get(motif, 0) + 1
+            class_counts[motif] = class_counts.get(motif, 0) + 1
+    return {
+        "population_size": len(rows),
+        "genomes_with_structure": genomes_with_structure,
+        "motif_population_counts": dict(sorted(motif_counts.items())),
+        "motif_by_strategy_family_class_population_counts": {
+            strategy_class: dict(sorted(counts.items()))
+            for strategy_class, counts in sorted(class_motif_counts.items())
+        },
+    }
+
+
 def _rank(values: np.ndarray) -> np.ndarray:
     if len(values) <= 1:
         return np.ones(len(values), dtype=float)
@@ -484,6 +529,7 @@ def run_island_evolution(
         island_class_counts: list[dict[str, int]] = []
         class_counts: dict[str, int] = {}
         island_other_structures: list[dict[str, object]] = []
+        island_population_motifs: list[dict[str, object]] = []
         for rows in evaluated_islands:
             island_counts: dict[str, int] = {}
             island_classes: dict[str, int] = {}
@@ -492,31 +538,25 @@ def run_island_evolution(
                 # Family labels are intentionally multi-label for hybrids.
                 for family in families:
                     island_counts[family] = island_counts.get(family, 0) + 1
-                recognized = families - {"hybrid", "hybrid_or_other", "other", "random_fallback"}
-                if "hybrid" in families or len(recognized) > 1:
-                    strategy_class = "hybrid"
-                elif len(recognized) == 1:
-                    strategy_class = next(iter(recognized))
-                elif "random_fallback" in families:
-                    strategy_class = "random_fallback"
-                else:
-                    strategy_class = "other"
+                strategy_class = _strategy_family_class(families)
                 island_classes[strategy_class] = island_classes.get(strategy_class, 0) + 1
             island_other_structures.append(_summarize_other_structures(rows))
+            island_population_motifs.append(_summarize_population_motifs(rows))
             island_family_counts.append(island_counts)
             island_class_counts.append(island_classes)
             for family, count in island_counts.items():
                 family_counts[family] = family_counts.get(family, 0) + count
             for strategy_class, count in island_classes.items():
                 class_counts[strategy_class] = class_counts.get(strategy_class, 0) + count
-        other_structures = _summarize_other_structures(
-            [row for rows in evaluated_islands for row in rows],
-            limit=12,
-        )
+        all_rows = [row for rows in evaluated_islands for row in rows]
+        other_structures = _summarize_other_structures(all_rows, limit=12)
+        population_motifs = _summarize_population_motifs(all_rows)
         history.append({
             "generation": generation,
             "unclassified_structure_diagnostics": other_structures,
             "island_unclassified_structure_diagnostics": island_other_structures,
+            "population_motif_diagnostics": population_motifs,
+            "island_population_motif_diagnostics": island_population_motifs,
             "best_fitness": generation_best,
             "best_genome_fingerprint": _fingerprint(generation_best_genome or {}),
             "mean_novelty": float(np.mean([
