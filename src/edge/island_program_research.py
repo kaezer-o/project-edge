@@ -460,8 +460,9 @@ def _training_trade_path_events(
 
 
 def _set_jaccard(left: set, right: set) -> float:
-    union_size = len(left) + len(right) - len(left & right)
-    return len(left & right) / union_size if union_size else 0.0
+    intersection_size = len(left & right)
+    union_size = len(left) + len(right) - intersection_size
+    return intersection_size / union_size if union_size else 0.0
 
 
 def _risk_profile_similarity(left: StrategyProgram, right: StrategyProgram) -> float:
