@@ -80,7 +80,7 @@ def test_selection_audit_uses_fitness_only_baseline_with_same_selected_count(mon
     signal_map = {
         1: np.array([1, 1, 1, 0], dtype=np.int8),
         2: np.array([1, 1, 0, 0], dtype=np.int8),
-        3: np.array([1, 1, 1, 0], dtype=np.int8),
+        3: np.array([-1, 0, 0, -1], dtype=np.int8),
     }
     monkeypatch.setattr(
         audit_module.StrategyProgram,
