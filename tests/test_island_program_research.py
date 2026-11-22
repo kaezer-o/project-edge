@@ -133,7 +133,7 @@ def test_behaviour_descriptor_uses_comparable_rate_scales(monkeypatch):
     monkeypatch.setattr(
         island_program_research,
         "_evaluate",
-        lambda *_args, **_kwargs: ({"trades": 3}, pd.DataFrame({"entry_time": entries})),
+        lambda *_args, **_kwargs: ({"trades": 3}, pd.DataFrame({"entry_time": entries, "direction": ["long", "short", "long"]})),
     )
 
     descriptor = island_program_research._behaviour_descriptor(
@@ -145,9 +145,14 @@ def test_behaviour_descriptor_uses_comparable_rate_scales(monkeypatch):
         price_basis="mid",
     )
 
-    assert len(descriptor) == 9
-    assert descriptor[0] == 10 / 30
-    assert descriptor[4] == 10 / 30
-    assert descriptor[2] == 1 / 30
-    assert descriptor[5] == 1 / 30
-    assert max(descriptor) <= 1.0
+    assert len(descriptor["rates"]) == 9
+    assert descriptor["rates"][0] == 10 / 30
+    assert descriptor["rates"][4] == 10 / 30
+    assert descriptor["rates"][2] == 1 / 30
+    assert descriptor["rates"][5] == 1 / 30
+    assert descriptor["trades"] == [
+        f"{entries[0].isoformat()}|long",
+        f"{entries[1].isoformat()}|short",
+        f"{entries[2].isoformat()}|long",
+    ]
+    assert max(descriptor["rates"]) <= 1.0
