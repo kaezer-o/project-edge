@@ -374,7 +374,7 @@ def test_training_signal_diversity_filter_rejects_redundant_finalists(monkeypatc
     ]
     signals_by_fingerprint = {
         programs[0].fingerprint(): np.array([1, 1, 1, 1, 0, 0, 0, 0], dtype=np.int8),
-        programs[1].fingerprint(): np.array([1, 1, 1, 1, 1, 0, 0, 0], dtype=np.int8),
+        programs[1].fingerprint(): np.array([1, 1, 1, 1, 0, 0, 0, 0], dtype=np.int8),
         programs[2].fingerprint(): np.array([0, 0, 0, 0, 0, 0, -1, -1], dtype=np.int8),
     }
     monkeypatch.setattr(
