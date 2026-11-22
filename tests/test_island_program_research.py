@@ -432,6 +432,7 @@ def test_training_signal_diversity_filter_rejects_redundant_finalists(monkeypatc
     assert rejected["most_similar_selected_fitness_rank"] == 1
     assert rejected["max_directional_signal_jaccard"] == 1.0
     assert rejected["max_training_trade_path_jaccard"] == 1.0
+    assert rejected["max_risk_profile_similarity"] == 1.0
     assert diagnostics["validation_used_for_selection"] is False
     assert diagnostics["final_test_used_for_selection"] is False
 
@@ -470,6 +471,53 @@ def test_training_signal_filter_keeps_same_signals_with_different_trade_paths(mo
         island_program_research,
         "_evaluate",
         lambda _frame, program, **_kwargs: ({}, paths[program.fingerprint()]),
+    )
+    ranked = [(2.0, programs[0], {}, {}), (1.0, programs[1], {}, {})]
+
+    selected, diagnostics = island_program_research._training_signal_diverse_shortlist(
+        ranked,
+        pd.DataFrame(index=range(len(signal))),
+        similarity_threshold=0.95,
+        limit=2,
+        execution=ExecutionConfig(),
+        risk=RiskConfig(),
+        pip_size=0.0001,
+        price_basis="mid",
+    )
+
+    assert len(selected) == 2
+    assert diagnostics["rejected_as_redundant"] == []
+
+
+def test_training_signal_filter_keeps_materially_different_risk_profiles(monkeypatch):
+    feature = lambda name: Expr("feature", value=name)
+    programs = [
+        StrategyProgram(
+            long_entry=Expr("gt", (feature("ema_gap_atr"), Expr("const", value=1))),
+            short_entry=Expr("lt", (feature("ema_gap_atr"), Expr("const", value=0))),
+            stop_atr=1.5,
+            reward_risk=reward_risk,
+            max_holding_bars=holding,
+        )
+        for reward_risk, holding in ((2.0, 24), (3.5, 48))
+    ]
+    signal = np.array([1, 1, 0, -1, -1, 0], dtype=np.int8)
+    monkeypatch.setattr(
+        island_program_research,
+        "evaluate_program",
+        lambda _program, frame: pd.Series(signal, index=frame.index),
+    )
+    entry = pd.Timestamp("2024-01-01T00:00:00Z")
+    same_path = pd.DataFrame([{
+        "entry_time": entry,
+        "direction": "long",
+        "exit_time": entry + pd.Timedelta(hours=1),
+        "exit_reason": "target",
+    }])
+    monkeypatch.setattr(
+        island_program_research,
+        "_evaluate",
+        lambda _frame, _program, **_kwargs: ({}, same_path.copy()),
     )
     ranked = [(2.0, programs[0], {}, {}), (1.0, programs[1], {}, {})]
 
