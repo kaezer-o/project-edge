@@ -720,12 +720,15 @@ def run_island_program_research(
     resume: bool = False,
     run_final_test: bool = False,
     finalist_similarity_threshold: float | None = None,
+    finalist_limit: int = 20,
 ) -> dict[str, object]:
     """Run resumable multi-island program evolution; only training reaches the evaluator."""
     if generations < 1:
         raise ValueError("generations must be at least one")
     if finalist_similarity_threshold is not None and not 0.0 <= finalist_similarity_threshold <= 1.0:
         raise ValueError("finalist_similarity_threshold must be between zero and one")
+    if not isinstance(finalist_limit, int) or isinstance(finalist_limit, bool) or finalist_limit < 1:
+        raise ValueError("finalist_limit must be a positive integer")
     config = config or IslandEvolutionConfig()
     timeframe = timeframe.upper()
     source_timeframe = source_timeframe.upper()
@@ -877,7 +880,7 @@ def run_island_program_research(
             final_evaluated.append((score, program, metrics, robustness))
     fitness_ranked_shortlist = _diverse_ranked(
         final_evaluated,
-        min(20, len(final_evaluated)),
+        min(finalist_limit, len(final_evaluated)),
         max_per_structure=1,
     )
     shortlist = fitness_ranked_shortlist
@@ -886,6 +889,7 @@ def run_island_program_research(
         "similarity_filter_enabled": finalist_similarity_threshold is not None,
         "fitness_ranked_pool_count": len(fitness_ranked_shortlist),
         "selected_count": len(fitness_ranked_shortlist),
+        "requested_limit": finalist_limit,
         "validation_used_for_selection": False,
         "final_test_used_for_selection": False,
     }
@@ -894,7 +898,7 @@ def run_island_program_research(
             fitness_ranked_shortlist,
             train,
             similarity_threshold=finalist_similarity_threshold,
-            limit=min(20, len(fitness_ranked_shortlist)),
+            limit=min(finalist_limit, len(fitness_ranked_shortlist)),
             execution=execution,
             risk=risk,
             pip_size=pip_size,
