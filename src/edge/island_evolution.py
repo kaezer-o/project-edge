@@ -85,6 +85,7 @@ def _summarize_other_structures(
 ) -> dict[str, object]:
     """Summarize structural archetypes for genomes classified as other."""
     archetypes: dict[str, dict[str, object]] = {}
+    motif_counts: dict[str, int] = {}
     unclassified = 0
     for row in rows:
         descriptor = row["descriptor"]
@@ -94,6 +95,9 @@ def _summarize_other_structures(
         if not isinstance(structure, dict):
             continue
         unclassified += 1
+        motifs = list(structure.get("motifs", []))
+        for motif in motifs:
+            motif_counts[motif] = motif_counts.get(motif, 0) + 1
         fingerprint = str(structure["fingerprint"])
         item = archetypes.setdefault(
             fingerprint,
@@ -109,6 +113,9 @@ def _summarize_other_structures(
                 "lookbacks": structure["lookbacks"],
                 "long_only_features": structure["long_only_features"],
                 "short_only_features": structure["short_only_features"],
+                "motifs": motifs,
+                "long_motifs": structure.get("long_motifs", []),
+                "short_motifs": structure.get("short_motifs", []),
             },
         )
         item["count"] = int(item["count"]) + 1
@@ -119,6 +126,7 @@ def _summarize_other_structures(
     return {
         "unclassified_genomes": unclassified,
         "distinct_archetypes": len(archetypes),
+        "motif_population_counts": dict(sorted(motif_counts.items())),
         "top_archetypes": ranked[:limit],
     }
 
@@ -184,7 +192,7 @@ def _validate_descriptor(descriptor: BehaviourDescriptor) -> BehaviourDescriptor
             or any(
                 not isinstance(structure.get(field), list)
                 or any(not isinstance(value, str) for value in structure[field])
-                for field in ("features", "long_only_features", "short_only_features")
+                for field in ("features", "long_only_features", "short_only_features", "long_motifs", "short_motifs", "motifs")
             )
             or not isinstance(structure.get("lookbacks"), list)
             or any(
