@@ -211,12 +211,14 @@ def build_audit(reports: list[tuple[int, dict[str, Any]]]) -> dict[str, Any]:
         raise ValueError("Seed identifiers must be unique")
     reference = reports[0][1]
     for seed, report in reports:
+        # Check holdout access before cross-run metadata equality so the
+        # safety failure is reported directly, even if this flag differs.
+        if report.get("data", {}).get("final_test_evaluated") is not False:
+            raise ValueError(f"Seed {seed} indicates final-test evaluation; audit stopped")
         if report.get("symbol") != reference.get("symbol") or report.get("timeframe") != reference.get("timeframe"):
             raise ValueError(f"Seed {seed} has a different symbol or timeframe")
         if report.get("data") != reference.get("data"):
             raise ValueError(f"Seed {seed} has different data partition metadata")
-        if report.get("data", {}).get("final_test_evaluated") is not False:
-            raise ValueError(f"Seed {seed} indicates final-test evaluation; audit stopped")
 
     records = []
     run_summaries = []
