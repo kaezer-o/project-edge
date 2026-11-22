@@ -130,14 +130,14 @@ def test_program_structure_diagnostics_normalizes_constants_and_reports_asymmetr
     first = StrategyProgram(
         long_entry=Expr("and", (
             Expr("cross_above", (feature("rsi_14"), Expr("const", value=30))),
-            Expr("gt", (feature("ema_gap_atr"), feature("ema_20"))),
+            Expr("gt", (feature("close"), feature("ema_20"))),
         )),
         short_entry=Expr("cross_below", (feature("rsi_14"), Expr("const", value=70))),
     )
     second = StrategyProgram(
         long_entry=Expr("and", (
             Expr("cross_above", (feature("rsi_14"), Expr("const", value=35))),
-            Expr("gt", (feature("ema_gap_atr"), feature("ema_20"))),
+            Expr("gt", (feature("close"), feature("ema_20"))),
         )),
         short_entry=Expr("cross_below", (feature("rsi_14"), Expr("const", value=65))),
     )
@@ -163,10 +163,10 @@ def test_structural_motif_taxonomy_recognizes_volatility_and_donchian_patterns()
 
     feature = lambda name: Expr("feature", value=name)
     long_rule = Expr("and", (
-        Expr("gt", (feature("ema_gap_atr"), feature("ema_20"))),
+        Expr("gt", (feature("close"), feature("ema_20"))),
         Expr("gt", (feature("atr_14"), Expr("rolling_mean", (feature("atr_14"),), value=30))),
     ))
-    short_rule = Expr("lt", (feature("ema_gap_atr"), feature("donchian_low_20")))
+    short_rule = Expr("lt", (feature("close"), feature("donchian_low_20")))
 
     assert _classify_structural_motifs(long_rule) == [
         "atr_vs_rolling_atr",
@@ -319,8 +319,8 @@ def test_volatility_family_requires_matching_directional_filter_and_lookback():
             Expr("rolling_mean", (feature("atr_14"),), value=lookback),
         ),
     )
-    long_direction = Expr("gt", (feature("ema_gap_atr"), feature("ema_40")))
-    short_direction = Expr("lt", (feature("ema_gap_atr"), feature("ema_40")))
+    long_direction = Expr("gt", (feature("close"), feature("ema_40")))
+    short_direction = Expr("lt", (feature("close"), feature("ema_40")))
 
     valid = StrategyProgram(
         long_entry=Expr("and", (gate("gt", 20), long_direction)),
@@ -368,7 +368,7 @@ def test_training_signal_diversity_filter_rejects_redundant_finalists(monkeypatc
     programs = [
         StrategyProgram(
             long_entry=Expr("gt", (feature("ema_gap_atr"), Expr("const", value=value))),
-            short_entry=Expr("const", value=False),
+            short_entry=Expr("lt", (feature("ema_gap_atr"), Expr("const", value=0))),
         )
         for value in (1, 2, 3)
     ]
