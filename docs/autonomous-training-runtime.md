@@ -51,9 +51,13 @@ to validation or final-test outcomes.
      while alternatives are available. Migration skips behaviours already
      present in the receiving island. Retries are bounded.
    - Generation telemetry records unique genomes, unique full behaviours,
-     unique signal streams, per-island uniqueness and inferred strategy-family
-     counts. Family labels
-     describe feature usage and do not prove a strategy belongs to a family.
+     unique signal streams, per-island uniqueness and semantically classified
+     strategy-family counts.
+   - Each island retains a configurable minimum number of top-fitness elites
+     from every recognizable family before filling the remaining population
+     through normal novelty/fitness-guided reproduction. The default floor is
+     two representatives per family per island; hybrid/other programs do not
+     satisfy a named-family quota.
 
 4. **Search grammar**
    - Expand strategy primitives by family: trend, mean reversion, breakout,
