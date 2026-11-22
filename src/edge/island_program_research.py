@@ -54,8 +54,10 @@ def _prepare_frames(
     train = featured.iloc[:train_end].copy()
     validation = featured.iloc[train_end:validation_end].copy()
     test = featured.iloc[validation_end:].copy()
+    # Include close for causal Donchian breakout templates. Raw price levels
+    # remain protected by the expression unit checks against scalar thresholds.
     features = tuple(
-        column for column in FEATURE_COLUMNS
+        column for column in (*FEATURE_COLUMNS, "close")
         if column in train.columns
         and pd.api.types.is_numeric_dtype(train[column])
         and train[column].notna().any()
