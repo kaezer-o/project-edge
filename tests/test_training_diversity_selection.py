@@ -34,7 +34,7 @@ def test_training_selection_respects_active_signal_similarity_threshold():
     signals = {
         1: np.array([1, 1, 1, 0]),
         2: np.array([1, 1, 0, 0]),
-        3: np.array([-1, 0, -1, 0]),
+        3: np.array([-1, 0, 0, -1]),
     }
     result = select_training_diverse(candidates, signals, similarity_threshold=0.65)
     assert [row["rank"] for row in result["selected"]] == [1, 3]
