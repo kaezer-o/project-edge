@@ -217,6 +217,7 @@ def test_identical_signal_fingerprint_has_zero_behaviour_distance():
         "rates": [0.8, 0.9],
         "trades": ["entry-b|short"],
         "signal_fingerprint": "same-signal",
+        "behaviour_fingerprint": "same-behaviour",
         "families": ["breakout"],
     }
     assert _descriptor_distance(first, second) == 0.0
