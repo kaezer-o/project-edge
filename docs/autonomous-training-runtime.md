@@ -229,3 +229,29 @@ similarity is computed on aligned bars; exact agreement is reported alongside
 active-signal Jaccard because long stretches of no-signal bars can inflate
 exact agreement. Trade-entry overlap is execution-dependent. All outputs are
 observational and do not feed back into evolution or candidate selection.
+
+
+## Intra-run finalist behavioural redundancy audit
+
+Use this audit after the cross-seed audit to measure redundancy among the
+finalists retained by each individual evolutionary run. It replays each
+finalist on the same training and validation partitions and reports exact
+signal/trade duplicates, near-duplicate pair counts, validation-qualified
+pair overlap, and redundancy grouped by exclusive strategy-family class.
+
+Example:
+
+~~~powershell
+.\\.venv\\Scripts\\python.exe scripts\\audit_candidate_redundancy.py `
+  --input data\\EURUSD_M1.csv `
+  --report 2033=results\\motif-repro-h4-seed-2033\\island_program_evolution_report.json `
+  --report 2034=results\\motif-repro-h4-seed-2034\\island_program_evolution_report.json `
+  --report 2035=results\\motif-repro-h4-seed-2035\\island_program_evolution_report.json `
+  --price-basis bid --spread-pips 0.8 --slippage-pips 0.1
+~~~
+
+The report is finalist-only and cannot establish redundancy in the full
+evolving population. It is observational: it does not alter fitness,
+selection, migration, validation gates or final-test access. Validation has
+been repeatedly examined during development and is not independent evidence.
+The final chronological holdout is never evaluated.
