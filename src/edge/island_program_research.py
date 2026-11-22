@@ -502,6 +502,8 @@ def _training_signal_diverse_shortlist(
     signals: dict[str, np.ndarray] = {}
     trade_paths: dict[str, set[tuple[int, str, int, str]]] = {}
     programs_by_fingerprint: dict[str, StrategyProgram] = {}
+    signal_evaluations = 0
+    training_backtests = 0
     for item in ranked:
         program = item[1]
         fingerprint = program.fingerprint()
@@ -509,6 +511,7 @@ def _training_signal_diverse_shortlist(
             continue
         programs_by_fingerprint[fingerprint] = program
         signal = np.asarray(evaluate_program(program, frame), dtype=np.int8)
+        signal_evaluations += 1
         _, trades = _evaluate(
             frame,
             program,
@@ -518,6 +521,7 @@ def _training_signal_diverse_shortlist(
             price_basis=price_basis,
             signal=pd.Series(signal, index=frame.index),
         )
+        training_backtests += 1
         signals[fingerprint] = signal
         trade_paths[fingerprint] = _training_trade_path_events(trades)
 
@@ -525,6 +529,8 @@ def _training_signal_diverse_shortlist(
     selected_ranks: list[int] = []
     selected_fingerprints: list[str] = []
     rejected = []
+    pairwise_comparisons = 0
+    short_circuited_comparisons = 0
     for rank, item in enumerate(ranked, start=1):
         if len(selected) >= limit:
             break
@@ -533,6 +539,7 @@ def _training_signal_diverse_shortlist(
         for selected_rank, selected_fingerprint in zip(
             selected_ranks, selected_fingerprints
         ):
+            pairwise_comparisons += 1
             signal_similarity = _directional_signal_jaccard(
                 signals[fingerprint], signals[selected_fingerprint]
             )
@@ -542,6 +549,7 @@ def _training_signal_diverse_shortlist(
                 best_comparison is not None
                 and signal_similarity <= best_comparison["combined_similarity"]
             ):
+                short_circuited_comparisons += 1
                 continue
             trade_similarity = _set_jaccard(
                 trade_paths[fingerprint], trade_paths[selected_fingerprint]
@@ -550,6 +558,7 @@ def _training_signal_diverse_shortlist(
                 best_comparison is not None
                 and trade_similarity <= best_comparison["combined_similarity"]
             ):
+                short_circuited_comparisons += 1
                 continue
             risk_similarity = _risk_profile_similarity(
                 item[1], programs_by_fingerprint[selected_fingerprint]
@@ -592,6 +601,14 @@ def _training_signal_diverse_shortlist(
         "fitness_ranked_pool_count": len(ranked),
         "selected_count": len(selected),
         "selected_fitness_ranks": selected_ranks,
+        "performance": {
+            "ranked_program_count": len(ranked),
+            "unique_program_count": len(programs_by_fingerprint),
+            "signal_evaluations": signal_evaluations,
+            "training_backtests": training_backtests,
+            "pairwise_comparisons": pairwise_comparisons,
+            "short_circuited_comparisons": short_circuited_comparisons,
+        },
         "rejected_as_redundant": rejected,
         "selection_inputs": [
             "training_fitness",
