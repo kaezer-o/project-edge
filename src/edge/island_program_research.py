@@ -348,7 +348,7 @@ def _run_signature(
         "seed": seed,
         "min_train_trades": min_train_trades,
         "min_validation_trades": min_validation_trades,
-        "fitness_version": 6,
+        "fitness_version": 7,
         "strategy_seed_version": 1,
         "strategy_family_classifier_version": 2,
     }
