@@ -156,5 +156,6 @@ def test_behaviour_descriptor_uses_comparable_rate_scales(monkeypatch):
         f"{entries[2].isoformat()}|long",
     ]
     assert len(descriptor["signal_fingerprint"]) == 64
+    assert len(descriptor["behaviour_fingerprint"]) == 64
     assert descriptor["families"] == ["other"]
     assert max(descriptor["rates"]) <= 1.0
