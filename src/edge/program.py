@@ -276,6 +276,51 @@ def validate_expr(expr: Expr, *, expected: str = "number") -> None:
         raise ValueError(f"Expected {expected} expression, received {actual}")
 
 
+def canonicalize_expr(expr: Expr) -> Expr:
+    """Return a semantics-preserving, deterministic simplified expression tree."""
+    children = tuple(canonicalize_expr(child) for child in expr.args)
+    node = Expr(expr.op, children, expr.value)
+
+    if node.op == "not" and node.args[0].op == "not":
+        return canonicalize_expr(node.args[0].args[0])
+    if node.op in {"and", "or"}:
+        left, right = node.args
+        if left == right:
+            return left
+        # These operators are commutative; stable ordering makes equivalent
+        # operand orderings share a structural representation.
+        ordered = tuple(sorted((left, right), key=_expr_sort_key))
+        return Expr(node.op, ordered)
+    if node.op in {"min", "max"} and node.args[0] == node.args[1]:
+        return node.args[0]
+    if node.op == "abs" and node.args[0].op == "feature":
+        if _feature_dimension(str(node.args[0].value)) == "price_level":
+            return node.args[0]
+    return node
+
+
+def _expr_sort_key(expr: Expr) -> str:
+    return json.dumps(expr.to_dict(), sort_keys=True, separators=(",", ":"))
+
+
+def canonicalize_program(program: StrategyProgram) -> StrategyProgram:
+    """Canonicalize entry expressions while preserving execution parameters."""
+    return StrategyProgram(
+        long_entry=canonicalize_expr(program.long_entry),
+        short_entry=canonicalize_expr(program.short_entry),
+        stop_atr=program.stop_atr,
+        reward_risk=program.reward_risk,
+        max_holding_bars=program.max_holding_bars,
+    )
+
+
+def semantic_fingerprint(program: StrategyProgram, frame: pd.DataFrame) -> str:
+    """Hash the exact per-bar long/short decision stream on supplied data."""
+    signal = evaluate_program(program, frame)
+    payload = signal.to_numpy(dtype="int8", copy=False).tobytes()
+    return hashlib.sha256(payload).hexdigest()
+
+
 def evaluate_expr(expr: Expr, frame: pd.DataFrame) -> pd.Series:
     """Evaluate an expression causally over a chronological feature frame."""
     expected = "bool" if expr.op in BOOLEAN_OPS else "number"
