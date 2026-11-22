@@ -34,16 +34,16 @@ def test_training_selection_respects_active_signal_similarity_threshold():
     signals = {
         1: np.array([1, 1, 1, 0]),
         2: np.array([1, 1, 0, 0]),
-        3: np.array([-1, -1, -1, 0]),
+        3: np.array([-1, 0, -1, 0]),
     }
-    result = select_training_diverse(candidates, signals, similarity_threshold=0.75)
+    result = select_training_diverse(candidates, signals, similarity_threshold=0.65)
     assert [row["rank"] for row in result["selected"]] == [1, 3]
     assert result["rejected_as_redundant"][0]["rank"] == 2
 
 
 def test_training_selection_limit_is_respected():
     candidates = [{"rank": i, "training_fitness": float(10-i)} for i in range(1, 5)]
-    signals = {i: np.array([i, 0, 0]) for i in range(1, 5)}
+    signals = {i: np.eye(4, dtype=np.int8)[i - 1] for i in range(1, 5)}
     result = select_training_diverse(candidates, signals, limit=2)
     assert result["selected_count"] == 2
 
