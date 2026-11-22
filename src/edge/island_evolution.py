@@ -131,7 +131,6 @@ def _summarize_other_structures(
     }
 
 
-
 def _strategy_family_class(families: set[str]) -> str:
     """Return one mutually exclusive class for a genome's family labels."""
     recognized = families - {
