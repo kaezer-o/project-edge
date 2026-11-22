@@ -61,6 +61,41 @@ def _pair_summary(rows: list[dict[str, Any]], *, signal_field: str, trade_field:
     }
 
 
+def _exclusive_family_class(families: list[str]) -> str:
+    if "hybrid" in families:
+        return "hybrid"
+    return families[0] if len(families) == 1 else "other"
+
+
+def _family_pair_summary(rows: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    grouped: dict[str, list[dict[str, Any]]] = {}
+    for row in rows:
+        classes = sorted([row["family_class_a"], row["family_class_b"]])
+        key = " | ".join(classes)
+        grouped.setdefault(key, []).append(row)
+    result: dict[str, dict[str, Any]] = {}
+    for key, group in sorted(grouped.items()):
+        result[key] = {
+            "pair_count": len(group),
+            "mean_training_active_signal_jaccard": float(np.mean([
+                row["training_signal_similarity"]["active_signal_jaccard"] for row in group
+            ])),
+            "mean_validation_active_signal_jaccard": float(np.mean([
+                row["validation_signal_similarity"]["active_signal_jaccard"] for row in group
+            ])),
+            "training_pairs_at_or_above_0_75": sum(
+                row["training_signal_similarity"]["active_signal_jaccard"] >= 0.75 for row in group
+            ),
+            "validation_pairs_at_or_above_0_75": sum(
+                row["validation_signal_similarity"]["active_signal_jaccard"] >= 0.75 for row in group
+            ),
+            "exact_training_signal_pairs": sum(row["exact_training_signal_match"] for row in group),
+            "exact_validation_signal_pairs": sum(row["exact_validation_signal_match"] for row in group),
+            "qualified_pairs": sum(row["both_validation_qualified"] for row in group),
+        }
+    return result
+
+
 def build_redundancy_audit(
     reports: list[tuple[int, dict[str, Any]]],
     train,
@@ -135,6 +170,8 @@ def build_redundancy_audit(
                 "rank_b": right["rank"],
                 "families_a": left["families"],
                 "families_b": right["families"],
+                "family_class_a": _exclusive_family_class(left["families"]),
+                "family_class_b": _exclusive_family_class(right["families"]),
                 "both_validation_qualified": left["validation_gate_pass"] and right["validation_gate_pass"],
                 "validation_qualified_a": left["validation_gate_pass"],
                 "validation_qualified_b": right["validation_gate_pass"],
@@ -176,6 +213,7 @@ def build_redundancy_audit(
             "qualified_pair_summary": _pair_summary(
                 qualified_pairs, signal_field="training_signal_similarity", trade_field="training_trade_overlap"
             ),
+            "family_pair_redundancy": _family_pair_summary(pairs),
             "candidates": candidate_rows,
             "pairs": pairs,
         }
