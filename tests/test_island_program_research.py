@@ -164,7 +164,7 @@ def test_behaviour_descriptor_uses_comparable_rate_scales(monkeypatch):
     ]
     assert len(descriptor["signal_fingerprint"]) == 64
     assert len(descriptor["behaviour_fingerprint"]) == 64
-    assert descriptor["families"] == ["hybrid_or_other"]
+    assert descriptor["families"] == ["other"]
     assert max(descriptor["rates"]) <= 1.0
 
 
@@ -215,6 +215,27 @@ def test_semantic_family_classifier_recognizes_seed_templates():
         assert _classify_strategy_families(program) == [family]
 
 
+def test_semantic_family_classifier_marks_multi_family_programs_as_hybrid():
+    from edge.island_program_research import _classify_strategy_families
+    from edge.program_evolution import strategy_family_program
+
+    features = (
+        "ema_10", "ema_20", "ema_40", "rsi_14", "close",
+        "donchian_high_20", "donchian_low_20", "atr_14",
+    )
+    rng = np.random.default_rng(73)
+    trend = strategy_family_program("trend", features, rng)
+    mean_reversion = strategy_family_program("mean_reversion", features, rng)
+    hybrid = StrategyProgram(
+        long_entry=Expr("and", (trend.long_entry, mean_reversion.long_entry)),
+        short_entry=Expr("and", (trend.short_entry, mean_reversion.short_entry)),
+        stop_atr=trend.stop_atr,
+        reward_risk=trend.reward_risk,
+        max_holding_bars=trend.max_holding_bars,
+    )
+    assert _classify_strategy_families(hybrid) == ["hybrid", "mean_reversion", "trend"]
+
+
 def test_semantic_family_classifier_does_not_tag_incidental_features():
     from edge.island_program_research import _classify_strategy_families
 
@@ -226,7 +247,7 @@ def test_semantic_family_classifier_does_not_tag_incidental_features():
             "lt", (Expr("feature", value="ema_40"), Expr("feature", value="close"))
         ),
     )
-    assert _classify_strategy_families(program) == ["hybrid_or_other"]
+    assert _classify_strategy_families(program) == ["other"]
 
 
 
@@ -258,8 +279,8 @@ def test_volatility_family_requires_matching_directional_filter_and_lookback():
     )
 
     assert _classify_strategy_families(valid) == ["volatility_expansion"]
-    assert _classify_strategy_families(missing_direction) == ["hybrid_or_other"]
-    assert _classify_strategy_families(mismatched_lookback) == ["hybrid_or_other"]
+    assert _classify_strategy_families(missing_direction) == ["other"]
+    assert _classify_strategy_families(mismatched_lookback) == ["other"]
 
 
 

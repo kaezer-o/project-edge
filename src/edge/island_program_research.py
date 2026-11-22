@@ -193,7 +193,11 @@ def _classify_strategy_families(program: StrategyProgram) -> list[str]:
         if long_lookbacks & short_lookbacks:
             families.add(label)
 
-    return sorted(families) if families else ["hybrid_or_other"]
+    if not families:
+        return ["other"]
+    if len(families) > 1:
+        families.add("hybrid")
+    return sorted(families)
 
 
 def _behaviour_descriptor(
@@ -350,7 +354,7 @@ def _run_signature(
         "min_validation_trades": min_validation_trades,
         "fitness_version": 7,
         "strategy_seed_version": 1,
-        "strategy_family_classifier_version": 2,
+        "strategy_family_classifier_version": 3,
     }
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
     return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
