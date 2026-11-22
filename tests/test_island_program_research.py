@@ -152,6 +152,27 @@ def test_program_structure_diagnostics_normalizes_constants_and_reports_asymmetr
     assert first_result["features"] == ["close", "ema_20", "rsi_14"]
     assert first_result["long_only_features"] == ["close", "ema_20"]
     assert first_result["short_only_features"] == []
+    assert first_result["long_motifs"] == ["price_vs_ema_filter", "rsi_threshold_cross"]
+    assert first_result["short_motifs"] == ["rsi_threshold_cross"]
+    assert first_result["motifs"] == ["price_vs_ema_filter", "rsi_threshold_cross"]
+
+
+def test_structural_motif_taxonomy_recognizes_volatility_and_donchian_patterns():
+    from edge.island_program_research import _classify_structural_motifs
+
+    feature = lambda name: Expr("feature", value=name)
+    long_rule = Expr("and", (
+        Expr("gt", (feature("close"), feature("ema_20"))),
+        Expr("gt", (feature("atr_14"), Expr("rolling_mean", (feature("atr_14"),), value=30))),
+    ))
+    short_rule = Expr("lt", (feature("close"), feature("donchian_low_20")))
+
+    assert _classify_structural_motifs(long_rule) == [
+        "atr_vs_rolling_atr",
+        "ema_direction_with_atr_regime_gate",
+        "price_vs_ema_filter",
+    ]
+    assert _classify_structural_motifs(short_rule) == ["donchian_low_breakout"]
 
 
 def test_behaviour_descriptor_uses_comparable_rate_scales(monkeypatch):
