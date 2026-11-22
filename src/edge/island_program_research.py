@@ -304,8 +304,9 @@ def run_island_program_research(
         return canonicalize_program(child).to_dict()
 
     initial_populations = None
-    initial_family_counts: dict[str, int] = {}
+    initial_family_counts: dict[str, int] | None = None
     if not resume:
+        initial_family_counts = {}
         seed_sequence = np.random.SeedSequence(seed)
         initial_populations = []
         family_names = available_strategy_families(features)
@@ -332,14 +333,16 @@ def run_island_program_research(
                     )
                     fingerprint = candidate.fingerprint()
                     attempts += 1
+                assigned_family = family
                 if fingerprint in seen:
                     candidate = canonicalize_program(_random_program(features, rng))
                     fingerprint = candidate.fingerprint()
+                    assigned_family = "random_fallback"
                 if fingerprint not in seen:
                     seen.add(fingerprint)
                     population.append(candidate.to_dict())
-                    initial_family_counts[family] = (
-                        initial_family_counts.get(family, 0) + 1
+                    initial_family_counts[assigned_family] = (
+                        initial_family_counts.get(assigned_family, 0) + 1
                     )
             initial_populations.append(population)
 
