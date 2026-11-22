@@ -59,6 +59,12 @@ def test_island_program_research_runs_and_resumes_without_final_test(tmp_path):
     )
     assert first["runtime"]["generation"] == 1
     assert first["runtime"]["total_population"] == 8
+    family_counts = first["runtime"]["initial_strategy_family_counts"]
+    assert sum(family_counts.values()) == 8
+    assert set(first["runtime"]["available_strategy_families"]) == {
+        "trend", "mean_reversion", "breakout",
+        "volatility_expansion", "volatility_contraction",
+    }
     assert first["final_test"] is None
     assert first["final_test_skipped"] is True
     assert (tmp_path / "checkpoint.json").exists()
