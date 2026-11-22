@@ -68,6 +68,7 @@ def test_island_program_research_runs_and_resumes_without_final_test(tmp_path):
     assert "close" in first["data"]["features"]
     assert first["final_test"] is None
     assert first["final_test_skipped"] is True
+    assert first["finalist_selection"]["similarity_filter_enabled"] is False
     assert (tmp_path / "checkpoint.json").exists()
 
     resumed = run_island_program_research(
