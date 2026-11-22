@@ -139,12 +139,12 @@ def test_training_fitness_reuses_precomputed_aggregate_result(monkeypatch):
     from edge.program import Expr, StrategyProgram
 
     frame = pd.DataFrame(
-        {"close": np.ones(90)},
+        {"ema_gap_atr": np.zeros(90), "rsi_14": np.full(90, 50.0)},
         index=pd.date_range("2025-01-01", periods=90, freq="h", tz="UTC"),
     )
     program = StrategyProgram(
-        long_entry=Expr("gt", (Expr("feature", value="close"), Expr("const", value=0.0))),
-        short_entry=Expr("lt", (Expr("feature", value="close"), Expr("const", value=0.0))),
+        long_entry=Expr("gt", (Expr("feature", value="ema_gap_atr"), Expr("const", value=0.0))),
+        short_entry=Expr("lt", (Expr("feature", value="rsi_14"), Expr("const", value=30.0))),
     )
     aggregate_metrics = {
         "trades": 30, "expectancy_r": 0.1,
