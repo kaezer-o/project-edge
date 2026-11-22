@@ -227,3 +227,36 @@ def test_semantic_family_classifier_does_not_tag_incidental_features():
         ),
     )
     assert _classify_strategy_families(program) == ["hybrid_or_other"]
+
+
+
+def test_volatility_family_requires_matching_directional_filter_and_lookback():
+    from edge.island_program_research import _classify_strategy_families
+
+    feature = lambda name: Expr("feature", value=name)
+    gate = lambda op, lookback: Expr(
+        op,
+        (
+            feature("atr_14"),
+            Expr("rolling_mean", (feature("atr_14"),), value=lookback),
+        ),
+    )
+    long_direction = Expr("gt", (feature("close"), feature("ema_40")))
+    short_direction = Expr("lt", (feature("close"), feature("ema_40")))
+
+    valid = StrategyProgram(
+        long_entry=Expr("and", (gate("gt", 20), long_direction)),
+        short_entry=Expr("and", (gate("gt", 20), short_direction)),
+    )
+    missing_direction = StrategyProgram(
+        long_entry=gate("gt", 20),
+        short_entry=gate("gt", 20),
+    )
+    mismatched_lookback = StrategyProgram(
+        long_entry=Expr("and", (gate("gt", 10), long_direction)),
+        short_entry=Expr("and", (gate("gt", 20), short_direction)),
+    )
+
+    assert _classify_strategy_families(valid) == ["volatility_expansion"]
+    assert _classify_strategy_families(missing_direction) == ["hybrid_or_other"]
+    assert _classify_strategy_families(mismatched_lookback) == ["hybrid_or_other"]
