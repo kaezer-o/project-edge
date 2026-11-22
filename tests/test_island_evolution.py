@@ -389,3 +389,58 @@ def test_minimum_family_elites_prevent_family_extinction(tmp_path):
     # The strongest family receives an additional protected representative
     # per island based only on its training selection score.
     assert counts["trend"] >= 6
+
+
+
+def test_hybrid_genomes_do_not_satisfy_single_family_elite_quotas(tmp_path):
+    config = IslandEvolutionConfig(
+        islands=2,
+        population_per_island=8,
+        elite_count=1,
+        migration_interval=10,
+        migrants_per_island=1,
+        minimum_family_elites=2,
+    )
+    initial = [
+        [
+            {"kind": "pure", "family": family, "id": island * 100 + index}
+            for index, family in enumerate(
+                ("trend", "trend", "trend", "breakout", "breakout", "mean_reversion", "mean_reversion", "mean_reversion")
+            )
+        ]
+        for island in range(config.islands)
+    ]
+
+    def family_evaluator(genome):
+        identifier = int(genome["id"])
+        if genome["kind"] == "hybrid":
+            families = ["hybrid", "trend", "mean_reversion"]
+        else:
+            families = [str(genome["family"])]
+        return float(identifier), {
+            "rates": [identifier / 1000.0],
+            "trades": [f"entry-{identifier}"],
+            "signal_fingerprint": f"signal-{identifier}",
+            "behaviour_fingerprint": f"behaviour-{identifier}",
+            "families": families,
+        }
+
+    def hybrid_only_reproducer(_first, _second, rng):
+        return {"kind": "hybrid", "id": int(rng.integers(10_000, 1_000_000))}
+
+    result = run_island_evolution(
+        initial,
+        evaluate=family_evaluator,
+        reproduce=hybrid_only_reproducer,
+        config=config,
+        seed=314,
+        generations=2,
+        checkpoint_path=tmp_path / "hybrid-family-quotas.json",
+        run_signature="hybrid-family-quotas-test",
+    )
+
+    counts = result.history[1]["strategy_family_population_counts"]
+    # Hybrid descendants cannot replace the protected pure-family floor.
+    assert counts["trend"] >= 4
+    assert counts["breakout"] >= 4
+    assert counts["mean_reversion"] >= 4
