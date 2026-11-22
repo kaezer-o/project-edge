@@ -93,7 +93,6 @@ def test_unclassified_structure_diagnostics_are_reported_per_island_and_globally
     assert all(item["distinct_archetypes"] == 4 for item in island_summaries)
 
 
-
 def test_population_motif_telemetry_covers_all_classes_and_islands(tmp_path):
     config = IslandEvolutionConfig(
         islands=2, population_per_island=4, elite_count=1,
