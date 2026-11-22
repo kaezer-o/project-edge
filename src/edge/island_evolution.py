@@ -243,7 +243,7 @@ def run_island_evolution(
     if resume:
         state = load_training_checkpoint(checkpoint, expected_run_signature=run_signature)
         runtime_state = state["rng_state"]
-        if runtime_state.get("runtime") != "island_evolution_v3":
+        if runtime_state.get("runtime") != "island_evolution_v4":
             raise ValueError("Checkpoint does not contain compatible island-evolution state")
         if runtime_state.get("config") != expected_config:
             raise ValueError("Checkpoint evolution configuration does not match")
@@ -445,9 +445,9 @@ def run_island_evolution(
                 if len(next_population) >= config.elite_count:
                     break
 
-            # Then reserve a small per-island floor for each recognizable family.
-            # This prevents selection pressure from deleting an entire family in
-            # one generation while leaving the remaining slots free to evolve.
+            # Preserve a floor for every recognizable family, then allocate
+            # a small number of extra family slots using training-only fitness
+            # and novelty (the same combined selection score used by evolution).
             if config.minimum_family_elites:
                 families = sorted({
                     family
@@ -455,9 +455,38 @@ def run_island_evolution(
                     for family in row["descriptor"]["families"]
                     if family not in {"hybrid_or_other", "other", "random_fallback"}
                 })
+                family_quotas = {
+                    family: config.minimum_family_elites for family in families
+                }
+                family_scores = {}
+                for family in families:
+                    family_rows = sorted(
+                        (
+                            row for row in rows
+                            if family in row["descriptor"]["families"]
+                        ),
+                        key=lambda row: float(row["selection_score"]),
+                        reverse=True,
+                    )
+                    top_rows = family_rows[:min(3, len(family_rows))]
+                    family_scores[family] = float(np.mean([
+                        float(row["selection_score"]) for row in top_rows
+                    ]))
+
+                # Give one additional protected slot to the strongest half of
+                # the available families. This is deliberately capped so that
+                # family protection cannot consume the whole population.
+                bonus_count = min(len(families), len(families) // 2)
+                bonus_families = sorted(
+                    families,
+                    key=lambda family: (-family_scores[family], family),
+                )[:bonus_count]
+                for family in bonus_families:
+                    family_quotas[family] += 1
+
                 for family in families:
                     for row in elites:
-                        if family_elite_counts.get(family, 0) >= config.minimum_family_elites:
+                        if family_elite_counts.get(family, 0) >= family_quotas[family]:
                             break
                         if family in row["descriptor"]["families"]:
                             retain_elite(row)
@@ -546,7 +575,7 @@ def run_island_evolution(
             generation=generation,
             population=islands,
             rng_state={
-                "runtime": "island_evolution_v3",
+                "runtime": "island_evolution_v4",
                 "config": expected_config,
                 "archives": archives,
                 "island_rng_states": [rng.bit_generator.state for rng in rngs],
