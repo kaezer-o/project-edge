@@ -112,23 +112,40 @@ def main() -> None:
             pip_size=args.pip_size, price_basis=args.price_basis,
         )
 
+    def shared_genome_stage():
+        shared_signal = evaluate_program(program, train)
+        aggregate_result = _evaluate(
+            train, program, execution=execution, risk=risk,
+            pip_size=args.pip_size, price_basis=args.price_basis,
+            signal=shared_signal,
+        )
+        _training_fitness(
+            train, program, execution=execution, risk=risk,
+            pip_size=args.pip_size, price_basis=args.price_basis,
+            min_train_trades=30, aggregate_result=aggregate_result,
+        )
+        _behaviour_descriptor(
+            train, program, execution=execution, risk=risk,
+            pip_size=args.pip_size, price_basis=args.price_basis,
+            signal=shared_signal, trades=aggregate_result[1],
+        )
+
     # Warm each measured path once to reduce one-time interpreter/library effects.
     signal_stage()
     backtest_stage()
     fitness_stage()
     descriptor_stage()
+    shared_genome_stage()
 
     timings = {
         "signal_evaluation": timed(signal_stage, args.samples),
         "single_backtest": timed(backtest_stage, args.samples),
         "training_fitness_three_eras": timed(fitness_stage, args.samples),
         "behaviour_descriptor": timed(descriptor_stage, args.samples),
+        "shared_genome_evaluation": timed(shared_genome_stage, args.samples),
     }
 
-    per_genome_seconds = (
-        timings["training_fitness_three_eras"]["median_seconds"]
-        + timings["behaviour_descriptor"]["median_seconds"]
-    )
+    per_genome_seconds = timings["shared_genome_evaluation"]["median_seconds"]
     population = 128
     report = {
         "project": "Project EDGE",
@@ -173,8 +190,8 @@ def main() -> None:
         "elapsed_seconds": time.perf_counter() - total_start,
         "interpretation": [
             "Training fitness evaluates the aggregate training frame and three chronological training eras.",
-            "Behaviour descriptor performs another signal evaluation and backtest.",
-            "The population estimate is a linear estimate, not a measured full generation.",
+            "Shared genome evaluation reuses aggregate signals and trades between fitness and behaviour descriptors.",
+            "The population estimate uses the shared evaluation timing and remains a linear estimate, not a measured full generation.",
             "Validation and final holdout are not used in the measured evolution workload.",
         ],
     }
