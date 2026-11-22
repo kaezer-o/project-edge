@@ -123,34 +123,6 @@ def _summarize_other_structures(
     }
 
 
-def _merge_structure_summaries(
-    summaries: list[dict[str, object]],
-    *,
-    limit: int = 12,
-) -> dict[str, object]:
-    merged: dict[str, dict[str, object]] = {}
-    total = 0
-    for summary in summaries:
-        total += int(summary["unclassified_genomes"])
-        for item in summary["top_archetypes"]:
-            fingerprint = str(item["fingerprint"])
-            if fingerprint not in merged:
-                merged[fingerprint] = {**item}
-            else:
-                merged[fingerprint]["count"] = (
-                    int(merged[fingerprint]["count"]) + int(item["count"])
-                )
-    ranked = sorted(
-        merged.values(),
-        key=lambda item: (-int(item["count"]), str(item["fingerprint"])),
-    )
-    return {
-        "unclassified_genomes": total,
-        "distinct_archetypes": len(merged),
-        "top_archetypes": ranked[:limit],
-    }
-
-
 def _rank(values: np.ndarray) -> np.ndarray:
     if len(values) <= 1:
         return np.ones(len(values), dtype=float)
@@ -504,7 +476,10 @@ def run_island_evolution(
                 family_counts[family] = family_counts.get(family, 0) + count
             for strategy_class, count in island_classes.items():
                 class_counts[strategy_class] = class_counts.get(strategy_class, 0) + count
-        other_structures = _merge_structure_summaries(island_other_structures)
+        other_structures = _summarize_other_structures(
+            [row for rows in evaluated_islands for row in rows],
+            limit=12,
+        )
         history.append({
             "generation": generation,
             "unclassified_structure_diagnostics": other_structures,
