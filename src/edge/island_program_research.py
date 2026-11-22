@@ -488,6 +488,7 @@ def _run_signature(
         "strategy_family_classifier_version": 3,
         "structure_diagnostics_version": 2,
         "structural_motif_taxonomy_version": 1,
+        "population_motif_telemetry_version": 1,
     }
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
     return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
