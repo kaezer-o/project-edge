@@ -58,6 +58,14 @@ to validation or final-test outcomes.
      each genome once (pure family, hybrid, other or random fallback) and sum
      exactly to population size. Per-island counts expose local family collapse
      that aggregate counts can hide.
+   - For genomes classified as `other`, generation telemetry records
+     value-normalized expression-tree fingerprints, long/short AST node counts
+     and depths, operator counts, feature sets, rolling lookbacks and
+     long/short-only features. Global and per-island summaries retain the most
+     common structural archetypes. Constant thresholds are normalized so
+     structurally equivalent rules with different threshold values group
+     together. These diagnostics are descriptive only and do not affect
+     fitness, selection, validation or execution.
    - Each island retains a configurable minimum number of top-fitness elites
      from every recognizable family. A capped additional allocation gives one
      extra protected slot to the strongest half of families, ranked by the mean

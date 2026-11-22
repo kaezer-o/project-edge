@@ -135,6 +135,79 @@ def _volatility_family_lookbacks(
     return lookbacks
 
 
+def _expression_structure(root) -> dict[str, object]:
+    """Return a value-normalized AST shape and compact structural metrics."""
+    operators: dict[str, int] = {}
+    features: set[str] = set()
+    lookbacks: set[int] = set()
+    node_count = 0
+    max_depth = 0
+
+    def visit(node, depth: int):
+        nonlocal node_count, max_depth
+        node_count += 1
+        max_depth = max(max_depth, depth)
+        operators[node.op] = operators.get(node.op, 0) + 1
+        if node.op == "feature":
+            features.add(str(node.value))
+        if node.op == "rolling_mean" and isinstance(node.value, int):
+            lookbacks.add(int(node.value))
+        if node.op == "const":
+            value = "*"
+        elif node.op == "rolling_mean":
+            value = node.value
+        elif node.op == "feature":
+            value = str(node.value)
+        else:
+            value = None
+        return {
+            "op": node.op,
+            "value": value,
+            "args": [visit(child, depth + 1) for child in node.args],
+        }
+
+    tree = visit(root, 1)
+    return {
+        "tree": tree,
+        "nodes": node_count,
+        "depth": max_depth,
+        "operators": dict(sorted(operators.items())),
+        "features": sorted(features),
+        "lookbacks": sorted(lookbacks),
+    }
+
+
+def _program_structure_diagnostics(program: StrategyProgram) -> dict[str, object]:
+    """Describe AST topology without changing evaluation or selection."""
+    long = _expression_structure(program.long_entry)
+    short = _expression_structure(program.short_entry)
+    long_features = set(long["features"])
+    short_features = set(short["features"])
+    payload = {
+        "long": long["tree"],
+        "short": short["tree"],
+    }
+    fingerprint = hashlib.sha256(
+        json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    operator_counts = {
+        "long": long["operators"],
+        "short": short["operators"],
+    }
+    return {
+        "fingerprint": fingerprint,
+        "long_nodes": long["nodes"],
+        "short_nodes": short["nodes"],
+        "long_depth": long["depth"],
+        "short_depth": short["depth"],
+        "operator_counts": operator_counts,
+        "features": sorted(long_features | short_features),
+        "lookbacks": sorted(set(long["lookbacks"]) | set(short["lookbacks"])),
+        "long_only_features": sorted(long_features - short_features),
+        "short_only_features": sorted(short_features - long_features),
+    }
+
+
 def _classify_strategy_families(program: StrategyProgram) -> list[str]:
     """Classify recognizable rule structures, not incidental feature usage."""
     long_rule, short_rule = program.long_entry, program.short_entry
@@ -281,6 +354,7 @@ def _behaviour_descriptor(
         "signal_fingerprint": signal_fingerprint,
         "behaviour_fingerprint": behaviour_fingerprint,
         "families": sorted(families),
+        "structure": _program_structure_diagnostics(program),
     }
 
 
@@ -355,6 +429,7 @@ def _run_signature(
         "fitness_version": 7,
         "strategy_seed_version": 1,
         "strategy_family_classifier_version": 3,
+        "structure_diagnostics_version": 1,
     }
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
     return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
