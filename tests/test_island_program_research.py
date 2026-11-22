@@ -377,11 +377,32 @@ def test_training_signal_diversity_filter_rejects_redundant_finalists(monkeypatc
         programs[1].fingerprint(): np.array([1, 1, 1, 1, 0, 0, 0, 0], dtype=np.int8),
         programs[2].fingerprint(): np.array([0, 0, 0, 0, 0, 0, -1, -1], dtype=np.int8),
     }
+    entry = pd.Timestamp("2024-01-01T00:00:00Z")
+    same_path = pd.DataFrame([
+        {"entry_time": entry, "direction": "long", "exit_time": entry + pd.Timedelta(hours=1), "exit_reason": "target"},
+        {"entry_time": entry + pd.Timedelta(hours=2), "direction": "short", "exit_time": entry + pd.Timedelta(hours=3), "exit_reason": "stop"},
+    ])
+    distinct_path = pd.DataFrame([
+        {"entry_time": entry + pd.Timedelta(days=1), "direction": "short", "exit_time": entry + pd.Timedelta(days=1, hours=2), "exit_reason": "time"},
+    ])
+    trades_by_fingerprint = {
+        programs[0].fingerprint(): same_path,
+        programs[1].fingerprint(): same_path.copy(),
+        programs[2].fingerprint(): distinct_path,
+    }
     monkeypatch.setattr(
         island_program_research,
         "evaluate_program",
-        lambda program, _frame: pd.Series(
-            signals_by_fingerprint[program.fingerprint()]
+        lambda program, frame: pd.Series(
+            signals_by_fingerprint[program.fingerprint()], index=frame.index
+        ),
+    )
+    monkeypatch.setattr(
+        island_program_research,
+        "_evaluate",
+        lambda _frame, program, **_kwargs: (
+            {},
+            trades_by_fingerprint[program.fingerprint()],
         ),
     )
     ranked = [
@@ -395,6 +416,10 @@ def test_training_signal_diversity_filter_rejects_redundant_finalists(monkeypatc
         pd.DataFrame(index=range(8)),
         similarity_threshold=0.90,
         limit=3,
+        execution=ExecutionConfig(),
+        risk=RiskConfig(),
+        pip_size=0.0001,
+        price_basis="mid",
     )
 
     assert [item[1].fingerprint() for item in selected] == [
@@ -402,10 +427,120 @@ def test_training_signal_diversity_filter_rejects_redundant_finalists(monkeypatc
         programs[2].fingerprint(),
     ]
     assert diagnostics["selected_fitness_ranks"] == [1, 3]
-    assert diagnostics["rejected_as_redundant"][0]["fitness_rank"] == 2
-    assert diagnostics["rejected_as_redundant"][0]["most_similar_selected_fitness_rank"] == 1
+    rejected = diagnostics["rejected_as_redundant"][0]
+    assert rejected["fitness_rank"] == 2
+    assert rejected["most_similar_selected_fitness_rank"] == 1
+    assert rejected["max_directional_signal_jaccard"] == 1.0
+    assert rejected["max_training_trade_path_jaccard"] == 1.0
+    assert rejected["max_risk_profile_similarity"] == 1.0
     assert diagnostics["validation_used_for_selection"] is False
     assert diagnostics["final_test_used_for_selection"] is False
+
+
+def test_training_signal_filter_keeps_same_signals_with_different_trade_paths(monkeypatch):
+    feature = lambda name: Expr("feature", value=name)
+    programs = [
+        StrategyProgram(
+            long_entry=Expr("gt", (feature("ema_gap_atr"), Expr("const", value=value))),
+            short_entry=Expr("lt", (feature("ema_gap_atr"), Expr("const", value=0))),
+        )
+        for value in (1, 2)
+    ]
+    signal = np.array([1, 1, 0, -1, -1, 0], dtype=np.int8)
+    monkeypatch.setattr(
+        island_program_research,
+        "evaluate_program",
+        lambda _program, frame: pd.Series(signal, index=frame.index),
+    )
+    entry = pd.Timestamp("2024-01-01T00:00:00Z")
+    paths = {
+        programs[0].fingerprint(): pd.DataFrame([{
+            "entry_time": entry,
+            "direction": "long",
+            "exit_time": entry + pd.Timedelta(hours=1),
+            "exit_reason": "target",
+        }]),
+        programs[1].fingerprint(): pd.DataFrame([{
+            "entry_time": entry,
+            "direction": "long",
+            "exit_time": entry + pd.Timedelta(hours=4),
+            "exit_reason": "time",
+        }]),
+    }
+    monkeypatch.setattr(
+        island_program_research,
+        "_evaluate",
+        lambda _frame, program, **_kwargs: ({}, paths[program.fingerprint()]),
+    )
+    ranked = [(2.0, programs[0], {}, {}), (1.0, programs[1], {}, {})]
+
+    selected, diagnostics = island_program_research._training_signal_diverse_shortlist(
+        ranked,
+        pd.DataFrame(index=range(len(signal))),
+        similarity_threshold=0.95,
+        limit=2,
+        execution=ExecutionConfig(),
+        risk=RiskConfig(),
+        pip_size=0.0001,
+        price_basis="mid",
+    )
+
+    assert len(selected) == 2
+    assert diagnostics["rejected_as_redundant"] == []
+
+
+def test_training_signal_filter_keeps_materially_different_risk_profiles(monkeypatch):
+    feature = lambda name: Expr("feature", value=name)
+    programs = [
+        StrategyProgram(
+            long_entry=Expr("gt", (feature("ema_gap_atr"), Expr("const", value=1))),
+            short_entry=Expr("lt", (feature("ema_gap_atr"), Expr("const", value=0))),
+            stop_atr=1.5,
+            reward_risk=reward_risk,
+            max_holding_bars=holding,
+        )
+        for reward_risk, holding in ((2.0, 24), (3.5, 48))
+    ]
+    signal = np.array([1, 1, 0, -1, -1, 0], dtype=np.int8)
+    monkeypatch.setattr(
+        island_program_research,
+        "evaluate_program",
+        lambda _program, frame: pd.Series(signal, index=frame.index),
+    )
+    entry = pd.Timestamp("2024-01-01T00:00:00Z")
+    same_path = pd.DataFrame([{
+        "entry_time": entry,
+        "direction": "long",
+        "exit_time": entry + pd.Timedelta(hours=1),
+        "exit_reason": "target",
+    }])
+    monkeypatch.setattr(
+        island_program_research,
+        "_evaluate",
+        lambda _frame, _program, **_kwargs: ({}, same_path.copy()),
+    )
+    ranked = [(2.0, programs[0], {}, {}), (1.0, programs[1], {}, {})]
+
+    selected, diagnostics = island_program_research._training_signal_diverse_shortlist(
+        ranked,
+        pd.DataFrame(index=range(len(signal))),
+        similarity_threshold=0.95,
+        limit=2,
+        execution=ExecutionConfig(),
+        risk=RiskConfig(),
+        pip_size=0.0001,
+        price_basis="mid",
+    )
+
+    assert len(selected) == 2
+    assert diagnostics["rejected_as_redundant"] == []
+
+
+def test_directional_signal_jaccard_distinguishes_opposite_directions():
+    left = np.array([1, 0, -1, 0], dtype=np.int8)
+    right = np.array([-1, 0, 1, 0], dtype=np.int8)
+
+    assert island_program_research._directional_signal_jaccard(left, right) == 0.0
 
 
 def test_training_signal_diversity_filter_validates_threshold():
@@ -417,4 +552,8 @@ def test_training_signal_diversity_filter_validates_threshold():
             pd.DataFrame(),
             similarity_threshold=1.01,
             limit=20,
+            execution=ExecutionConfig(),
+            risk=RiskConfig(),
+            pip_size=0.0001,
+            price_basis="mid",
         )
