@@ -672,3 +672,33 @@ def test_finalist_limit_cli_rejects_non_integer_values():
             "--input", "data.csv",
             "--finalist-limit", "not-an-integer",
         ])
+
+
+def test_training_eligibility_filter_excludes_ineligible_and_non_finite_scores():
+    programs = [
+        StrategyProgram(
+            long_entry=Expr("gt", (Expr("feature", value="ema_gap_atr"), Expr("const", value=value))),
+            short_entry=Expr("lt", (Expr("feature", value="ema_gap_atr"), Expr("const", value=0))),
+        )
+        for value in (1, 2, 3, 4)
+    ]
+    evaluated = [
+        (2.0, programs[0], {}, {"all_windows_eligible": True}),
+        (-1e9, programs[1], {}, {"all_windows_eligible": False}),
+        (1.0, programs[2], {}, {"all_windows_eligible": False}),
+        (float("nan"), programs[3], {}, {"all_windows_eligible": True}),
+    ]
+
+    eligible, diagnostics = island_program_research._training_eligible_finalists(evaluated)
+
+    assert [row[1].fingerprint() for row in eligible] == [programs[0].fingerprint()]
+    assert diagnostics["evaluated_population_count"] == 4
+    assert diagnostics["eligible_population_count"] == 1
+    assert diagnostics["rejected_population_count"] == 3
+    assert diagnostics["validation_used"] is False
+    assert diagnostics["final_test_used"] is False
+    assert [row["reason"] for row in diagnostics["rejected"]] == [
+        "training_window_ineligible",
+        "training_window_ineligible",
+        "non_finite_or_ineligible_training_fitness",
+    ]
