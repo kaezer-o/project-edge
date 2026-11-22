@@ -43,3 +43,6 @@ availability and compiled GPU architectures, and Numba CUDA availability.
 It does not install dependencies, benchmark a kernel, or establish numerical
 parity. For a GTX 1060, verify that the installed framework build supports
 compute capability 6.1 (sm_61) before attempting a CUDA implementation.
+
+
+The profiler also measures `shared_genome_evaluation`, which reuses the aggregate signal and backtest results between training fitness and behaviour-descriptor construction. The population estimate uses this combined timing. It remains a linear estimate and excludes reproduction, migration, checkpoint I/O, and final validation.
