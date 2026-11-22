@@ -378,14 +378,32 @@ def run_island_evolution(
         ]
         island_family_counts: list[dict[str, int]] = []
         family_counts: dict[str, int] = {}
+        island_class_counts: list[dict[str, int]] = []
+        class_counts: dict[str, int] = {}
         for rows in evaluated_islands:
             island_counts: dict[str, int] = {}
+            island_classes: dict[str, int] = {}
             for row in rows:
-                for family in row["descriptor"]["families"]:
+                families = set(row["descriptor"]["families"])
+                # Family labels are intentionally multi-label for hybrids.
+                for family in families:
                     island_counts[family] = island_counts.get(family, 0) + 1
+                recognized = families - {"hybrid", "hybrid_or_other", "other", "random_fallback"}
+                if "hybrid" in families or len(recognized) > 1:
+                    strategy_class = "hybrid"
+                elif len(recognized) == 1:
+                    strategy_class = next(iter(recognized))
+                elif "random_fallback" in families:
+                    strategy_class = "random_fallback"
+                else:
+                    strategy_class = "other"
+                island_classes[strategy_class] = island_classes.get(strategy_class, 0) + 1
             island_family_counts.append(island_counts)
+            island_class_counts.append(island_classes)
             for family, count in island_counts.items():
                 family_counts[family] = family_counts.get(family, 0) + count
+            for strategy_class, count in island_classes.items():
+                class_counts[strategy_class] = class_counts.get(strategy_class, 0) + count
         history.append({
             "generation": generation,
             "best_fitness": generation_best,
@@ -412,8 +430,13 @@ def run_island_evolution(
                 len({str(row["descriptor"]["behaviour_fingerprint"]) for row in rows})
                 for rows in evaluated_islands
             ],
+            # Multi-label counts can exceed population size when hybrids carry
+            # their component-family labels. Exclusive class counts sum exactly
+            # to the population and are suitable for composition comparisons.
             "strategy_family_population_counts": family_counts,
             "island_strategy_family_population_counts": island_family_counts,
+            "strategy_family_class_population_counts": class_counts,
+            "island_strategy_family_class_population_counts": island_class_counts,
         })
         phase_stats["history_seconds"] = float(phase_stats["history_seconds"]) + (
             time.perf_counter() - history_started
