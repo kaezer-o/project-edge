@@ -265,8 +265,9 @@ def _run_signature(
         "seed": seed,
         "min_train_trades": min_train_trades,
         "min_validation_trades": min_validation_trades,
-        "fitness_version": 5,
+        "fitness_version": 6,
         "strategy_seed_version": 1,
+        "strategy_family_classifier_version": 1,
     }
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
     return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
