@@ -53,8 +53,11 @@ to validation or final-test outcomes.
    - Generation telemetry records unique genomes, unique full behaviours,
      unique signal streams, per-island uniqueness and semantically classified
      strategy-family counts, both globally and separately for each island.
-     Per-island family counts expose local family collapse that aggregate
-     counts can hide.
+     Multi-label family counts include a hybrid's component families and can
+     therefore exceed population size. Separate exclusive class counts assign
+     each genome once (pure family, hybrid, other or random fallback) and sum
+     exactly to population size. Per-island counts expose local family collapse
+     that aggregate counts can hide.
    - Each island retains a configurable minimum number of top-fitness elites
      from every recognizable family. A capped additional allocation gives one
      extra protected slot to the strongest half of families, ranked by the mean
