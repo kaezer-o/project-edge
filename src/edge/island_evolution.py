@@ -426,7 +426,6 @@ def run_island_evolution(
             )
             next_population: list[Genome] = []
             next_behaviours: set[str] = set()
-            selected_elites: list[dict[str, object]] = []
             family_elite_counts: dict[str, int] = {}
 
             def retain_elite(row: dict[str, object]) -> None:
@@ -434,7 +433,6 @@ def run_island_evolution(
                 if behaviour in next_behaviours:
                     return
                 next_population.append(_json_copy(row["genome"]))
-                selected_elites.append(row)
                 next_behaviours.add(behaviour)
                 for family in row["descriptor"]["families"]:
                     if family not in {"hybrid_or_other", "other", "random_fallback"}:
