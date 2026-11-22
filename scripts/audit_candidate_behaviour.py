@@ -342,7 +342,7 @@ def _write_markdown(audit: dict[str, Any], path: Path) -> None:
             )
     lines.extend(["", "## Limitations", ""])
     lines.extend(f"- {item}" for item in audit["limitations"])
-    path.write_text("\\n".join(lines) + "\\n", encoding="utf-8")
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 def main() -> None:
@@ -392,7 +392,7 @@ def main() -> None:
     )
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(json.dumps(audit, indent=2, sort_keys=True, default=str) + "\\n", encoding="utf-8")
+    output.write_text(json.dumps(audit, indent=2, sort_keys=True, default=str) + "\n", encoding="utf-8")
     markdown_path = output.with_suffix(".md")
     _write_markdown(audit, markdown_path)
     print(f"Audited {len(reports)} runs and {audit['scope']['candidate_count']} finalists.")
