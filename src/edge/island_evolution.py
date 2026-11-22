@@ -78,6 +78,79 @@ def _json_copy(value: Any) -> Any:
     return json.loads(json.dumps(value, allow_nan=False))
 
 
+def _summarize_other_structures(
+    rows: list[dict[str, object]],
+    *,
+    limit: int = 8,
+) -> dict[str, object]:
+    """Summarize structural archetypes for genomes classified as other."""
+    archetypes: dict[str, dict[str, object]] = {}
+    unclassified = 0
+    for row in rows:
+        descriptor = row["descriptor"]
+        if "other" not in descriptor["families"]:
+            continue
+        structure = descriptor.get("structure")
+        if not isinstance(structure, dict):
+            continue
+        unclassified += 1
+        fingerprint = str(structure["fingerprint"])
+        item = archetypes.setdefault(
+            fingerprint,
+            {
+                "fingerprint": fingerprint,
+                "count": 0,
+                "long_nodes": int(structure["long_nodes"]),
+                "short_nodes": int(structure["short_nodes"]),
+                "long_depth": int(structure["long_depth"]),
+                "short_depth": int(structure["short_depth"]),
+                "operator_counts": structure["operator_counts"],
+                "features": structure["features"],
+                "lookbacks": structure["lookbacks"],
+                "long_only_features": structure["long_only_features"],
+                "short_only_features": structure["short_only_features"],
+            },
+        )
+        item["count"] = int(item["count"]) + 1
+    ranked = sorted(
+        archetypes.values(),
+        key=lambda item: (-int(item["count"]), str(item["fingerprint"])),
+    )
+    return {
+        "unclassified_genomes": unclassified,
+        "distinct_archetypes": len(archetypes),
+        "top_archetypes": ranked[:limit],
+    }
+
+
+def _merge_structure_summaries(
+    summaries: list[dict[str, object]],
+    *,
+    limit: int = 12,
+) -> dict[str, object]:
+    merged: dict[str, dict[str, object]] = {}
+    total = 0
+    for summary in summaries:
+        total += int(summary["unclassified_genomes"])
+        for item in summary["top_archetypes"]:
+            fingerprint = str(item["fingerprint"])
+            if fingerprint not in merged:
+                merged[fingerprint] = {**item}
+            else:
+                merged[fingerprint]["count"] = (
+                    int(merged[fingerprint]["count"]) + int(item["count"])
+                )
+    ranked = sorted(
+        merged.values(),
+        key=lambda item: (-int(item["count"]), str(item["fingerprint"])),
+    )
+    return {
+        "unclassified_genomes": total,
+        "distinct_archetypes": len(merged),
+        "top_archetypes": ranked[:limit],
+    }
+
+
 def _rank(values: np.ndarray) -> np.ndarray:
     if len(values) <= 1:
         return np.ones(len(values), dtype=float)
@@ -96,13 +169,34 @@ def _rank(values: np.ndarray) -> np.ndarray:
 
 
 def _validate_descriptor(descriptor: BehaviourDescriptor) -> BehaviourDescriptor:
-    if not isinstance(descriptor, dict) or set(descriptor) != {"rates", "trades", "signal_fingerprint", "behaviour_fingerprint", "families"}:
+    required = {"rates", "trades", "signal_fingerprint", "behaviour_fingerprint", "families"}
+    if (
+        not isinstance(descriptor, dict)
+        or not required.issubset(descriptor)
+        or set(descriptor) - (required | {"structure"})
+    ):
         raise ValueError("Behaviour descriptor has an invalid schema")
     rates = descriptor["rates"]
     trades = descriptor["trades"]
     signal_fingerprint = descriptor["signal_fingerprint"]
     behaviour_fingerprint = descriptor["behaviour_fingerprint"]
     families = descriptor["families"]
+    structure = descriptor.get("structure")
+    if structure is not None:
+        if (
+            not isinstance(structure, dict)
+            or not isinstance(structure.get("fingerprint"), str)
+            or not structure["fingerprint"]
+            or not isinstance(structure.get("long_nodes"), int)
+            or not isinstance(structure.get("short_nodes"), int)
+            or not isinstance(structure.get("long_depth"), int)
+            or not isinstance(structure.get("short_depth"), int)
+            or not isinstance(structure.get("operator_counts"), dict)
+            or not isinstance(structure.get("features"), list)
+            or not isinstance(structure.get("lookbacks"), list)
+        ):
+            raise ValueError("Behaviour descriptor contains invalid structure diagnostics")
+        _json_copy(structure)
     if (
         not isinstance(rates, list)
         or not rates
@@ -118,7 +212,10 @@ def _validate_descriptor(descriptor: BehaviourDescriptor) -> BehaviourDescriptor
         or any(not isinstance(item, str) or not item for item in families)
     ):
         raise ValueError("Behaviour descriptor contains invalid rates or trade events")
-    return {"rates": list(map(float, rates)), "trades": sorted(trades), "signal_fingerprint": signal_fingerprint, "behaviour_fingerprint": behaviour_fingerprint, "families": sorted(set(families))}
+    result = {"rates": list(map(float, rates)), "trades": sorted(trades), "signal_fingerprint": signal_fingerprint, "behaviour_fingerprint": behaviour_fingerprint, "families": sorted(set(families))}
+    if structure is not None:
+        result["structure"] = _json_copy(structure)
+    return result
 
 
 def _descriptor_distance(first: BehaviourDescriptor, second: BehaviourDescriptor) -> float:
@@ -380,6 +477,8 @@ def run_island_evolution(
         family_counts: dict[str, int] = {}
         island_class_counts: list[dict[str, int]] = []
         class_counts: dict[str, int] = {}
+        island_other_structures: list[dict[str, object]] = []
+        other_structures: dict[str, dict[str, object]] = {}
         for rows in evaluated_islands:
             island_counts: dict[str, int] = {}
             island_classes: dict[str, int] = {}
@@ -398,14 +497,18 @@ def run_island_evolution(
                 else:
                     strategy_class = "other"
                 island_classes[strategy_class] = island_classes.get(strategy_class, 0) + 1
+            island_other_structures.append(_summarize_other_structures(rows))
             island_family_counts.append(island_counts)
             island_class_counts.append(island_classes)
             for family, count in island_counts.items():
                 family_counts[family] = family_counts.get(family, 0) + count
             for strategy_class, count in island_classes.items():
                 class_counts[strategy_class] = class_counts.get(strategy_class, 0) + count
+        other_structures = _merge_structure_summaries(island_other_structures)
         history.append({
             "generation": generation,
+            "unclassified_structure_diagnostics": other_structures,
+            "island_unclassified_structure_diagnostics": island_other_structures,
             "best_fitness": generation_best,
             "best_genome_fingerprint": _fingerprint(generation_best_genome or {}),
             "mean_novelty": float(np.mean([
