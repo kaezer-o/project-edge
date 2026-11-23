@@ -277,7 +277,7 @@ def test_indicators_reset_after_a_data_gap() -> None:
     from edge.data import annotate_gaps
 
     first_index = pd.date_range("2024-01-01", periods=40, freq="min", tz="UTC")
-    second_index = pd.date_range(first_index[-1] + pd.Timedelta(minutes=6), periods=30, freq="min")
+    second_index = pd.date_range(first_index[-1] + pd.Timedelta(6, unit="min"), periods=30, freq="min")
     index = first_index.append(second_index)
     first_close = np.full(len(first_index), 1.10)
     second_close = np.full(len(second_index), 1.20)
@@ -489,8 +489,8 @@ def test_feature_state_resets_only_after_very_long_resampled_gap() -> None:
     from edge.data import annotate_gaps
 
     first = pd.date_range("2024-01-02T00:00:00Z", periods=120, freq="min")
-    moderate = pd.date_range(first[-1] + pd.Timedelta(hours=2), periods=120, freq="min")
-    long = pd.date_range(moderate[-1] + pd.Timedelta(hours=13), periods=120, freq="min")
+    moderate = pd.date_range(first[-1] + pd.Timedelta(2, unit="h"), periods=120, freq="min")
+    long = pd.date_range(moderate[-1] + pd.Timedelta(13, unit="h"), periods=120, freq="min")
     index = first.append(moderate).append(long)
     base = sample_frame(len(index)).copy()
     base.index = index
@@ -760,7 +760,7 @@ def test_compare_independent_ohlc_feeds_reports_timestamp_and_price_differences(
     from edge.source_comparison import compare_ohlc_sources
 
     index_a = pd.date_range("2024-01-01", periods=5, freq="min", tz="UTC")
-    index_b = index_a.delete(2).append(pd.DatetimeIndex([index_a[-1] + pd.Timedelta(minutes=1)]))
+    index_b = index_a.delete(2).append(pd.DatetimeIndex([index_a[-1] + pd.Timedelta(1, unit="min")]))
     a = pd.DataFrame({
         "open": [1.1] * 5, "high": [1.1002] * 5,
         "low": [1.0998] * 5, "close": [1.1000, 1.1001, 1.1002, 1.1001, 1.1000],
