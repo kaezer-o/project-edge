@@ -410,3 +410,58 @@ def test_validation_minimum_trades_uses_ceiling_across_windows(monkeypatch, tmp_
     assert captured_minimums
     assert set(captured_minimums) == {11}
 
+def test_bid_ask_ohlc_cost_stress_widens_actual_ask_prices(monkeypatch):
+    import edge.program_research as research
+    from edge.program import Expr, StrategyProgram
+
+    index = pd.date_range("2025-01-01", periods=30, freq="4h", tz="UTC")
+    frame = pd.DataFrame(
+        {
+            "open": np.full(30, 1.1000),
+            "high": np.full(30, 1.1010),
+            "low": np.full(30, 1.0990),
+            "close": np.full(30, 1.1000),
+            "ask_open": np.full(30, 1.1002),
+            "ask_high": np.full(30, 1.1012),
+            "ask_low": np.full(30, 1.0992),
+            "ask_close": np.full(30, 1.1002),
+            "spread_pips": np.full(30, 2.0),
+            "atr_14": np.full(30, 0.0010),
+        },
+        index=index,
+    )
+    program = StrategyProgram(
+        long_entry=Expr(
+            "gt", (Expr("feature", value="ema_gap_atr"), Expr("const", value=0.0))
+        ),
+        short_entry=Expr(
+            "lt", (Expr("feature", value="rsi_14"), Expr("const", value=30.0))
+        ),
+    )
+    observed_spreads = []
+
+    def fake_evaluate(candidate_frame, candidate_program, **kwargs):
+        observed_spreads.append(
+            float((candidate_frame["ask_open"] - candidate_frame["open"]).iloc[0])
+        )
+        return {
+            "trades": 10,
+            "expectancy_r": 0.1,
+            "profit_factor": 1.2,
+            "max_realized_drawdown_pct": 0.01,
+        }, pd.DataFrame()
+
+    monkeypatch.setattr(research, "_evaluate", fake_evaluate)
+    research._validation_check(
+        frame,
+        program,
+        execution=ExecutionConfig(spread_pips=2.0),
+        risk=RiskConfig(),
+        pip_size=0.0001,
+        price_basis="bid",
+        min_trades=1,
+    )
+
+    assert observed_spreads[-2] == pytest.approx(0.0003)
+    assert observed_spreads[-1] == pytest.approx(0.0004)
+
