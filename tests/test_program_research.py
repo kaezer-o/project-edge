@@ -170,6 +170,44 @@ def test_training_fitness_reuses_precomputed_aggregate_result(monkeypatch):
 
 
 
+
+def test_validation_reports_two_of_three_pass_separately_from_strict_pass(monkeypatch):
+    import edge.program_research as research
+    from edge.program import Expr, StrategyProgram
+
+    index = pd.date_range("2025-01-01", periods=90, freq="h", tz="UTC")
+    frame = pd.DataFrame({"close": np.ones(90)}, index=index)
+    program = StrategyProgram(
+        long_entry=Expr("gt", (Expr("feature", value="ema_gap_atr"), Expr("const", value=0.0))),
+        short_entry=Expr("lt", (Expr("feature", value="rsi_14"), Expr("const", value=30.0))),
+    )
+
+    def fake_evaluate(candidate_frame, candidate_program, *, execution, risk, pip_size, price_basis):
+        is_third_window = len(candidate_frame) == 30 and candidate_frame.index[0] == index[60]
+        metrics = {
+            "trades": 10,
+            "expectancy_r": -0.1 if is_third_window else 0.1,
+            "profit_factor": 0.8 if is_third_window else 1.2,
+            "max_realized_drawdown_pct": 0.01,
+        }
+        return metrics, pd.DataFrame()
+
+    monkeypatch.setattr(research, "_evaluate", fake_evaluate)
+    result = _validation_check(
+        frame,
+        program,
+        execution=ExecutionConfig(spread_pips=0.8),
+        risk=RiskConfig(),
+        pip_size=0.0001,
+        price_basis="mid",
+        min_trades=5,
+    )
+
+    assert result["passed_windows"] == 2
+    assert result["pass"] is True
+    assert result["strict_pass"] is False
+
+
 def test_cost_stress_report_explains_trade_set_changes(monkeypatch):
     import edge.program_research as research
     from edge.program import Expr, StrategyProgram
