@@ -299,7 +299,15 @@ def _validation_check(
             window, program, execution=execution, risk=risk,
             pip_size=pip_size, price_basis=price_basis,
         )
-        trades = int(metrics.get("trades") or 0)
+        raw_trade_count = metrics.get("trades", 0)
+        numeric_trade_count = finite_number(raw_trade_count or 0)
+        trades = (
+            int(numeric_trade_count)
+            if numeric_trade_count is not None
+            and numeric_trade_count >= 0
+            and numeric_trade_count.is_integer()
+            else 0
+        )
         exp = finite_number(metrics.get("expectancy_r"))
         pf = finite_number(metrics.get("profit_factor"))
         dd = finite_number(metrics.get("max_realized_drawdown_pct"))
