@@ -64,6 +64,7 @@ def test_program_research_runs_evolution_and_writes_reproducible_report(tmp_path
     assert saved["data"]["final_test_bars"] == 300
     assert saved["final_test"] is None
     assert saved["final_test_skipped"] is True
+    assert saved["evolution"]["training_robustness"]["minimum_trades_per_window"] == 5
     for candidate in saved["candidates"]:
         assert candidate["program"]["version"] == 1
         assert candidate["fingerprint"]
