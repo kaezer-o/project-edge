@@ -373,7 +373,7 @@ def test_validation_summary_reports_pass_breadth_without_changing_gate():
                 {"passed": True, "metrics": {"trades": 20, "expectancy_r": 0.1, "profit_factor": 1.1, "max_realized_drawdown_pct": 0.2}},
                 {"passed": False, "metrics": {"trades": 30, "expectancy_r": -0.1, "profit_factor": 0.9, "max_realized_drawdown_pct": 0.3}},
             ],
-            "cost_stress": [{"pass": True}],
+            "cost_stress": [{"pass": True}, {"pass": False}],
         }},
         {"validation": {
             "pass": True, "strict_pass": True,
@@ -382,7 +382,7 @@ def test_validation_summary_reports_pass_breadth_without_changing_gate():
                 {"passed": True, "metrics": {"trades": 50, "expectancy_r": 0.2, "profit_factor": 1.2, "max_realized_drawdown_pct": 0.1}},
                 {"passed": True, "metrics": {"trades": 60, "expectancy_r": 0.1, "profit_factor": 1.1, "max_realized_drawdown_pct": 0.15}},
             ],
-            "cost_stress": [{"pass": True}],
+            "cost_stress": [{"pass": True}, {"pass": True}],
         }},
         {"validation": {
             "pass": False, "strict_pass": False,
@@ -391,7 +391,7 @@ def test_validation_summary_reports_pass_breadth_without_changing_gate():
                 {"passed": False, "metrics": {"trades": 80, "expectancy_r": -0.1, "profit_factor": 0.9, "max_realized_drawdown_pct": 0.3}},
                 {"passed": False, "metrics": {"trades": 90, "expectancy_r": -0.3, "profit_factor": 0.7, "max_realized_drawdown_pct": 0.35}},
             ],
-            "cost_stress": [{"pass": False}],
+            "cost_stress": [{"pass": False}, {"pass": False}],
         }},
     ]
 
@@ -421,6 +421,7 @@ def test_validation_summary_reports_pass_breadth_without_changing_gate():
                 "window": 2, "candidate_count": 3, "passed_candidates": 2,
                 "nonpositive_expectancy_count": 1,
                 "profit_factor_not_above_one_count": 1,
+                "drawdown_above_20_pct_count": 1,
                 "median_trades": 50.0, "median_expectancy_r": 0.1,
                 "median_profit_factor": 1.1,
                 "median_max_realized_drawdown_pct": 0.2,
