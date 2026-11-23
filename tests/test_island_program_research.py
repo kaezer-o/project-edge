@@ -643,7 +643,7 @@ def test_training_signal_diversity_filter_validates_threshold():
         )
 
 
-def test_finalist_limit_cli_defaults_to_50_and_accepts_custom_value():
+def test_finalist_limit_cli_defaults_to_100_and_accepts_custom_value():
     from edge.cli import _parser
 
     parser = _parser()
@@ -652,7 +652,7 @@ def test_finalist_limit_cli_defaults_to_50_and_accepts_custom_value():
         "evolve-program-islands",
         "--input", "data.csv",
     ])
-    assert default_args.finalist_limit == 50
+    assert default_args.finalist_limit == 100
 
     custom_args = parser.parse_args([
         "evolve-program-islands",
