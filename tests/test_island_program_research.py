@@ -363,6 +363,43 @@ def test_candidate_validation_overlap_measures_trade_event_jaccard():
 
 
 
+
+def test_validation_summary_reports_pass_breadth_without_changing_gate():
+    candidates = [
+        {"validation": {
+            "pass": True, "strict_pass": False,
+            "windows": [{"passed": True}, {"passed": True}, {"passed": False}],
+            "cost_stress": [{"pass": True}],
+        }},
+        {"validation": {
+            "pass": True, "strict_pass": True,
+            "windows": [{"passed": True}, {"passed": True}, {"passed": True}],
+            "cost_stress": [{"pass": True}],
+        }},
+        {"validation": {
+            "pass": False, "strict_pass": False,
+            "windows": [{"passed": False}, {"passed": False}, {"passed": False}],
+            "cost_stress": [{"pass": False}],
+        }},
+    ]
+
+    summary = island_program_research._validation_summary(candidates)
+
+    assert summary == {
+        "candidate_count": 3,
+        "validated_candidate_count": 2,
+        "strictly_validated_candidate_count": 1,
+        "validation_window_pass_distribution": {"0": 1, "1": 0, "2": 1, "3": 1},
+        "validation_window_pass_counts": [
+            {"window": 1, "passed_candidates": 2},
+            {"window": 2, "passed_candidates": 2},
+            {"window": 3, "passed_candidates": 1},
+        ],
+        "one_and_half_x_cost_pass_count": 2,
+        "validation_gate_unchanged": True,
+    }
+
+
 def test_training_signal_diversity_filter_rejects_redundant_finalists(monkeypatch):
     feature = lambda name: Expr("feature", value=name)
     programs = [
