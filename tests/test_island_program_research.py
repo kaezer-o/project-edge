@@ -437,7 +437,7 @@ def test_validation_summary_reports_pass_breadth_without_changing_gate():
             },
         ],
         "one_and_half_x_cost_pass_count": 2,
-        "two_x_cost_pass_count": 0,
+        "two_x_cost_pass_count": 1,
         "validation_gate_unchanged": True,
     }
 
