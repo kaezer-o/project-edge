@@ -698,6 +698,7 @@ def _validation_summary(candidates: list[dict[str, object]]) -> dict[str, object
     """Summarize candidate pass breadth without changing the validation gate."""
     pass_distribution = {str(count): 0 for count in range(4)}
     window_pass_counts = [0, 0, 0]
+    window_metrics: list[list[dict[str, object]]] = [[], [], []]
     cost_stress_pass_count = 0
     validated_count = 0
     strict_count = 0
@@ -710,6 +711,9 @@ def _validation_summary(candidates: list[dict[str, object]]) -> dict[str, object
         for index, window in enumerate(windows[:3]):
             if window.get("passed"):
                 window_pass_counts[index] += 1
+            metrics = window.get("metrics", {})
+            if isinstance(metrics, dict):
+                window_metrics[index].append(metrics)
         if validation.get("pass"):
             validated_count += 1
         if validation.get("strict_pass"):
@@ -717,6 +721,36 @@ def _validation_summary(candidates: list[dict[str, object]]) -> dict[str, object
         stress = validation.get("cost_stress", [])
         if stress and stress[0].get("pass"):
             cost_stress_pass_count += 1
+
+    def median_metric(rows: list[dict[str, object]], key: str) -> float | None:
+        values = [
+            float(row[key])
+            for row in rows
+            if row.get(key) is not None and np.isfinite(float(row[key]))
+        ]
+        return float(np.median(values)) if values else None
+
+    per_window = []
+    for index, rows in enumerate(window_metrics):
+        per_window.append({
+            "window": index + 1,
+            "candidate_count": len(rows),
+            "passed_candidates": window_pass_counts[index],
+            "nonpositive_expectancy_count": sum(
+                row.get("expectancy_r") is None or float(row["expectancy_r"]) <= 0
+                for row in rows
+            ),
+            "profit_factor_not_above_one_count": sum(
+                row.get("profit_factor") is None or float(row["profit_factor"]) <= 1
+                for row in rows
+            ),
+            "median_trades": median_metric(rows, "trades"),
+            "median_expectancy_r": median_metric(rows, "expectancy_r"),
+            "median_profit_factor": median_metric(rows, "profit_factor"),
+            "median_max_realized_drawdown_pct": median_metric(
+                rows, "max_realized_drawdown_pct"
+            ),
+        })
 
     return {
         "candidate_count": len(candidates),
@@ -727,6 +761,7 @@ def _validation_summary(candidates: list[dict[str, object]]) -> dict[str, object
             {"window": index + 1, "passed_candidates": count}
             for index, count in enumerate(window_pass_counts)
         ],
+        "validation_window_metrics": per_window,
         "one_and_half_x_cost_pass_count": cost_stress_pass_count,
         "validation_gate_unchanged": True,
     }
