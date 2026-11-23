@@ -6,6 +6,13 @@ import numpy as np
 import pandas as pd
 
 
+def _finite_or_none(value: float | None) -> float | None:
+    """Keep undefined and non-finite metrics JSON-safe."""
+    if value is None or not math.isfinite(value):
+        return None
+    return float(value)
+
+
 def calculate_metrics(trades: pd.DataFrame, equity_curve: pd.DataFrame) -> dict[str, float | int | None]:
     if trades.empty:
         return {
@@ -47,12 +54,12 @@ def calculate_metrics(trades: pd.DataFrame, equity_curve: pd.DataFrame) -> dict[
     return {
         "trades": int(len(trades)),
         "gap_exits": int(trades.get("gap_exit", pd.Series(False, index=trades.index)).fillna(False).sum()),
-        "win_rate": float((returns > 0).mean()),
-        "profit_factor": float(profit_factor) if profit_factor is not None else None,
-        "expectancy_r": float(returns.mean()),
-        "average_win_r": float(winners.mean()) if not winners.empty else None,
-        "average_loss_r": float(losers.mean()) if not losers.empty else None,
-        "max_realized_drawdown_pct": max_drawdown,
-        "total_return_pct": total_return,
-        "trade_sharpe_unannualized": trade_sharpe,
+        "win_rate": _finite_or_none(float((returns > 0).mean())),
+        "profit_factor": _finite_or_none(profit_factor),
+        "expectancy_r": _finite_or_none(float(returns.mean())),
+        "average_win_r": _finite_or_none(float(winners.mean())) if not winners.empty else None,
+        "average_loss_r": _finite_or_none(float(losers.mean())) if not losers.empty else None,
+        "max_realized_drawdown_pct": _finite_or_none(max_drawdown),
+        "total_return_pct": _finite_or_none(total_return),
+        "trade_sharpe_unannualized": _finite_or_none(trade_sharpe),
     }
