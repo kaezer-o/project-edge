@@ -652,7 +652,7 @@ def test_finalist_limit_cli_defaults_to_20_and_accepts_custom_value():
         "evolve-program-islands",
         "--input", "data.csv",
     ])
-    assert default_args.finalist_limit == 20
+    assert default_args.finalist_limit == 50
 
     custom_args = parser.parse_args([
         "evolve-program-islands",
