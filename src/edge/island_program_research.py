@@ -700,6 +700,7 @@ def _validation_summary(candidates: list[dict[str, object]]) -> dict[str, object
     window_pass_counts = [0, 0, 0]
     window_metrics: list[list[dict[str, object]]] = [[], [], []]
     cost_stress_pass_count = 0
+    two_x_cost_stress_pass_count = 0
     validated_count = 0
     strict_count = 0
 
@@ -721,6 +722,8 @@ def _validation_summary(candidates: list[dict[str, object]]) -> dict[str, object
         stress = validation.get("cost_stress", [])
         if stress and stress[0].get("pass"):
             cost_stress_pass_count += 1
+        if len(stress) > 1 and stress[1].get("pass"):
+            two_x_cost_stress_pass_count += 1
 
     def median_metric(rows: list[dict[str, object]], key: str) -> float | None:
         values = [
@@ -744,6 +747,11 @@ def _validation_summary(candidates: list[dict[str, object]]) -> dict[str, object
                 row.get("profit_factor") is None or float(row["profit_factor"]) <= 1
                 for row in rows
             ),
+            "drawdown_above_20_pct_count": sum(
+                row.get("max_realized_drawdown_pct") is None
+                or float(row["max_realized_drawdown_pct"]) > 0.20
+                for row in rows
+            ),
             "median_trades": median_metric(rows, "trades"),
             "median_expectancy_r": median_metric(rows, "expectancy_r"),
             "median_profit_factor": median_metric(rows, "profit_factor"),
@@ -763,6 +771,7 @@ def _validation_summary(candidates: list[dict[str, object]]) -> dict[str, object
         ],
         "validation_window_metrics": per_window,
         "one_and_half_x_cost_pass_count": cost_stress_pass_count,
+        "two_x_cost_pass_count": two_x_cost_stress_pass_count,
         "validation_gate_unchanged": True,
     }
 
