@@ -8,6 +8,7 @@ from edge.config import ExecutionConfig, RiskConfig
 from edge.program_research import (
     _combine_training_fitness,
     _diverse_ranked,
+    _fitness,
     _minimum_window_trades,
     _program_structure,
     _validation_check,
@@ -268,3 +269,41 @@ def test_cost_stress_report_explains_trade_set_changes(monkeypatch):
     assert diagnostic["entry_event_jaccard_similarity"] == pytest.approx(1 / 3)
     assert diagnostic["expectancy_delta_r"] == pytest.approx(0.02)
     assert diagnostic["profit_factor_delta"] == pytest.approx(0.1)
+
+
+
+def test_training_fitness_keeps_non_finite_profit_factor_out_of_score():
+    from edge.program import Expr, StrategyProgram
+
+    program = StrategyProgram(
+        long_entry=Expr("const", value=True),
+        short_entry=Expr("const", value=False),
+    )
+    base = {
+        "trades": 30,
+        "expectancy_r": 0.1,
+        "max_realized_drawdown_pct": 0.01,
+    }
+    missing = _fitness(base, program, 10)
+    for invalid_profit_factor in (float("nan"), float("inf"), float("-inf"), -1.0):
+        metrics = {**base, "profit_factor": invalid_profit_factor}
+        assert _fitness(metrics, program, 10) == missing
+    assert np.isfinite(missing)
+
+
+def test_training_fitness_rejects_non_finite_core_metrics():
+    from edge.program import Expr, StrategyProgram
+
+    program = StrategyProgram(
+        long_entry=Expr("const", value=True),
+        short_entry=Expr("const", value=False),
+    )
+    for key in ("trades", "expectancy_r", "max_realized_drawdown_pct"):
+        metrics = {
+            "trades": 30,
+            "expectancy_r": 0.1,
+            "max_realized_drawdown_pct": 0.01,
+            "profit_factor": 1.5,
+        }
+        metrics[key] = float("nan")
+        assert _fitness(metrics, program, 10) == -1e9
