@@ -753,7 +753,7 @@ def run_island_program_research(
     resume: bool = False,
     run_final_test: bool = False,
     finalist_similarity_threshold: float | None = None,
-    finalist_limit: int = 20,
+    finalist_limit: int = 50,
 ) -> dict[str, object]:
     """Run resumable multi-island program evolution; only training reaches the evaluator."""
     if generations < 1:
