@@ -45,10 +45,11 @@ def calculate_metrics(trades: pd.DataFrame, equity_curve: pd.DataFrame) -> dict[
         max_drawdown = float(drawdowns.max()) if not drawdowns.empty else 0.0
         total_return = float((equity.iloc[-1] / equity.iloc[0]) - 1) if len(equity) > 1 else 0.0
 
-    std = float(returns.std(ddof=1)) if len(returns) > 1 else 0.0
+    finite_returns = bool(np.isfinite(returns.to_numpy()).all())
+    std = float(returns.std(ddof=1)) if len(returns) > 1 and finite_returns else None
     trade_sharpe = (
         float(returns.mean() / std * math.sqrt(len(returns)))
-        if std > 0
+        if std is not None and std > 0
         else None
     )
     return {
