@@ -748,8 +748,12 @@ def _validation_summary(candidates: list[dict[str, object]]) -> dict[str, object
                 for row in rows
             ),
             "drawdown_above_20_pct_count": sum(
+                row.get("max_realized_drawdown_pct") is not None
+                and float(row["max_realized_drawdown_pct"]) > 0.20
+                for row in rows
+            ),
+            "missing_drawdown_count": sum(
                 row.get("max_realized_drawdown_pct") is None
-                or float(row["max_realized_drawdown_pct"]) > 0.20
                 for row in rows
             ),
             "median_trades": median_metric(rows, "trades"),
