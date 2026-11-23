@@ -368,17 +368,29 @@ def test_validation_summary_reports_pass_breadth_without_changing_gate():
     candidates = [
         {"validation": {
             "pass": True, "strict_pass": False,
-            "windows": [{"passed": True}, {"passed": True}, {"passed": False}],
+            "windows": [
+                {"passed": True, "metrics": {"trades": 10, "expectancy_r": 0.2, "profit_factor": 1.2, "max_realized_drawdown_pct": 0.1}},
+                {"passed": True, "metrics": {"trades": 20, "expectancy_r": 0.1, "profit_factor": 1.1, "max_realized_drawdown_pct": 0.2}},
+                {"passed": False, "metrics": {"trades": 30, "expectancy_r": -0.1, "profit_factor": 0.9, "max_realized_drawdown_pct": 0.3}},
+            ],
             "cost_stress": [{"pass": True}],
         }},
         {"validation": {
             "pass": True, "strict_pass": True,
-            "windows": [{"passed": True}, {"passed": True}, {"passed": True}],
+            "windows": [
+                {"passed": True, "metrics": {"trades": 40, "expectancy_r": 0.3, "profit_factor": 1.3, "max_realized_drawdown_pct": 0.05}},
+                {"passed": True, "metrics": {"trades": 50, "expectancy_r": 0.2, "profit_factor": 1.2, "max_realized_drawdown_pct": 0.1}},
+                {"passed": True, "metrics": {"trades": 60, "expectancy_r": 0.1, "profit_factor": 1.1, "max_realized_drawdown_pct": 0.15}},
+            ],
             "cost_stress": [{"pass": True}],
         }},
         {"validation": {
             "pass": False, "strict_pass": False,
-            "windows": [{"passed": False}, {"passed": False}, {"passed": False}],
+            "windows": [
+                {"passed": False, "metrics": {"trades": 70, "expectancy_r": -0.2, "profit_factor": 0.8, "max_realized_drawdown_pct": 0.25}},
+                {"passed": False, "metrics": {"trades": 80, "expectancy_r": -0.1, "profit_factor": 0.9, "max_realized_drawdown_pct": 0.3}},
+                {"passed": False, "metrics": {"trades": 90, "expectancy_r": -0.3, "profit_factor": 0.7, "max_realized_drawdown_pct": 0.35}},
+            ],
             "cost_stress": [{"pass": False}],
         }},
     ]
@@ -394,6 +406,32 @@ def test_validation_summary_reports_pass_breadth_without_changing_gate():
             {"window": 1, "passed_candidates": 2},
             {"window": 2, "passed_candidates": 2},
             {"window": 3, "passed_candidates": 1},
+        ],
+        "validation_window_metrics": [
+            {
+                "window": 1, "candidate_count": 3, "passed_candidates": 2,
+                "nonpositive_expectancy_count": 1,
+                "profit_factor_not_above_one_count": 1,
+                "median_trades": 40.0, "median_expectancy_r": 0.2,
+                "median_profit_factor": 1.2,
+                "median_max_realized_drawdown_pct": 0.1,
+            },
+            {
+                "window": 2, "candidate_count": 3, "passed_candidates": 2,
+                "nonpositive_expectancy_count": 1,
+                "profit_factor_not_above_one_count": 1,
+                "median_trades": 50.0, "median_expectancy_r": 0.1,
+                "median_profit_factor": 1.1,
+                "median_max_realized_drawdown_pct": 0.2,
+            },
+            {
+                "window": 3, "candidate_count": 3, "passed_candidates": 1,
+                "nonpositive_expectancy_count": 2,
+                "profit_factor_not_above_one_count": 2,
+                "median_trades": 60.0, "median_expectancy_r": -0.1,
+                "median_profit_factor": 0.9,
+                "median_max_realized_drawdown_pct": 0.3,
+            },
         ],
         "one_and_half_x_cost_pass_count": 2,
         "validation_gate_unchanged": True,
