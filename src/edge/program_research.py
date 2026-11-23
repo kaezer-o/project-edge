@@ -351,7 +351,27 @@ def _validation_check(
         )
         stressed_frame = frame.copy()
         if "spread_pips" in stressed_frame.columns:
-            stressed_frame["spread_pips"] = stressed_frame["spread_pips"].astype(float) * multiplier
+            stressed_frame["spread_pips"] = (
+                pd.to_numeric(stressed_frame["spread_pips"], errors="coerce")
+                .fillna(execution.spread_pips) * multiplier
+            )
+        # With actual bid/ask OHLC, run_backtest correctly prefers the quote
+        # prices over spread_pips. Widen the ask side as well so stress tests
+        # still apply the requested incremental spread to those datasets.
+        ask_columns = ("ask_open", "ask_high", "ask_low", "ask_close")
+        if price_basis == "bid" and set(ask_columns).issubset(stressed_frame.columns):
+            base_spread = (
+                pd.to_numeric(frame["spread_pips"], errors="coerce")
+                .fillna(execution.spread_pips)
+                if "spread_pips" in frame.columns
+                else pd.Series(execution.spread_pips, index=frame.index, dtype=float)
+            )
+            extra_spread = (base_spread * (multiplier - 1.0) * pip_size).to_numpy()
+            for column in ask_columns:
+                stressed_frame[column] = (
+                    pd.to_numeric(stressed_frame[column], errors="coerce")
+                    + extra_spread
+                )
         stressed_metrics, stressed_trades = _evaluate(
             stressed_frame, program, execution=stressed_execution, risk=risk,
             pip_size=pip_size, price_basis=price_basis,
