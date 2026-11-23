@@ -69,18 +69,30 @@ def _fitness(
     *,
     sample_multiplier: int = 1,
 ) -> float:
-    count = int(metrics.get("trades") or 0)
-    expectancy = metrics.get("expectancy_r")
-    drawdown = metrics.get("max_realized_drawdown_pct")
+    try:
+        count_value = float(metrics.get("trades") or 0)
+        expectancy = float(metrics.get("expectancy_r"))
+        drawdown = float(metrics.get("max_realized_drawdown_pct"))
+    except (TypeError, ValueError, OverflowError):
+        return -1e9
+    if (
+        not np.isfinite(count_value)
+        or not count_value.is_integer()
+        or not np.isfinite(expectancy)
+        or not np.isfinite(drawdown)
+        or count_value < min_trades
+    ):
+        return -1e9
+    count = int(count_value)
     profit_factor = metrics.get("profit_factor")
-    if count < min_trades or expectancy is None or drawdown is None:
-        return -1e9
-    expectancy = float(expectancy)
-    drawdown = float(drawdown)
-    if not np.isfinite(expectancy) or not np.isfinite(drawdown):
-        return -1e9
+    try:
+        numeric_profit_factor = float(profit_factor)
+    except (TypeError, ValueError, OverflowError):
+        numeric_profit_factor = 0.0
+    if not np.isfinite(numeric_profit_factor) or numeric_profit_factor < 0:
+        numeric_profit_factor = 0.0
     # Training fitness is a ranking signal only; it is not evidence of robustness.
-    pf_bonus = min(float(profit_factor or 0.0), 3.0) * 0.02
+    pf_bonus = min(numeric_profit_factor, 3.0) * 0.02
     return (
         expectancy * np.sqrt(count * sample_multiplier) / (1.0 + 4.0 * drawdown)
         + pf_bonus
