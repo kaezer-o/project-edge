@@ -702,3 +702,42 @@ def test_training_eligibility_filter_excludes_ineligible_and_non_finite_scores()
         "training_window_ineligible",
         "non_finite_or_ineligible_training_fitness",
     ]
+
+
+def test_finalist_selection_report_preserves_requested_limit_above_pool_size(tmp_path):
+    config = IslandEvolutionConfig(
+        islands=2,
+        population_per_island=4,
+        elite_count=1,
+        tournament_size=2,
+        migration_interval=1,
+        migrants_per_island=1,
+        archive_capacity=16,
+        novelty_weight=0.25,
+    )
+    report = run_island_program_research(
+        raw_frame=_market_frame(),
+        timeframe="M15",
+        source_timeframe="M15",
+        symbol="EURUSD",
+        execution=ExecutionConfig(),
+        risk=RiskConfig(),
+        pip_size=0.0001,
+        price_basis="mid",
+        generations=1,
+        seed=23,
+        min_train_trades=1,
+        min_validation_trades=1,
+        checkpoint_path=tmp_path / "checkpoint.json",
+        output_dir=tmp_path / "report",
+        config=config,
+        finalist_similarity_threshold=0.95,
+        finalist_limit=100,
+    )
+
+    selection = report["finalist_selection"]
+    assert selection["requested_limit"] == 100
+    assert selection["fitness_ranked_pool_count"] <= 8
+    assert selection["selected_count"] <= selection["fitness_ranked_pool_count"]
+    assert selection["training_eligibility"]["validation_used"] is False
+    assert selection["training_eligibility"]["final_test_used"] is False
