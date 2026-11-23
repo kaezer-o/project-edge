@@ -516,11 +516,11 @@ def test_training_signal_diversity_filter_rejects_redundant_finalists(monkeypatc
     }
     entry = pd.Timestamp("2024-01-01T00:00:00Z")
     same_path = pd.DataFrame([
-        {"entry_time": entry, "direction": "long", "exit_time": entry + pd.Timedelta(hours=1), "exit_reason": "target"},
-        {"entry_time": entry + pd.Timedelta(hours=2), "direction": "short", "exit_time": entry + pd.Timedelta(hours=3), "exit_reason": "stop"},
+        {"entry_time": entry, "direction": "long", "exit_time": entry + pd.Timedelta(1, unit="h"), "exit_reason": "target"},
+        {"entry_time": entry + pd.Timedelta(2, unit="h"), "direction": "short", "exit_time": entry + pd.Timedelta(3, unit="h"), "exit_reason": "stop"},
     ])
     distinct_path = pd.DataFrame([
-        {"entry_time": entry + pd.Timedelta(days=1), "direction": "short", "exit_time": entry + pd.Timedelta(days=1, hours=2), "exit_reason": "time"},
+        {"entry_time": entry + pd.Timedelta(1, unit="D"), "direction": "short", "exit_time": entry + (pd.Timedelta(1, unit="D") + pd.Timedelta(2, unit="h")), "exit_reason": "time"},
     ])
     trades_by_fingerprint = {
         programs[0].fingerprint(): same_path,
@@ -582,13 +582,13 @@ def test_training_trade_path_events_use_timezone_normalized_compact_keys():
         {
             "entry_time": utc,
             "direction": "LONG",
-            "exit_time": utc + pd.Timedelta(hours=1),
+            "exit_time": utc + pd.Timedelta(1, unit="h"),
             "exit_reason": "TARGET",
         },
         {
             "entry_time": equivalent_local,
             "direction": "long",
-            "exit_time": equivalent_local + pd.Timedelta(hours=1),
+            "exit_time": equivalent_local + pd.Timedelta(1, unit="h"),
             "exit_reason": "target",
         },
     ])
@@ -600,7 +600,7 @@ def test_training_trade_path_events_use_timezone_normalized_compact_keys():
     assert event == (
         int(utc.value),
         "long",
-        int((utc + pd.Timedelta(hours=1)).value),
+        int((utc + pd.Timedelta(1, unit="h")).value),
         "target",
     )
 
@@ -678,13 +678,13 @@ def test_training_signal_filter_keeps_same_signals_with_different_trade_paths(mo
         programs[0].fingerprint(): pd.DataFrame([{
             "entry_time": entry,
             "direction": "long",
-            "exit_time": entry + pd.Timedelta(hours=1),
+            "exit_time": entry + pd.Timedelta(1, unit="h"),
             "exit_reason": "target",
         }]),
         programs[1].fingerprint(): pd.DataFrame([{
             "entry_time": entry,
             "direction": "long",
-            "exit_time": entry + pd.Timedelta(hours=4),
+            "exit_time": entry + pd.Timedelta(4, unit="h"),
             "exit_reason": "time",
         }]),
     }
@@ -732,7 +732,7 @@ def test_training_signal_filter_keeps_materially_different_risk_profiles(monkeyp
     same_path = pd.DataFrame([{
         "entry_time": entry,
         "direction": "long",
-        "exit_time": entry + pd.Timedelta(hours=1),
+        "exit_time": entry + pd.Timedelta(1, unit="h"),
         "exit_reason": "target",
     }])
     monkeypatch.setattr(
