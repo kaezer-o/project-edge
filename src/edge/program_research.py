@@ -650,6 +650,6 @@ def run_program_research(
     output = Path(output_dir)
     output.mkdir(parents=True, exist_ok=True)
     (output / "program_evolution_report.json").write_text(
-        json.dumps(report, indent=2, default=str), encoding="utf-8"
+        json.dumps(report, indent=2, default=str, allow_nan=False), encoding="utf-8"
     )
     return report
