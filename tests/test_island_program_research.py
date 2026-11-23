@@ -464,6 +464,34 @@ def test_validation_summary_separates_missing_drawdown_from_excessive_drawdown()
     assert summary["validation_window_metrics"][1]["missing_drawdown_count"] == 0
 
 
+def test_validation_summary_treats_non_finite_metrics_as_missing():
+    candidates = [{
+        "validation": {
+            "windows": [{
+                "passed": False,
+                "metrics": {
+                    "trades": 10,
+                    "expectancy_r": float("nan"),
+                    "profit_factor": float("inf"),
+                    "max_realized_drawdown_pct": float("nan"),
+                },
+            }],
+            "cost_stress": [],
+        }
+    }]
+
+    summary = island_program_research._validation_summary(candidates)
+    window = summary["validation_window_metrics"][0]
+
+    assert window["nonpositive_expectancy_count"] == 1
+    assert window["profit_factor_not_above_one_count"] == 1
+    assert window["drawdown_above_20_pct_count"] == 0
+    assert window["missing_drawdown_count"] == 1
+    assert window["median_expectancy_r"] is None
+    assert window["median_profit_factor"] is None
+    assert window["median_max_realized_drawdown_pct"] is None
+
+
 def test_training_signal_diversity_filter_rejects_redundant_finalists(monkeypatch):
     feature = lambda name: Expr("feature", value=name)
     programs = [
