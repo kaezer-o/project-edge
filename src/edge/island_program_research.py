@@ -749,11 +749,21 @@ def _validation_summary(candidates: list[dict[str, object]]) -> dict[str, object
             "candidate_count": len(rows),
             "passed_candidates": window_pass_counts[index],
             "nonpositive_expectancy_count": sum(
-                (value := finite_metric(row, "expectancy_r")) is None or value <= 0
+                (value := finite_metric(row, "expectancy_r")) is not None
+                and value <= 0
+                for row in rows
+            ),
+            "missing_expectancy_count": sum(
+                finite_metric(row, "expectancy_r") is None
                 for row in rows
             ),
             "profit_factor_not_above_one_count": sum(
-                (value := finite_metric(row, "profit_factor")) is None or value <= 1
+                (value := finite_metric(row, "profit_factor")) is not None
+                and value <= 1
+                for row in rows
+            ),
+            "missing_profit_factor_count": sum(
+                finite_metric(row, "profit_factor") is None
                 for row in rows
             ),
             "drawdown_above_20_pct_count": sum(
