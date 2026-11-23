@@ -693,6 +693,45 @@ def _candidate_validation_overlap(
     )
 
 
+
+def _validation_summary(candidates: list[dict[str, object]]) -> dict[str, object]:
+    """Summarize candidate pass breadth without changing the validation gate."""
+    pass_distribution = {str(count): 0 for count in range(4)}
+    window_pass_counts = [0, 0, 0]
+    cost_stress_pass_count = 0
+    validated_count = 0
+    strict_count = 0
+
+    for candidate in candidates:
+        validation = candidate.get("validation", {})
+        windows = validation.get("windows", [])
+        passed_windows = sum(bool(window.get("passed")) for window in windows)
+        pass_distribution[str(min(passed_windows, 3))] += 1
+        for index, window in enumerate(windows[:3]):
+            if window.get("passed"):
+                window_pass_counts[index] += 1
+        if validation.get("pass"):
+            validated_count += 1
+        if validation.get("strict_pass"):
+            strict_count += 1
+        stress = validation.get("cost_stress", [])
+        if stress and stress[0].get("pass"):
+            cost_stress_pass_count += 1
+
+    return {
+        "candidate_count": len(candidates),
+        "validated_candidate_count": validated_count,
+        "strictly_validated_candidate_count": strict_count,
+        "validation_window_pass_distribution": pass_distribution,
+        "validation_window_pass_counts": [
+            {"window": index + 1, "passed_candidates": count}
+            for index, count in enumerate(window_pass_counts)
+        ],
+        "one_and_half_x_cost_pass_count": cost_stress_pass_count,
+        "validation_gate_unchanged": True,
+    }
+
+
 def _run_signature(
     source_data: pd.DataFrame,
     *,
@@ -1060,6 +1099,7 @@ def run_island_program_research(
         },
         "candidate_count": len(candidates),
         "validated_candidate_count": len(accepted),
+        "validation_summary": _validation_summary(candidates),
         "status": "validated_candidate" if winner else "no_robust_candidate",
         "candidates": candidates,
         "candidate_validation_overlap": candidate_validation_overlap,
