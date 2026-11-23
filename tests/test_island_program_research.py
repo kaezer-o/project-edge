@@ -643,7 +643,7 @@ def test_training_signal_diversity_filter_validates_threshold():
         )
 
 
-def test_finalist_limit_cli_defaults_to_20_and_accepts_custom_value():
+def test_finalist_limit_cli_defaults_to_50_and_accepts_custom_value():
     from edge.cli import _parser
 
     parser = _parser()
