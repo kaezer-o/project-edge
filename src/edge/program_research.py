@@ -552,7 +552,7 @@ def run_program_research(
         validation_result = _validation_check(
             validation, program, execution=execution, risk=risk,
             pip_size=pip_size, price_basis=price_basis,
-            min_trades=max(5, min_validation_trades // 3),
+            min_trades=_minimum_window_trades(min_validation_trades, 3),
         )
         row = {
             "program": program.to_dict(),
