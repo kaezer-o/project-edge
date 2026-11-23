@@ -358,16 +358,17 @@ def test_validation_rejects_non_finite_trade_counts_without_crashing(monkeypatch
 def test_calculate_metrics_converts_non_finite_results_to_none():
     from edge.metrics import calculate_metrics
 
-    trades = pd.DataFrame({"net_r": [1.0, float("nan"), -1.0]})
-    equity = pd.DataFrame({"equity": [1.0, float("inf"), 0.9]})
+    trades = pd.DataFrame({"net_r": [float("inf"), -1.0]})
+    equity = pd.DataFrame({"equity": [0.0, float("inf")]})
 
     metrics = calculate_metrics(trades, equity)
 
     assert metrics["expectancy_r"] is None
-    assert metrics["trade_sharpe_unannualized"] is None
+    assert metrics["profit_factor"] is None
+    assert metrics["average_win_r"] is None
     assert metrics["max_realized_drawdown_pct"] is None
-    assert metrics["profit_factor"] == pytest.approx(1.0)
-    assert metrics["win_rate"] == pytest.approx(1 / 3)
-    import json
+    assert metrics["total_return_pct"] is None
+    assert metrics["trade_sharpe_unannualized"] is None
+    assert metrics["win_rate"] == pytest.approx(0.5)
     json.dumps(metrics, allow_nan=False)
 
