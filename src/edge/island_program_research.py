@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import time
 from collections import OrderedDict
 from pathlib import Path
 
@@ -432,11 +433,13 @@ def _directional_signal_jaccard(left: np.ndarray, right: np.ndarray) -> float:
     return len(left_active & right_active) / len(union) if union else 0.0
 
 
-def _training_trade_path_events(trades: pd.DataFrame) -> set[str]:
-    """Fingerprint executed training trades using entry and exit behaviour."""
+def _training_trade_path_events(
+    trades: pd.DataFrame,
+) -> set[tuple[int, str, int, str]]:
+    """Fingerprint executed training trades with compact UTC nanosecond events."""
     if trades.empty:
         return set()
-    events: set[str] = set()
+    events: set[tuple[int, str, int, str]] = set()
     for trade in trades.itertuples(index=False):
         entry_time = pd.Timestamp(trade.entry_time)
         exit_time = pd.Timestamp(trade.exit_time)
@@ -448,16 +451,19 @@ def _training_trade_path_events(trades: pd.DataFrame) -> set[str]:
             exit_time = exit_time.tz_localize("UTC")
         else:
             exit_time = exit_time.tz_convert("UTC")
-        events.add(
-            f"{entry_time.isoformat()}|{str(trade.direction).lower()}|"
-            f"{exit_time.isoformat()}|{str(trade.exit_reason).lower()}"
-        )
+        events.add((
+            int(entry_time.value),
+            str(trade.direction).lower(),
+            int(exit_time.value),
+            str(trade.exit_reason).lower(),
+        ))
     return events
 
 
-def _set_jaccard(left: set[str], right: set[str]) -> float:
-    union = left | right
-    return len(left & right) / len(union) if union else 0.0
+def _set_jaccard(left: set, right: set) -> float:
+    intersection_size = len(left & right)
+    union_size = len(left) + len(right) - intersection_size
+    return intersection_size / union_size if union_size else 0.0
 
 
 def _risk_profile_similarity(left: StrategyProgram, right: StrategyProgram) -> float:
@@ -472,10 +478,10 @@ def _risk_profile_similarity(left: StrategyProgram, right: StrategyProgram) -> f
         float(right.reward_risk),
         float(right.max_holding_bars),
     )
-    differences = [
+    differences = (
         abs(a - b) / max(abs(a), abs(b), 1e-12)
         for a, b in zip(left_values, right_values)
-    ]
+    )
     return max(0.0, 1.0 - max(differences, default=0.0))
 
 
@@ -490,15 +496,23 @@ def _training_signal_diverse_shortlist(
     pip_size: float,
     price_basis: str,
 ) -> tuple[list[tuple[float, StrategyProgram, dict[str, object], dict[str, object]]], dict[str, object]]:
-    """Filter finalists only when both signals and executed training trade paths are redundant."""
+    """Filter finalists using cached training behaviour and exact greedy ranking."""
     if not 0.0 <= similarity_threshold <= 1.0:
         raise ValueError("finalist similarity threshold must be between zero and one")
+
     signals: dict[str, np.ndarray] = {}
-    trade_paths: dict[str, set[str]] = {}
+    trade_paths: dict[str, set[tuple[int, str, int, str]]] = {}
+    programs_by_fingerprint: dict[str, StrategyProgram] = {}
+    signal_evaluations = 0
+    training_backtests = 0
     for item in ranked:
         program = item[1]
         fingerprint = program.fingerprint()
+        if fingerprint in programs_by_fingerprint:
+            continue
+        programs_by_fingerprint[fingerprint] = program
         signal = np.asarray(evaluate_program(program, frame), dtype=np.int8)
+        signal_evaluations += 1
         _, trades = _evaluate(
             frame,
             program,
@@ -508,6 +522,7 @@ def _training_signal_diverse_shortlist(
             price_basis=price_basis,
             signal=pd.Series(signal, index=frame.index),
         )
+        training_backtests += 1
         signals[fingerprint] = signal
         trade_paths[fingerprint] = _training_trade_path_events(trades)
 
@@ -515,55 +530,66 @@ def _training_signal_diverse_shortlist(
     selected_ranks: list[int] = []
     selected_fingerprints: list[str] = []
     rejected = []
+    pairwise_comparisons = 0
+    short_circuited_comparisons = 0
     for rank, item in enumerate(ranked, start=1):
         if len(selected) >= limit:
             break
         fingerprint = item[1].fingerprint()
-        comparisons = []
+        best_comparison = None
         for selected_rank, selected_fingerprint in zip(
             selected_ranks, selected_fingerprints
         ):
+            pairwise_comparisons += 1
             signal_similarity = _directional_signal_jaccard(
                 signals[fingerprint], signals[selected_fingerprint]
             )
+            # The combined score is the minimum of the three similarities.
+            # A signal score no greater than the current best cannot improve it.
+            if (
+                best_comparison is not None
+                and signal_similarity <= best_comparison["combined_similarity"]
+            ):
+                short_circuited_comparisons += 1
+                continue
             trade_similarity = _set_jaccard(
                 trade_paths[fingerprint], trade_paths[selected_fingerprint]
             )
+            if (
+                best_comparison is not None
+                and trade_similarity <= best_comparison["combined_similarity"]
+            ):
+                short_circuited_comparisons += 1
+                continue
             risk_similarity = _risk_profile_similarity(
-                item[1], next(
-                    prior[1] for prior in ranked
-                    if prior[1].fingerprint() == selected_fingerprint
-                )
+                item[1], programs_by_fingerprint[selected_fingerprint]
             )
-            # A candidate is redundant only when its directional signals,
-            # realized entry/exit paths and risk profile are all highly similar.
             combined_similarity = min(
                 signal_similarity, trade_similarity, risk_similarity
             )
-            comparisons.append({
-                "fitness_rank": selected_rank,
-                "directional_signal_jaccard": signal_similarity,
-                "training_trade_path_jaccard": trade_similarity,
-                "risk_profile_similarity": risk_similarity,
-                "combined_similarity": combined_similarity,
-            })
-        most_similar = max(
-            comparisons,
-            key=lambda row: row["combined_similarity"],
-            default=None,
-        )
+            if (
+                best_comparison is None
+                or combined_similarity > best_comparison["combined_similarity"]
+            ):
+                best_comparison = {
+                    "fitness_rank": selected_rank,
+                    "directional_signal_jaccard": signal_similarity,
+                    "training_trade_path_jaccard": trade_similarity,
+                    "risk_profile_similarity": risk_similarity,
+                    "combined_similarity": combined_similarity,
+                }
         if (
-            most_similar is not None
-            and most_similar["combined_similarity"] >= similarity_threshold
+            best_comparison is not None
+            and best_comparison["combined_similarity"] >= similarity_threshold
         ):
             rejected.append({
                 "fitness_rank": rank,
                 "training_fitness": float(item[0]),
-                "most_similar_selected_fitness_rank": most_similar["fitness_rank"],
-                "max_directional_signal_jaccard": most_similar["directional_signal_jaccard"],
-                "max_training_trade_path_jaccard": most_similar["training_trade_path_jaccard"],
-                "max_risk_profile_similarity": most_similar["risk_profile_similarity"],
-                "max_combined_similarity": most_similar["combined_similarity"],
+                "most_similar_selected_fitness_rank": best_comparison["fitness_rank"],
+                "max_directional_signal_jaccard": best_comparison["directional_signal_jaccard"],
+                "max_training_trade_path_jaccard": best_comparison["training_trade_path_jaccard"],
+                "max_risk_profile_similarity": best_comparison["risk_profile_similarity"],
+                "max_combined_similarity": best_comparison["combined_similarity"],
             })
             continue
         selected.append(item)
@@ -576,6 +602,14 @@ def _training_signal_diverse_shortlist(
         "fitness_ranked_pool_count": len(ranked),
         "selected_count": len(selected),
         "selected_fitness_ranks": selected_ranks,
+        "performance": {
+            "ranked_program_count": len(ranked),
+            "unique_program_count": len(programs_by_fingerprint),
+            "signal_evaluations": signal_evaluations,
+            "training_backtests": training_backtests,
+            "pairwise_comparisons": pairwise_comparisons,
+            "short_circuited_comparisons": short_circuited_comparisons,
+        },
         "rejected_as_redundant": rejected,
         "selection_inputs": [
             "training_fitness",
@@ -585,6 +619,39 @@ def _training_signal_diverse_shortlist(
         ],
         "validation_used_for_selection": False,
         "final_test_used_for_selection": False,
+    }
+
+
+def _training_eligible_finalists(
+    evaluated: list[tuple[float, StrategyProgram, dict[str, object], dict[str, object]]],
+) -> tuple[list[tuple[float, StrategyProgram, dict[str, object], dict[str, object]]], dict[str, object]]:
+    """Exclude candidates that fail an existing chronological training-era gate."""
+    eligible = []
+    rejected = []
+    for score, program, metrics, robustness in evaluated:
+        all_windows_eligible = robustness.get("all_windows_eligible") is True
+        finite_score = bool(np.isfinite(score))
+        score_above_ineligible_sentinel = finite_score and float(score) > -1e8
+        if all_windows_eligible and score_above_ineligible_sentinel:
+            eligible.append((score, program, metrics, robustness))
+        else:
+            rejected.append({
+                "program_fingerprint": program.fingerprint(),
+                "training_fitness": float(score) if finite_score else None,
+                "all_windows_eligible": all_windows_eligible,
+                "reason": (
+                    "training_window_ineligible" if not all_windows_eligible
+                    else "non_finite_or_ineligible_training_fitness"
+                ),
+            })
+    return eligible, {
+        "method": "existing_three_window_training_eligibility",
+        "evaluated_population_count": len(evaluated),
+        "eligible_population_count": len(eligible),
+        "rejected_population_count": len(rejected),
+        "rejected": rejected,
+        "validation_used": False,
+        "final_test_used": False,
     }
 
 
@@ -624,6 +691,112 @@ def _candidate_validation_overlap(
         ),
         reverse=True,
     )
+
+
+
+def _validation_summary(candidates: list[dict[str, object]]) -> dict[str, object]:
+    """Summarize candidate pass breadth without changing the validation gate."""
+    pass_distribution = {str(count): 0 for count in range(4)}
+    window_pass_counts = [0, 0, 0]
+    window_metrics: list[list[dict[str, object]]] = [[], [], []]
+    cost_stress_pass_count = 0
+    two_x_cost_stress_pass_count = 0
+    validated_count = 0
+    strict_count = 0
+
+    for candidate in candidates:
+        validation = candidate.get("validation", {})
+        windows = validation.get("windows", [])
+        passed_windows = sum(bool(window.get("passed")) for window in windows)
+        pass_distribution[str(min(passed_windows, 3))] += 1
+        for index, window in enumerate(windows[:3]):
+            if window.get("passed"):
+                window_pass_counts[index] += 1
+            metrics = window.get("metrics", {})
+            if isinstance(metrics, dict):
+                window_metrics[index].append(metrics)
+        if validation.get("pass"):
+            validated_count += 1
+        if validation.get("strict_pass"):
+            strict_count += 1
+        stress = validation.get("cost_stress", [])
+        if stress and stress[0].get("pass"):
+            cost_stress_pass_count += 1
+        if len(stress) > 1 and stress[1].get("pass"):
+            two_x_cost_stress_pass_count += 1
+
+    def finite_metric(row: dict[str, object], key: str) -> float | None:
+        value = row.get(key)
+        if value is None:
+            return None
+        try:
+            numeric = float(value)
+        except (TypeError, ValueError, OverflowError):
+            return None
+        return numeric if np.isfinite(numeric) else None
+
+    def median_metric(rows: list[dict[str, object]], key: str) -> float | None:
+        values = [
+            value for row in rows
+            if (value := finite_metric(row, key)) is not None
+        ]
+        return float(np.median(values)) if values else None
+
+    per_window = []
+    for index, rows in enumerate(window_metrics):
+        per_window.append({
+            "window": index + 1,
+            "candidate_count": len(rows),
+            "passed_candidates": window_pass_counts[index],
+            "nonpositive_expectancy_count": sum(
+                (value := finite_metric(row, "expectancy_r")) is not None
+                and value <= 0
+                for row in rows
+            ),
+            "missing_expectancy_count": sum(
+                finite_metric(row, "expectancy_r") is None
+                for row in rows
+            ),
+            "profit_factor_not_above_one_count": sum(
+                (value := finite_metric(row, "profit_factor")) is not None
+                and value <= 1
+                for row in rows
+            ),
+            "missing_profit_factor_count": sum(
+                finite_metric(row, "profit_factor") is None
+                for row in rows
+            ),
+            "drawdown_above_20_pct_count": sum(
+                (value := finite_metric(row, "max_realized_drawdown_pct")) is not None
+                and value > 0.20
+                for row in rows
+            ),
+            "missing_drawdown_count": sum(
+                finite_metric(row, "max_realized_drawdown_pct") is None
+                for row in rows
+            ),
+            "median_trades": median_metric(rows, "trades"),
+            "median_expectancy_r": median_metric(rows, "expectancy_r"),
+            "median_profit_factor": median_metric(rows, "profit_factor"),
+            "median_max_realized_drawdown_pct": median_metric(
+                rows, "max_realized_drawdown_pct"
+            ),
+        })
+
+    return {
+        "candidate_count": len(candidates),
+        "validated_candidate_count": validated_count,
+        "strictly_validated_candidate_count": strict_count,
+        "validation_window_pass_distribution": pass_distribution,
+        "validation_window_pass_counts": [
+            {"window": index + 1, "passed_candidates": count}
+            for index, count in enumerate(window_pass_counts)
+        ],
+        "validation_window_metrics": per_window,
+        "one_and_half_x_cost_pass_count": cost_stress_pass_count,
+        "two_x_cost_pass_count": two_x_cost_stress_pass_count,
+        "validation_gate_unchanged": True,
+    }
 
 
 def _run_signature(
@@ -687,12 +860,16 @@ def run_island_program_research(
     resume: bool = False,
     run_final_test: bool = False,
     finalist_similarity_threshold: float | None = None,
+    finalist_limit: int = 50,
 ) -> dict[str, object]:
     """Run resumable multi-island program evolution; only training reaches the evaluator."""
+    research_started = time.perf_counter()
     if generations < 1:
         raise ValueError("generations must be at least one")
     if finalist_similarity_threshold is not None and not 0.0 <= finalist_similarity_threshold <= 1.0:
         raise ValueError("finalist_similarity_threshold must be between zero and one")
+    if not isinstance(finalist_limit, int) or isinstance(finalist_limit, bool) or finalist_limit < 1:
+        raise ValueError("finalist_limit must be a positive integer")
     config = config or IslandEvolutionConfig()
     timeframe = timeframe.upper()
     source_timeframe = source_timeframe.upper()
@@ -812,6 +989,7 @@ def run_island_program_research(
                     )
             initial_populations.append(population)
 
+    evolution_started = time.perf_counter()
     result = run_island_evolution(
         initial_populations,
         evaluate=evaluate,
@@ -823,6 +1001,7 @@ def run_island_program_research(
         run_signature=signature,
         resume=resume,
     )
+    evolution_wall_seconds = time.perf_counter() - evolution_started
 
     final_evaluated = []
     for population in result.islands:
@@ -842,17 +1021,23 @@ def run_island_program_research(
             else:
                 score, metrics, robustness = cached
             final_evaluated.append((score, program, metrics, robustness))
+    finalist_selection_started = time.perf_counter()
+    training_eligible_evaluated, training_eligibility = _training_eligible_finalists(
+        final_evaluated
+    )
     fitness_ranked_shortlist = _diverse_ranked(
-        final_evaluated,
-        min(20, len(final_evaluated)),
+        training_eligible_evaluated,
+        min(finalist_limit, len(training_eligible_evaluated)),
         max_per_structure=1,
     )
     shortlist = fitness_ranked_shortlist
     finalist_selection: dict[str, object] = {
+        "training_eligibility": training_eligibility,
         "method": "existing_fitness_and_structure_ranking",
         "similarity_filter_enabled": finalist_similarity_threshold is not None,
         "fitness_ranked_pool_count": len(fitness_ranked_shortlist),
         "selected_count": len(fitness_ranked_shortlist),
+        "requested_limit": finalist_limit,
         "validation_used_for_selection": False,
         "final_test_used_for_selection": False,
     }
@@ -861,13 +1046,15 @@ def run_island_program_research(
             fitness_ranked_shortlist,
             train,
             similarity_threshold=finalist_similarity_threshold,
-            limit=min(20, len(fitness_ranked_shortlist)),
+            limit=finalist_limit,
             execution=execution,
             risk=risk,
             pip_size=pip_size,
             price_basis=price_basis,
         )
         finalist_selection["similarity_filter_enabled"] = True
+        finalist_selection["training_eligibility"] = training_eligibility
+    finalist_selection_wall_seconds = time.perf_counter() - finalist_selection_started
     fitness_ranked_shortlist_report = [
         {
             "fitness_rank": rank,
@@ -884,6 +1071,7 @@ def run_island_program_research(
     }
     candidates: list[dict[str, object]] = []
     accepted: list[tuple[float, StrategyProgram, dict[str, object]]] = []
+    validation_started = time.perf_counter()
     for score, program, train_metrics, robustness in shortlist:
         validation_result = _validation_check(
             validation,
@@ -914,9 +1102,11 @@ def run_island_program_research(
         validation_diagnostics.pop("events", None)
         for window in candidate["validation"].get("windows", []):
             window.get("trade_event_diagnostics", {}).pop("events", None)
+    validation_wall_seconds = time.perf_counter() - validation_started
 
     winner = max(accepted, key=lambda item: item[0]) if accepted else None
     final_test = None
+    final_test_started = time.perf_counter()
     if winner is not None and run_final_test:
         test_metrics, _ = _evaluate(
             test,
@@ -930,6 +1120,8 @@ def run_island_program_research(
             "metrics": test_metrics,
             "warning": "Single historical holdout; not prospective or live-trading evidence.",
         }
+    final_test_wall_seconds = time.perf_counter() - final_test_started
+    wall_seconds_before_report_write = time.perf_counter() - research_started
 
     report: dict[str, object] = {
         "project": "Project EDGE",
@@ -956,6 +1148,13 @@ def run_island_program_research(
             "migrants_per_island": config.migrants_per_island,
             "novelty_weight": config.novelty_weight,
             "minimum_family_elites": config.minimum_family_elites,
+            "phase_wall_seconds": {
+                "evolution": float(evolution_wall_seconds),
+                "finalist_selection": float(finalist_selection_wall_seconds),
+                "validation": float(validation_wall_seconds),
+                "final_test": float(final_test_wall_seconds),
+                "before_report_write": float(wall_seconds_before_report_write),
+            },
             "initial_strategy_family_counts": initial_family_counts,
             "available_strategy_families": list(available_strategy_families(features)),
             "generation_performance": result.runtime_metrics,
@@ -967,6 +1166,7 @@ def run_island_program_research(
         },
         "candidate_count": len(candidates),
         "validated_candidate_count": len(accepted),
+        "validation_summary": _validation_summary(candidates),
         "status": "validated_candidate" if winner else "no_robust_candidate",
         "candidates": candidates,
         "candidate_validation_overlap": candidate_validation_overlap,

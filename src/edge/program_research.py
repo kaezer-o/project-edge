@@ -69,18 +69,30 @@ def _fitness(
     *,
     sample_multiplier: int = 1,
 ) -> float:
-    count = int(metrics.get("trades") or 0)
-    expectancy = metrics.get("expectancy_r")
-    drawdown = metrics.get("max_realized_drawdown_pct")
+    try:
+        count_value = float(metrics.get("trades") or 0)
+        expectancy = float(metrics.get("expectancy_r"))
+        drawdown = float(metrics.get("max_realized_drawdown_pct"))
+    except (TypeError, ValueError, OverflowError):
+        return -1e9
+    if (
+        not np.isfinite(count_value)
+        or not count_value.is_integer()
+        or not np.isfinite(expectancy)
+        or not np.isfinite(drawdown)
+        or count_value < min_trades
+    ):
+        return -1e9
+    count = int(count_value)
     profit_factor = metrics.get("profit_factor")
-    if count < min_trades or expectancy is None or drawdown is None:
-        return -1e9
-    expectancy = float(expectancy)
-    drawdown = float(drawdown)
-    if not np.isfinite(expectancy) or not np.isfinite(drawdown):
-        return -1e9
+    try:
+        numeric_profit_factor = float(profit_factor)
+    except (TypeError, ValueError, OverflowError):
+        numeric_profit_factor = 0.0
+    if not np.isfinite(numeric_profit_factor) or numeric_profit_factor < 0:
+        numeric_profit_factor = 0.0
     # Training fitness is a ranking signal only; it is not evidence of robustness.
-    pf_bonus = min(float(profit_factor or 0.0), 3.0) * 0.02
+    pf_bonus = min(numeric_profit_factor, 3.0) * 0.02
     return (
         expectancy * np.sqrt(count * sample_multiplier) / (1.0 + 4.0 * drawdown)
         + pf_bonus
@@ -270,6 +282,15 @@ def _validation_check(
             "events": sorted(events),
         }
 
+    def finite_number(value: object) -> float | None:
+        if value is None:
+            return None
+        try:
+            numeric = float(value)
+        except (TypeError, ValueError, OverflowError):
+            return None
+        return numeric if np.isfinite(numeric) else None
+
     chunks = np.array_split(np.arange(len(frame)), 3)
     windows = []
     for i, positions in enumerate(chunks, start=1):
@@ -278,15 +299,23 @@ def _validation_check(
             window, program, execution=execution, risk=risk,
             pip_size=pip_size, price_basis=price_basis,
         )
-        trades = int(metrics.get("trades") or 0)
-        exp = metrics.get("expectancy_r")
-        pf = metrics.get("profit_factor")
-        dd = metrics.get("max_realized_drawdown_pct")
+        raw_trade_count = metrics.get("trades", 0)
+        numeric_trade_count = finite_number(raw_trade_count or 0)
+        trades = (
+            int(numeric_trade_count)
+            if numeric_trade_count is not None
+            and numeric_trade_count >= 0
+            and numeric_trade_count.is_integer()
+            else 0
+        )
+        exp = finite_number(metrics.get("expectancy_r"))
+        pf = finite_number(metrics.get("profit_factor"))
+        dd = finite_number(metrics.get("max_realized_drawdown_pct"))
         passed = (
             trades >= min_trades
-            and exp is not None and float(exp) > 0
-            and pf is not None and float(pf) > 1.0
-            and dd is not None and float(dd) <= 0.20
+            and exp is not None and exp > 0
+            and pf is not None and pf > 1.0
+            and dd is not None and dd <= 0.20
         )
         windows.append({
             "window": i,
@@ -329,10 +358,10 @@ def _validation_check(
         )
         stressed_events = entry_events(stressed_trades)
         union_events = baseline_events | stressed_events
-        expectancy = stressed_metrics.get("expectancy_r")
-        profit_factor = stressed_metrics.get("profit_factor")
-        baseline_expectancy = full_metrics.get("expectancy_r")
-        baseline_profit_factor = full_metrics.get("profit_factor")
+        expectancy = finite_number(stressed_metrics.get("expectancy_r"))
+        profit_factor = finite_number(stressed_metrics.get("profit_factor"))
+        baseline_expectancy = finite_number(full_metrics.get("expectancy_r"))
+        baseline_profit_factor = finite_number(full_metrics.get("profit_factor"))
         cost_stress.append({
             "cost_multiplier": multiplier,
             "metrics": stressed_metrics,
@@ -347,17 +376,17 @@ def _validation_check(
                     if union_events else 1.0
                 ),
                 "expectancy_delta_r": (
-                    float(expectancy) - float(baseline_expectancy)
+                    expectancy - baseline_expectancy
                     if expectancy is not None and baseline_expectancy is not None else None
                 ),
                 "profit_factor_delta": (
-                    float(profit_factor) - float(baseline_profit_factor)
+                    profit_factor - baseline_profit_factor
                     if profit_factor is not None and baseline_profit_factor is not None else None
                 ),
             },
             "pass": bool(
-                expectancy is not None and float(expectancy) > 0
-                and profit_factor is not None and float(profit_factor) > 1.0
+                expectancy is not None and expectancy > 0
+                and profit_factor is not None and profit_factor > 1.0
             ),
         })
     passed_windows = sum(bool(row["passed"]) for row in windows)
@@ -370,6 +399,7 @@ def _validation_check(
         "cost_stress": cost_stress,
         "one_and_half_x_cost_pass": stress_pass,
         "pass": bool(passed_windows >= 2 and len(windows) == 3 and stress_pass),
+        "strict_pass": bool(passed_windows == 3 and len(windows) == 3 and stress_pass),
     }
 
 
@@ -602,6 +632,10 @@ def run_program_research(
         },
         "candidate_count": len(candidate_reports),
         "validated_candidate_count": len(accepted),
+        "strictly_validated_candidate_count": sum(
+            bool(candidate["validation"].get("strict_pass"))
+            for candidate in candidate_reports
+        ),
         "winner": winner[2] if winner else None,
         "final_test": final_test,
         "final_test_skipped": bool(winner is None or not run_final_test),

@@ -363,6 +363,143 @@ def test_candidate_validation_overlap_measures_trade_event_jaccard():
 
 
 
+
+def test_validation_summary_reports_pass_breadth_without_changing_gate():
+    candidates = [
+        {"validation": {
+            "pass": True, "strict_pass": False,
+            "windows": [
+                {"passed": True, "metrics": {"trades": 10, "expectancy_r": 0.2, "profit_factor": 1.2, "max_realized_drawdown_pct": 0.1}},
+                {"passed": True, "metrics": {"trades": 20, "expectancy_r": 0.1, "profit_factor": 1.1, "max_realized_drawdown_pct": 0.2}},
+                {"passed": False, "metrics": {"trades": 30, "expectancy_r": -0.1, "profit_factor": 0.9, "max_realized_drawdown_pct": 0.3}},
+            ],
+            "cost_stress": [{"pass": True}, {"pass": False}],
+        }},
+        {"validation": {
+            "pass": True, "strict_pass": True,
+            "windows": [
+                {"passed": True, "metrics": {"trades": 40, "expectancy_r": 0.3, "profit_factor": 1.3, "max_realized_drawdown_pct": 0.05}},
+                {"passed": True, "metrics": {"trades": 50, "expectancy_r": 0.2, "profit_factor": 1.2, "max_realized_drawdown_pct": 0.1}},
+                {"passed": True, "metrics": {"trades": 60, "expectancy_r": 0.1, "profit_factor": 1.1, "max_realized_drawdown_pct": 0.15}},
+            ],
+            "cost_stress": [{"pass": True}, {"pass": True}],
+        }},
+        {"validation": {
+            "pass": False, "strict_pass": False,
+            "windows": [
+                {"passed": False, "metrics": {"trades": 70, "expectancy_r": -0.2, "profit_factor": 0.8, "max_realized_drawdown_pct": 0.25}},
+                {"passed": False, "metrics": {"trades": 80, "expectancy_r": -0.1, "profit_factor": 0.9, "max_realized_drawdown_pct": 0.3}},
+                {"passed": False, "metrics": {"trades": 90, "expectancy_r": -0.3, "profit_factor": 0.7, "max_realized_drawdown_pct": 0.35}},
+            ],
+            "cost_stress": [{"pass": False}, {"pass": False}],
+        }},
+    ]
+
+    summary = island_program_research._validation_summary(candidates)
+
+    assert summary == {
+        "candidate_count": 3,
+        "validated_candidate_count": 2,
+        "strictly_validated_candidate_count": 1,
+        "validation_window_pass_distribution": {"0": 1, "1": 0, "2": 1, "3": 1},
+        "validation_window_pass_counts": [
+            {"window": 1, "passed_candidates": 2},
+            {"window": 2, "passed_candidates": 2},
+            {"window": 3, "passed_candidates": 1},
+        ],
+        "validation_window_metrics": [
+            {
+                "window": 1, "candidate_count": 3, "passed_candidates": 2,
+                "nonpositive_expectancy_count": 1,
+                "missing_expectancy_count": 0,
+                "profit_factor_not_above_one_count": 1,
+                "missing_profit_factor_count": 0,
+                "drawdown_above_20_pct_count": 1,
+                "missing_drawdown_count": 0,
+                "median_trades": 40.0, "median_expectancy_r": 0.2,
+                "median_profit_factor": 1.2,
+                "median_max_realized_drawdown_pct": 0.1,
+            },
+            {
+                "window": 2, "candidate_count": 3, "passed_candidates": 2,
+                "nonpositive_expectancy_count": 1,
+                "missing_expectancy_count": 0,
+                "profit_factor_not_above_one_count": 1,
+                "missing_profit_factor_count": 0,
+                "drawdown_above_20_pct_count": 1,
+                "missing_drawdown_count": 0,
+                "median_trades": 50.0, "median_expectancy_r": 0.1,
+                "median_profit_factor": 1.1,
+                "median_max_realized_drawdown_pct": 0.2,
+            },
+            {
+                "window": 3, "candidate_count": 3, "passed_candidates": 1,
+                "nonpositive_expectancy_count": 2,
+                "missing_expectancy_count": 0,
+                "profit_factor_not_above_one_count": 2,
+                "missing_profit_factor_count": 0,
+                "drawdown_above_20_pct_count": 2,
+                "missing_drawdown_count": 0,
+                "median_trades": 60.0, "median_expectancy_r": -0.1,
+                "median_profit_factor": 0.9,
+                "median_max_realized_drawdown_pct": 0.3,
+            },
+        ],
+        "one_and_half_x_cost_pass_count": 2,
+        "two_x_cost_pass_count": 1,
+        "validation_gate_unchanged": True,
+    }
+
+
+def test_validation_summary_separates_missing_drawdown_from_excessive_drawdown():
+    candidates = [{
+        "validation": {
+            "windows": [
+                {"passed": False, "metrics": {"max_realized_drawdown_pct": None}},
+                {"passed": False, "metrics": {"max_realized_drawdown_pct": 0.25}},
+            ],
+            "cost_stress": [],
+        }
+    }]
+
+    summary = island_program_research._validation_summary(candidates)
+
+    assert summary["validation_window_metrics"][0]["drawdown_above_20_pct_count"] == 0
+    assert summary["validation_window_metrics"][0]["missing_drawdown_count"] == 1
+    assert summary["validation_window_metrics"][1]["drawdown_above_20_pct_count"] == 1
+    assert summary["validation_window_metrics"][1]["missing_drawdown_count"] == 0
+
+
+def test_validation_summary_treats_non_finite_metrics_as_missing():
+    candidates = [{
+        "validation": {
+            "windows": [{
+                "passed": False,
+                "metrics": {
+                    "trades": 10,
+                    "expectancy_r": float("nan"),
+                    "profit_factor": float("inf"),
+                    "max_realized_drawdown_pct": float("nan"),
+                },
+            }],
+            "cost_stress": [],
+        }
+    }]
+
+    summary = island_program_research._validation_summary(candidates)
+    window = summary["validation_window_metrics"][0]
+
+    assert window["nonpositive_expectancy_count"] == 0
+    assert window["missing_expectancy_count"] == 1
+    assert window["profit_factor_not_above_one_count"] == 0
+    assert window["missing_profit_factor_count"] == 1
+    assert window["drawdown_above_20_pct_count"] == 0
+    assert window["missing_drawdown_count"] == 1
+    assert window["median_expectancy_r"] is None
+    assert window["median_profit_factor"] is None
+    assert window["median_max_realized_drawdown_pct"] is None
+
+
 def test_training_signal_diversity_filter_rejects_redundant_finalists(monkeypatch):
     feature = lambda name: Expr("feature", value=name)
     programs = [
@@ -379,11 +516,11 @@ def test_training_signal_diversity_filter_rejects_redundant_finalists(monkeypatc
     }
     entry = pd.Timestamp("2024-01-01T00:00:00Z")
     same_path = pd.DataFrame([
-        {"entry_time": entry, "direction": "long", "exit_time": entry + pd.Timedelta(hours=1), "exit_reason": "target"},
-        {"entry_time": entry + pd.Timedelta(hours=2), "direction": "short", "exit_time": entry + pd.Timedelta(hours=3), "exit_reason": "stop"},
+        {"entry_time": entry, "direction": "long", "exit_time": entry + pd.Timedelta(1, unit="h"), "exit_reason": "target"},
+        {"entry_time": entry + pd.Timedelta(2, unit="h"), "direction": "short", "exit_time": entry + pd.Timedelta(3, unit="h"), "exit_reason": "stop"},
     ])
     distinct_path = pd.DataFrame([
-        {"entry_time": entry + pd.Timedelta(days=1), "direction": "short", "exit_time": entry + pd.Timedelta(days=1, hours=2), "exit_reason": "time"},
+        {"entry_time": entry + pd.Timedelta(1, unit="D"), "direction": "short", "exit_time": entry + (pd.Timedelta(1, unit="D") + pd.Timedelta(2, unit="h")), "exit_reason": "time"},
     ])
     trades_by_fingerprint = {
         programs[0].fingerprint(): same_path,
@@ -437,6 +574,90 @@ def test_training_signal_diversity_filter_rejects_redundant_finalists(monkeypatc
     assert diagnostics["final_test_used_for_selection"] is False
 
 
+
+def test_training_trade_path_events_use_timezone_normalized_compact_keys():
+    utc = pd.Timestamp("2024-01-01T00:00:00Z")
+    equivalent_local = pd.Timestamp("2024-01-01T05:30:00+05:30")
+    trades = pd.DataFrame([
+        {
+            "entry_time": utc,
+            "direction": "LONG",
+            "exit_time": utc + pd.Timedelta(1, unit="h"),
+            "exit_reason": "TARGET",
+        },
+        {
+            "entry_time": equivalent_local,
+            "direction": "long",
+            "exit_time": equivalent_local + pd.Timedelta(1, unit="h"),
+            "exit_reason": "target",
+        },
+    ])
+
+    events = island_program_research._training_trade_path_events(trades)
+
+    assert len(events) == 1
+    event = next(iter(events))
+    assert event == (
+        int(utc.value),
+        "long",
+        int((utc + pd.Timedelta(1, unit="h")).value),
+        "target",
+    )
+
+
+def test_training_signal_filter_evaluates_duplicate_program_fingerprint_once(monkeypatch):
+    program = StrategyProgram(
+        long_entry=Expr("gt", (
+            Expr("feature", value="ema_gap_atr"),
+            Expr("const", value=1),
+        )),
+        short_entry=Expr("lt", (
+            Expr("feature", value="ema_gap_atr"),
+            Expr("const", value=0),
+        )),
+    )
+    calls = {"signals": 0, "backtests": 0}
+
+    def evaluate(_program, frame):
+        calls["signals"] += 1
+        return pd.Series(np.array([1, 0, -1], dtype=np.int8), index=frame.index)
+
+    def backtest(_frame, _program, **_kwargs):
+        calls["backtests"] += 1
+        return {}, pd.DataFrame(columns=[
+            "entry_time", "direction", "exit_time", "exit_reason"
+        ])
+
+    monkeypatch.setattr(island_program_research, "evaluate_program", evaluate)
+    monkeypatch.setattr(island_program_research, "_evaluate", backtest)
+    ranked = [
+        (2.0, program, {}, {}),
+        (1.0, program, {}, {}),
+    ]
+
+    selected, diagnostics = island_program_research._training_signal_diverse_shortlist(
+        ranked,
+        pd.DataFrame(index=range(3)),
+        similarity_threshold=0.95,
+        limit=2,
+        execution=ExecutionConfig(),
+        risk=RiskConfig(),
+        pip_size=0.0001,
+        price_basis="mid",
+    )
+
+    assert calls == {"signals": 1, "backtests": 1}
+    assert len(selected) == 2
+    assert diagnostics["selected_fitness_ranks"] == [1, 2]
+    assert diagnostics["performance"] == {
+        "ranked_program_count": 2,
+        "unique_program_count": 1,
+        "signal_evaluations": 1,
+        "training_backtests": 1,
+        "pairwise_comparisons": 1,
+        "short_circuited_comparisons": 0,
+    }
+
 def test_training_signal_filter_keeps_same_signals_with_different_trade_paths(monkeypatch):
     feature = lambda name: Expr("feature", value=name)
     programs = [
@@ -457,13 +678,13 @@ def test_training_signal_filter_keeps_same_signals_with_different_trade_paths(mo
         programs[0].fingerprint(): pd.DataFrame([{
             "entry_time": entry,
             "direction": "long",
-            "exit_time": entry + pd.Timedelta(hours=1),
+            "exit_time": entry + pd.Timedelta(1, unit="h"),
             "exit_reason": "target",
         }]),
         programs[1].fingerprint(): pd.DataFrame([{
             "entry_time": entry,
             "direction": "long",
-            "exit_time": entry + pd.Timedelta(hours=4),
+            "exit_time": entry + pd.Timedelta(4, unit="h"),
             "exit_reason": "time",
         }]),
     }
@@ -511,7 +732,7 @@ def test_training_signal_filter_keeps_materially_different_risk_profiles(monkeyp
     same_path = pd.DataFrame([{
         "entry_time": entry,
         "direction": "long",
-        "exit_time": entry + pd.Timedelta(hours=1),
+        "exit_time": entry + pd.Timedelta(1, unit="h"),
         "exit_reason": "target",
     }])
     monkeypatch.setattr(
@@ -557,3 +778,161 @@ def test_training_signal_diversity_filter_validates_threshold():
             pip_size=0.0001,
             price_basis="mid",
         )
+
+
+def test_finalist_limit_cli_defaults_to_100_and_accepts_custom_value():
+    from edge.cli import _parser
+
+    parser = _parser()
+
+    default_args = parser.parse_args([
+        "evolve-program-islands",
+        "--input", "data.csv",
+    ])
+    assert default_args.finalist_limit == 100
+
+    custom_args = parser.parse_args([
+        "evolve-program-islands",
+        "--input", "data.csv",
+        "--finalist-limit", "100",
+    ])
+    assert custom_args.finalist_limit == 100
+
+
+def test_finalist_limit_cli_rejects_non_integer_values():
+    import pytest
+    from edge.cli import _parser
+
+    with pytest.raises(SystemExit):
+        _parser().parse_args([
+            "evolve-program-islands",
+            "--input", "data.csv",
+            "--finalist-limit", "not-an-integer",
+        ])
+
+
+def test_training_eligibility_filter_excludes_ineligible_and_non_finite_scores():
+    programs = [
+        StrategyProgram(
+            long_entry=Expr("gt", (Expr("feature", value="ema_gap_atr"), Expr("const", value=value))),
+            short_entry=Expr("lt", (Expr("feature", value="ema_gap_atr"), Expr("const", value=0))),
+        )
+        for value in (1, 2, 3, 4)
+    ]
+    evaluated = [
+        (2.0, programs[0], {}, {"all_windows_eligible": True}),
+        (-1e9, programs[1], {}, {"all_windows_eligible": False}),
+        (1.0, programs[2], {}, {"all_windows_eligible": False}),
+        (float("nan"), programs[3], {}, {"all_windows_eligible": True}),
+    ]
+
+    eligible, diagnostics = island_program_research._training_eligible_finalists(evaluated)
+
+    assert [row[1].fingerprint() for row in eligible] == [programs[0].fingerprint()]
+    assert diagnostics["evaluated_population_count"] == 4
+    assert diagnostics["eligible_population_count"] == 1
+    assert diagnostics["rejected_population_count"] == 3
+    assert diagnostics["validation_used"] is False
+    assert diagnostics["final_test_used"] is False
+    assert [row["reason"] for row in diagnostics["rejected"]] == [
+        "training_window_ineligible",
+        "training_window_ineligible",
+        "non_finite_or_ineligible_training_fitness",
+    ]
+
+
+def test_finalist_selection_report_preserves_requested_limit_above_pool_size(tmp_path):
+    config = IslandEvolutionConfig(
+        islands=2,
+        population_per_island=4,
+        elite_count=1,
+        tournament_size=2,
+        migration_interval=1,
+        migrants_per_island=1,
+        archive_capacity=16,
+        novelty_weight=0.25,
+    )
+    report = run_island_program_research(
+        raw_frame=_market_frame(),
+        timeframe="M15",
+        source_timeframe="M15",
+        symbol="EURUSD",
+        execution=ExecutionConfig(),
+        risk=RiskConfig(),
+        pip_size=0.0001,
+        price_basis="mid",
+        generations=1,
+        seed=23,
+        min_train_trades=1,
+        min_validation_trades=1,
+        checkpoint_path=tmp_path / "checkpoint.json",
+        output_dir=tmp_path / "report",
+        config=config,
+        finalist_similarity_threshold=0.95,
+        finalist_limit=100,
+    )
+
+    selection = report["finalist_selection"]
+    assert selection["requested_limit"] == 100
+    assert selection["fitness_ranked_pool_count"] <= 8
+    assert selection["selected_count"] <= selection["fitness_ranked_pool_count"]
+    assert selection["training_eligibility"]["validation_used"] is False
+    assert selection["training_eligibility"]["final_test_used"] is False
+
+    timings = report["runtime"]["phase_wall_seconds"]
+    assert set(timings) == {
+        "evolution",
+        "finalist_selection",
+        "validation",
+        "final_test",
+        "before_report_write",
+    }
+    assert all(value >= 0.0 for value in timings.values())
+    assert timings["before_report_write"] >= sum(
+        timings[key] for key in ("evolution", "finalist_selection", "validation", "final_test")
+    )
+
+
+
+def test_validation_check_rejects_non_finite_expectancy_and_profit_factor(monkeypatch):
+    program = StrategyProgram(
+        long_entry=Expr("gt", (
+            Expr("feature", value="ema_gap_atr"),
+            Expr("const", value=0),
+        )),
+        short_entry=Expr("lt", (
+            Expr("feature", value="ema_gap_atr"),
+            Expr("const", value=0),
+        )),
+    )
+    metrics = {
+        "trades": 10,
+        "expectancy_r": float("inf"),
+        "profit_factor": float("inf"),
+        "max_realized_drawdown_pct": 0.10,
+    }
+    import edge.program_research as program_research
+
+    monkeypatch.setattr(
+        program_research,
+        "_evaluate",
+        lambda *_args, **_kwargs: (metrics, pd.DataFrame()),
+    )
+
+    result = program_research._validation_check(
+        pd.DataFrame(index=pd.date_range(
+            "2024-01-01", periods=9, freq="h", tz="UTC"
+        )),
+        program,
+        execution=ExecutionConfig(),
+        risk=RiskConfig(),
+        pip_size=0.0001,
+        price_basis="mid",
+        min_trades=1,
+    )
+
+    assert result["passed_windows"] == 0
+    assert all(not window["passed"] for window in result["windows"])
+    assert all(not stress["pass"] for stress in result["cost_stress"])
+    assert result["pass"] is False
+    assert result["strict_pass"] is False

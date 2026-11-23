@@ -295,6 +295,7 @@ def _parser() -> argparse.ArgumentParser:
     evolve_islands.add_argument("--novelty-weight", type=float, default=0.25)
     evolve_islands.add_argument("--minimum-family-elites", type=int, default=2, help="minimum retained representatives per recognizable strategy family in each island")
     evolve_islands.add_argument("--finalist-similarity-threshold", type=float, default=None, help="optional training-only directional-signal and executed-trade-path Jaccard filter for the final shortlist; e.g. 0.95")
+    evolve_islands.add_argument("--finalist-limit", type=int, default=100, help="maximum number of training-ranked finalists; default: 100")
     evolve_islands.add_argument("--seed", type=int, default=2026)
     evolve_islands.add_argument("--min-train-trades", type=int, default=30)
     evolve_islands.add_argument("--min-validation-trades", type=int, default=30)
@@ -419,6 +420,7 @@ def main() -> None:
             resume=args.resume,
             run_final_test=args.final_test,
             finalist_similarity_threshold=args.finalist_similarity_threshold,
+            finalist_limit=args.finalist_limit,
         )
         print(json.dumps({
             "status": report["status"],

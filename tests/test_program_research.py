@@ -8,6 +8,7 @@ from edge.config import ExecutionConfig, RiskConfig
 from edge.program_research import (
     _combine_training_fitness,
     _diverse_ranked,
+    _fitness,
     _minimum_window_trades,
     _program_structure,
     _validation_check,
@@ -170,6 +171,44 @@ def test_training_fitness_reuses_precomputed_aggregate_result(monkeypatch):
 
 
 
+
+def test_validation_reports_two_of_three_pass_separately_from_strict_pass(monkeypatch):
+    import edge.program_research as research
+    from edge.program import Expr, StrategyProgram
+
+    index = pd.date_range("2025-01-01", periods=90, freq="h", tz="UTC")
+    frame = pd.DataFrame({"close": np.ones(90)}, index=index)
+    program = StrategyProgram(
+        long_entry=Expr("gt", (Expr("feature", value="ema_gap_atr"), Expr("const", value=0.0))),
+        short_entry=Expr("lt", (Expr("feature", value="rsi_14"), Expr("const", value=30.0))),
+    )
+
+    def fake_evaluate(candidate_frame, candidate_program, *, execution, risk, pip_size, price_basis):
+        is_third_window = len(candidate_frame) == 30 and candidate_frame.index[0] == index[60]
+        metrics = {
+            "trades": 10,
+            "expectancy_r": -0.1 if is_third_window else 0.1,
+            "profit_factor": 0.8 if is_third_window else 1.2,
+            "max_realized_drawdown_pct": 0.01,
+        }
+        return metrics, pd.DataFrame()
+
+    monkeypatch.setattr(research, "_evaluate", fake_evaluate)
+    result = _validation_check(
+        frame,
+        program,
+        execution=ExecutionConfig(spread_pips=0.8),
+        risk=RiskConfig(),
+        pip_size=0.0001,
+        price_basis="mid",
+        min_trades=5,
+    )
+
+    assert result["passed_windows"] == 2
+    assert result["pass"] is True
+    assert result["strict_pass"] is False
+
+
 def test_cost_stress_report_explains_trade_set_changes(monkeypatch):
     import edge.program_research as research
     from edge.program import Expr, StrategyProgram
@@ -217,6 +256,7 @@ def test_cost_stress_report_explains_trade_set_changes(monkeypatch):
     assert baseline_events["long_entries"] == 1
     assert baseline_events["short_entries"] == 1
     assert len(result["windows"]) == 3
+    assert result["strict_pass"] is True
     for window in result["windows"]:
         assert len(window["trade_event_diagnostics"]["entry_event_fingerprint"]) == 64
         assert window["trade_event_diagnostics"]["long_entries"] == 1
@@ -229,3 +269,89 @@ def test_cost_stress_report_explains_trade_set_changes(monkeypatch):
     assert diagnostic["entry_event_jaccard_similarity"] == pytest.approx(1 / 3)
     assert diagnostic["expectancy_delta_r"] == pytest.approx(0.02)
     assert diagnostic["profit_factor_delta"] == pytest.approx(0.1)
+
+
+
+def test_training_fitness_keeps_non_finite_profit_factor_out_of_score():
+    from edge.program import Expr, StrategyProgram
+
+    program = StrategyProgram(
+        long_entry=Expr(
+            "gt", (Expr("feature", value="ema_gap_atr"), Expr("const", value=0.0))
+        ),
+        short_entry=Expr(
+            "lt", (Expr("feature", value="rsi_14"), Expr("const", value=30.0))
+        ),
+    )
+    base = {
+        "trades": 30,
+        "expectancy_r": 0.1,
+        "max_realized_drawdown_pct": 0.01,
+    }
+    missing = _fitness(base, program, 10)
+    for invalid_profit_factor in (float("nan"), float("inf"), float("-inf"), -1.0):
+        metrics = {**base, "profit_factor": invalid_profit_factor}
+        assert _fitness(metrics, program, 10) == missing
+    assert np.isfinite(missing)
+
+
+def test_training_fitness_rejects_non_finite_core_metrics():
+    from edge.program import Expr, StrategyProgram
+
+    program = StrategyProgram(
+        long_entry=Expr(
+            "gt", (Expr("feature", value="ema_gap_atr"), Expr("const", value=0.0))
+        ),
+        short_entry=Expr(
+            "lt", (Expr("feature", value="rsi_14"), Expr("const", value=30.0))
+        ),
+    )
+    for key in ("trades", "expectancy_r", "max_realized_drawdown_pct"):
+        metrics = {
+            "trades": 30,
+            "expectancy_r": 0.1,
+            "max_realized_drawdown_pct": 0.01,
+            "profit_factor": 1.5,
+        }
+        metrics[key] = float("nan")
+        assert _fitness(metrics, program, 10) == -1e9
+
+
+def test_validation_rejects_non_finite_trade_counts_without_crashing(monkeypatch):
+    import edge.program_research as research
+    from edge.program import Expr, StrategyProgram
+
+    index = pd.date_range("2025-01-01", periods=90, freq="h", tz="UTC")
+    frame = pd.DataFrame({"close": np.ones(90)}, index=index)
+    program = StrategyProgram(
+        long_entry=Expr(
+            "gt", (Expr("feature", value="ema_gap_atr"), Expr("const", value=0.0))
+        ),
+        short_entry=Expr(
+            "lt", (Expr("feature", value="rsi_14"), Expr("const", value=30.0))
+        ),
+    )
+
+    def fake_evaluate(candidate_frame, candidate_program, **kwargs):
+        return {
+            "trades": float("nan"),
+            "expectancy_r": 0.2,
+            "profit_factor": 1.5,
+            "max_realized_drawdown_pct": 0.01,
+        }, pd.DataFrame()
+
+    monkeypatch.setattr(research, "_evaluate", fake_evaluate)
+    result = _validation_check(
+        frame,
+        program,
+        execution=ExecutionConfig(),
+        risk=RiskConfig(),
+        pip_size=0.0001,
+        price_basis="mid",
+        min_trades=5,
+    )
+
+    assert result["passed_windows"] == 0
+    assert result["pass"] is False
+    assert result["strict_pass"] is False
+

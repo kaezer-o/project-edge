@@ -333,6 +333,13 @@ stop, target or holding-time behaviour.
 
 The filter is opt-in and does not alter evolutionary fitness, population
 selection, migration, checkpoint state, validation gates or final-test access.
+It evaluates each unique program fingerprint once, stores trade events as
+compact UTC nanosecond tuples, and avoids evaluating the remaining similarity
+components when they cannot improve the current best pairwise score. The
+selection order, minimum-of-three similarity score, threshold comparison and
+reported winning comparison are preserved. Performance counters record unique
+program evaluations, training backtests and short-circuited pairwise comparisons.
+
 It evaluates directional signals and executed trade paths on the training
 partition only. The report retains the original fitness-ranked shortlist,
 selected original fitness ranks, and separate signal, trade-path and risk-profile
@@ -350,3 +357,19 @@ behaviour. The 0.95 value is an experimental starting point based on a small
 offline finalist-pool benchmark, not a validated production optimum. Validation
 remains post-selection only and the final chronological holdout must remain
 untouched.
+
+
+### Configurable island-program finalist limit
+
+`evolve-program-islands` accepts `--finalist-limit` (default `50`) to control the maximum training-ranked shortlist size. The default of 50 is provisional, based on the seed-2044 finalist-limit benchmark; use an explicit value when reproducing older experiments. The same limit is applied before optional training-only diversity filtering. Structural diversity can make the actual pool smaller than the requested limit when fewer unique rule structures are available.
+
+Before ranking finalists, the trainer now applies the existing three-era training eligibility gate. A candidate must have eligible trade counts in all three chronological training windows and a finite training fitness above the ineligible sentinel. This removes candidates that already failed the training robustness requirements before they consume finalist slots or trigger validation backtests. The report records evaluated, eligible and rejected counts with reasons. This gate uses training data only; validation and final-test partitions remain excluded from finalist selection.
+
+### Runtime phase diagnostics
+
+Each island-program research report records wall-clock seconds for evolution,
+finalist selection, validation, optional final-test evaluation, and total work
+before report serialization. These values separate the evolution loop from the
+cost of expanding and validating the finalist shortlist. The final-test phase
+is near zero when the holdout is skipped. The total excludes JSON serialization
+and file writing; generation-level timings remain available separately.
