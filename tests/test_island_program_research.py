@@ -411,7 +411,9 @@ def test_validation_summary_reports_pass_breadth_without_changing_gate():
             {
                 "window": 1, "candidate_count": 3, "passed_candidates": 2,
                 "nonpositive_expectancy_count": 1,
+                "missing_expectancy_count": 0,
                 "profit_factor_not_above_one_count": 1,
+                "missing_profit_factor_count": 0,
                 "drawdown_above_20_pct_count": 1,
                 "missing_drawdown_count": 0,
                 "median_trades": 40.0, "median_expectancy_r": 0.2,
@@ -421,7 +423,9 @@ def test_validation_summary_reports_pass_breadth_without_changing_gate():
             {
                 "window": 2, "candidate_count": 3, "passed_candidates": 2,
                 "nonpositive_expectancy_count": 1,
+                "missing_expectancy_count": 0,
                 "profit_factor_not_above_one_count": 1,
+                "missing_profit_factor_count": 0,
                 "drawdown_above_20_pct_count": 1,
                 "missing_drawdown_count": 0,
                 "median_trades": 50.0, "median_expectancy_r": 0.1,
@@ -431,7 +435,9 @@ def test_validation_summary_reports_pass_breadth_without_changing_gate():
             {
                 "window": 3, "candidate_count": 3, "passed_candidates": 1,
                 "nonpositive_expectancy_count": 2,
+                "missing_expectancy_count": 0,
                 "profit_factor_not_above_one_count": 2,
+                "missing_profit_factor_count": 0,
                 "drawdown_above_20_pct_count": 2,
                 "missing_drawdown_count": 0,
                 "median_trades": 60.0, "median_expectancy_r": -0.1,
@@ -483,8 +489,10 @@ def test_validation_summary_treats_non_finite_metrics_as_missing():
     summary = island_program_research._validation_summary(candidates)
     window = summary["validation_window_metrics"][0]
 
-    assert window["nonpositive_expectancy_count"] == 1
-    assert window["profit_factor_not_above_one_count"] == 1
+    assert window["nonpositive_expectancy_count"] == 0
+    assert window["missing_expectancy_count"] == 1
+    assert window["profit_factor_not_above_one_count"] == 0
+    assert window["missing_profit_factor_count"] == 1
     assert window["drawdown_above_20_pct_count"] == 0
     assert window["missing_drawdown_count"] == 1
     assert window["median_expectancy_r"] is None
