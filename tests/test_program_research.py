@@ -315,3 +315,43 @@ def test_training_fitness_rejects_non_finite_core_metrics():
         }
         metrics[key] = float("nan")
         assert _fitness(metrics, program, 10) == -1e9
+
+
+def test_validation_rejects_non_finite_trade_counts_without_crashing(monkeypatch):
+    import edge.program_research as research
+    from edge.program import Expr, StrategyProgram
+
+    index = pd.date_range("2025-01-01", periods=90, freq="h", tz="UTC")
+    frame = pd.DataFrame({"close": np.ones(90)}, index=index)
+    program = StrategyProgram(
+        long_entry=Expr(
+            "gt", (Expr("feature", value="ema_gap_atr"), Expr("const", value=0.0))
+        ),
+        short_entry=Expr(
+            "lt", (Expr("feature", value="rsi_14"), Expr("const", value=30.0))
+        ),
+    )
+
+    def fake_evaluate(candidate_frame, candidate_program, **kwargs):
+        return {
+            "trades": float("nan"),
+            "expectancy_r": 0.2,
+            "profit_factor": 1.5,
+            "max_realized_drawdown_pct": 0.01,
+        }, pd.DataFrame()
+
+    monkeypatch.setattr(research, "_evaluate", fake_evaluate)
+    result = _validation_check(
+        frame,
+        program,
+        execution=ExecutionConfig(),
+        risk=RiskConfig(),
+        pip_size=0.0001,
+        price_basis="mid",
+        min_trades=5,
+    )
+
+    assert result["passed_windows"] == 0
+    assert result["pass"] is False
+    assert result["strict_pass"] is False
+
