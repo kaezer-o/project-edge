@@ -605,8 +605,8 @@ def run_program_research(
             "selection": "aggregate plus three chronological training-era fitness scores; validation never feeds back into evolution; structural diversity cap applied to elites, parents, and validation shortlist",
             "training_robustness": {
                 "chronological_windows": 3,
-                "minimum_trades_per_window": max(
-                    3, int(np.ceil(min_train_trades / 6))
+                "minimum_trades_per_window": _minimum_window_trades(
+                    min_train_trades, 3
                 ),
                 "fitness_formula": (
                     "0.35 * aggregate + 0.45 * median(window_scores) "
