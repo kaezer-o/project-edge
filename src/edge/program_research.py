@@ -605,7 +605,7 @@ def run_program_research(
         "validated_candidate_count": len(accepted),
         "strictly_validated_candidate_count": sum(
             bool(candidate["validation"].get("strict_pass"))
-            for candidate in candidates
+            for candidate in candidate_reports
         ),
         "winner": winner[2] if winner else None,
         "final_test": final_test,
