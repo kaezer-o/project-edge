@@ -2197,7 +2197,7 @@ def test_temporal_habitat_performance_accounts_for_unmatched_trades():
     trades = pd.DataFrame({
         "entry_time": [
             index[1],
-            index[-1] + pd.Timedelta(hours=4),
+            index[-1] + pd.Timedelta(4, unit="h"),
         ],
         "net_r": [0.3, 0.2],
     })
