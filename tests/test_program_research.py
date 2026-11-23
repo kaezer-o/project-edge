@@ -217,6 +217,7 @@ def test_cost_stress_report_explains_trade_set_changes(monkeypatch):
     assert baseline_events["long_entries"] == 1
     assert baseline_events["short_entries"] == 1
     assert len(result["windows"]) == 3
+    assert result["strict_pass"] is True
     for window in result["windows"]:
         assert len(window["trade_event_diagnostics"]["entry_event_fingerprint"]) == 64
         assert window["trade_event_diagnostics"]["long_entries"] == 1
