@@ -741,3 +741,16 @@ def test_finalist_selection_report_preserves_requested_limit_above_pool_size(tmp
     assert selection["selected_count"] <= selection["fitness_ranked_pool_count"]
     assert selection["training_eligibility"]["validation_used"] is False
     assert selection["training_eligibility"]["final_test_used"] is False
+
+    timings = report["runtime"]["phase_wall_seconds"]
+    assert set(timings) == {
+        "evolution",
+        "finalist_selection",
+        "validation",
+        "final_test",
+        "before_report_write",
+    }
+    assert all(value >= 0.0 for value in timings.values())
+    assert timings["before_report_write"] >= sum(
+        timings[key] for key in ("evolution", "finalist_selection", "validation", "final_test")
+    )
