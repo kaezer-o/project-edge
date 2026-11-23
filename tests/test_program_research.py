@@ -375,3 +375,38 @@ def test_calculate_metrics_converts_non_finite_results_to_none():
     assert metrics["win_rate"] == pytest.approx(0.5)
     json.dumps(metrics, allow_nan=False)
 
+def test_validation_minimum_trades_uses_ceiling_across_windows(monkeypatch, tmp_path):
+    import edge.program_research as research
+
+    captured_minimums = []
+
+    def fake_training_fitness(*args, **kwargs):
+        return 1.0, {"trades": 30}, {"aggregate_fitness": 1.0, "windows": []}
+
+    def fake_validation_check(*args, min_trades, **kwargs):
+        captured_minimums.append(min_trades)
+        return {"pass": False, "strict_pass": False}
+
+    monkeypatch.setattr(research, "_training_fitness", fake_training_fitness)
+    monkeypatch.setattr(research, "_validation_check", fake_validation_check)
+
+    research.run_program_research(
+        _market_frame(),
+        timeframe="M15",
+        source_timeframe="M15",
+        symbol="EURUSD",
+        execution=ExecutionConfig(),
+        risk=RiskConfig(),
+        pip_size=0.0001,
+        price_basis="mid",
+        population_size=8,
+        generations=2,
+        seed=29,
+        min_train_trades=1,
+        min_validation_trades=31,
+        output_dir=tmp_path,
+    )
+
+    assert captured_minimums
+    assert set(captured_minimums) == {11}
+
