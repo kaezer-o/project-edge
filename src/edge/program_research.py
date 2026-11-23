@@ -370,6 +370,7 @@ def _validation_check(
         "cost_stress": cost_stress,
         "one_and_half_x_cost_pass": stress_pass,
         "pass": bool(passed_windows >= 2 and len(windows) == 3 and stress_pass),
+        "strict_pass": bool(passed_windows == 3 and len(windows) == 3 and stress_pass),
     }
 
 
@@ -602,6 +603,10 @@ def run_program_research(
         },
         "candidate_count": len(candidate_reports),
         "validated_candidate_count": len(accepted),
+        "strictly_validated_candidate_count": sum(
+            bool(candidate["validation"].get("strict_pass"))
+            for candidate in candidates
+        ),
         "winner": winner[2] if winner else None,
         "final_test": final_test,
         "final_test_skipped": bool(winner is None or not run_final_test),
