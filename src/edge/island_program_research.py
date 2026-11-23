@@ -935,7 +935,7 @@ def run_island_program_research(
             fitness_ranked_shortlist,
             train,
             similarity_threshold=finalist_similarity_threshold,
-            limit=min(finalist_limit, len(fitness_ranked_shortlist)),
+            limit=finalist_limit,
             execution=execution,
             risk=risk,
             pip_size=pip_size,
