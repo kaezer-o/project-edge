@@ -891,3 +891,46 @@ def test_finalist_selection_report_preserves_requested_limit_above_pool_size(tmp
     assert timings["before_report_write"] >= sum(
         timings[key] for key in ("evolution", "finalist_selection", "validation", "final_test")
     )
+
+
+
+def test_validation_check_rejects_non_finite_expectancy_and_profit_factor(monkeypatch):
+    program = StrategyProgram(
+        long_entry=Expr("gt", (
+            Expr("feature", value="ema_gap_atr"),
+            Expr("const", value=0),
+        )),
+        short_entry=Expr("lt", (
+            Expr("feature", value="ema_gap_atr"),
+            Expr("const", value=0),
+        )),
+    )
+    metrics = {
+        "trades": 10,
+        "expectancy_r": float("inf"),
+        "profit_factor": float("inf"),
+        "max_realized_drawdown_pct": 0.10,
+    }
+    monkeypatch.setattr(
+        island_program_research,
+        "_evaluate",
+        lambda *_args, **_kwargs: (metrics, pd.DataFrame()),
+    )
+
+    result = island_program_research._validation_check(
+        pd.DataFrame(index=pd.date_range(
+            "2024-01-01", periods=9, freq="h", tz="UTC"
+        )),
+        program,
+        execution=ExecutionConfig(),
+        risk=RiskConfig(),
+        pip_size=0.0001,
+        price_basis="mid",
+        min_trades=1,
+    )
+
+    assert result["passed_windows"] == 0
+    assert all(not window["passed"] for window in result["windows"])
+    assert all(not stress["pass"] for stress in result["cost_stress"])
+    assert result["pass"] is False
+    assert result["strict_pass"] is False
