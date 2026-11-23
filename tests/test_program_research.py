@@ -465,3 +465,43 @@ def test_bid_ask_ohlc_cost_stress_widens_actual_ask_prices(monkeypatch):
     assert observed_spreads[-2] == pytest.approx(0.0003)
     assert observed_spreads[-1] == pytest.approx(0.0004)
 
+def test_cost_stress_rejects_drawdown_above_validation_limit(monkeypatch):
+    import edge.program_research as research
+    from edge.program import Expr, StrategyProgram
+
+    index = pd.date_range("2025-01-01", periods=90, freq="h", tz="UTC")
+    frame = pd.DataFrame({"close": np.ones(90)}, index=index)
+    program = StrategyProgram(
+        long_entry=Expr(
+            "gt", (Expr("feature", value="ema_gap_atr"), Expr("const", value=0.0))
+        ),
+        short_entry=Expr(
+            "lt", (Expr("feature", value="rsi_14"), Expr("const", value=30.0))
+        ),
+    )
+
+    def fake_evaluate(candidate_frame, candidate_program, *, execution, **kwargs):
+        is_first_stress = execution.spread_pips == pytest.approx(1.2)
+        return {
+            "trades": 10,
+            "expectancy_r": 0.1,
+            "profit_factor": 1.2,
+            "max_realized_drawdown_pct": 0.25 if is_first_stress else 0.01,
+        }, pd.DataFrame()
+
+    monkeypatch.setattr(research, "_evaluate", fake_evaluate)
+    result = _validation_check(
+        frame,
+        program,
+        execution=ExecutionConfig(spread_pips=0.8),
+        risk=RiskConfig(),
+        pip_size=0.0001,
+        price_basis="mid",
+        min_trades=5,
+    )
+
+    assert result["cost_stress"][0]["pass"] is False
+    assert result["cost_stress"][1]["pass"] is True
+    assert result["one_and_half_x_cost_pass"] is False
+    assert result["pass"] is False
+\n
