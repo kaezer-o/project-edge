@@ -413,6 +413,7 @@ def test_validation_summary_reports_pass_breadth_without_changing_gate():
                 "nonpositive_expectancy_count": 1,
                 "profit_factor_not_above_one_count": 1,
                 "drawdown_above_20_pct_count": 1,
+                "missing_drawdown_count": 0,
                 "median_trades": 40.0, "median_expectancy_r": 0.2,
                 "median_profit_factor": 1.2,
                 "median_max_realized_drawdown_pct": 0.1,
@@ -422,6 +423,7 @@ def test_validation_summary_reports_pass_breadth_without_changing_gate():
                 "nonpositive_expectancy_count": 1,
                 "profit_factor_not_above_one_count": 1,
                 "drawdown_above_20_pct_count": 1,
+                "missing_drawdown_count": 0,
                 "median_trades": 50.0, "median_expectancy_r": 0.1,
                 "median_profit_factor": 1.1,
                 "median_max_realized_drawdown_pct": 0.2,
@@ -431,6 +433,7 @@ def test_validation_summary_reports_pass_breadth_without_changing_gate():
                 "nonpositive_expectancy_count": 2,
                 "profit_factor_not_above_one_count": 2,
                 "drawdown_above_20_pct_count": 2,
+                "missing_drawdown_count": 0,
                 "median_trades": 60.0, "median_expectancy_r": -0.1,
                 "median_profit_factor": 0.9,
                 "median_max_realized_drawdown_pct": 0.3,
@@ -440,6 +443,25 @@ def test_validation_summary_reports_pass_breadth_without_changing_gate():
         "two_x_cost_pass_count": 1,
         "validation_gate_unchanged": True,
     }
+
+
+def test_validation_summary_separates_missing_drawdown_from_excessive_drawdown():
+    candidates = [{
+        "validation": {
+            "windows": [
+                {"passed": False, "metrics": {"max_realized_drawdown_pct": None}},
+                {"passed": False, "metrics": {"max_realized_drawdown_pct": 0.25}},
+            ],
+            "cost_stress": [],
+        }
+    }]
+
+    summary = island_program_research._validation_summary(candidates)
+
+    assert summary["validation_window_metrics"][0]["drawdown_above_20_pct_count"] == 0
+    assert summary["validation_window_metrics"][0]["missing_drawdown_count"] == 1
+    assert summary["validation_window_metrics"][1]["drawdown_above_20_pct_count"] == 1
+    assert summary["validation_window_metrics"][1]["missing_drawdown_count"] == 0
 
 
 def test_training_signal_diversity_filter_rejects_redundant_finalists(monkeypatch):
