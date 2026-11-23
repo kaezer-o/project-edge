@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import time
 from collections import OrderedDict
 from pathlib import Path
 
@@ -756,6 +757,7 @@ def run_island_program_research(
     finalist_limit: int = 50,
 ) -> dict[str, object]:
     """Run resumable multi-island program evolution; only training reaches the evaluator."""
+    research_started = time.perf_counter()
     if generations < 1:
         raise ValueError("generations must be at least one")
     if finalist_similarity_threshold is not None and not 0.0 <= finalist_similarity_threshold <= 1.0:
@@ -881,6 +883,7 @@ def run_island_program_research(
                     )
             initial_populations.append(population)
 
+    evolution_started = time.perf_counter()
     result = run_island_evolution(
         initial_populations,
         evaluate=evaluate,
@@ -892,6 +895,7 @@ def run_island_program_research(
         run_signature=signature,
         resume=resume,
     )
+    evolution_wall_seconds = time.perf_counter() - evolution_started
 
     final_evaluated = []
     for population in result.islands:
@@ -911,6 +915,7 @@ def run_island_program_research(
             else:
                 score, metrics, robustness = cached
             final_evaluated.append((score, program, metrics, robustness))
+    finalist_selection_started = time.perf_counter()
     training_eligible_evaluated, training_eligibility = _training_eligible_finalists(
         final_evaluated
     )
@@ -943,6 +948,7 @@ def run_island_program_research(
         )
         finalist_selection["similarity_filter_enabled"] = True
         finalist_selection["training_eligibility"] = training_eligibility
+    finalist_selection_wall_seconds = time.perf_counter() - finalist_selection_started
     fitness_ranked_shortlist_report = [
         {
             "fitness_rank": rank,
@@ -959,6 +965,7 @@ def run_island_program_research(
     }
     candidates: list[dict[str, object]] = []
     accepted: list[tuple[float, StrategyProgram, dict[str, object]]] = []
+    validation_started = time.perf_counter()
     for score, program, train_metrics, robustness in shortlist:
         validation_result = _validation_check(
             validation,
@@ -989,9 +996,11 @@ def run_island_program_research(
         validation_diagnostics.pop("events", None)
         for window in candidate["validation"].get("windows", []):
             window.get("trade_event_diagnostics", {}).pop("events", None)
+    validation_wall_seconds = time.perf_counter() - validation_started
 
     winner = max(accepted, key=lambda item: item[0]) if accepted else None
     final_test = None
+    final_test_started = time.perf_counter()
     if winner is not None and run_final_test:
         test_metrics, _ = _evaluate(
             test,
@@ -1005,6 +1014,8 @@ def run_island_program_research(
             "metrics": test_metrics,
             "warning": "Single historical holdout; not prospective or live-trading evidence.",
         }
+    final_test_wall_seconds = time.perf_counter() - final_test_started
+    wall_seconds_before_report_write = time.perf_counter() - research_started
 
     report: dict[str, object] = {
         "project": "Project EDGE",
@@ -1031,6 +1042,13 @@ def run_island_program_research(
             "migrants_per_island": config.migrants_per_island,
             "novelty_weight": config.novelty_weight,
             "minimum_family_elites": config.minimum_family_elites,
+            "phase_wall_seconds": {
+                "evolution": float(evolution_wall_seconds),
+                "finalist_selection": float(finalist_selection_wall_seconds),
+                "validation": float(validation_wall_seconds),
+                "final_test": float(final_test_wall_seconds),
+                "before_report_write": float(wall_seconds_before_report_write),
+            },
             "initial_strategy_family_counts": initial_family_counts,
             "available_strategy_families": list(available_strategy_families(features)),
             "generation_performance": result.runtime_metrics,
