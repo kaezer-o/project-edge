@@ -725,11 +725,20 @@ def _validation_summary(candidates: list[dict[str, object]]) -> dict[str, object
         if len(stress) > 1 and stress[1].get("pass"):
             two_x_cost_stress_pass_count += 1
 
+    def finite_metric(row: dict[str, object], key: str) -> float | None:
+        value = row.get(key)
+        if value is None:
+            return None
+        try:
+            numeric = float(value)
+        except (TypeError, ValueError, OverflowError):
+            return None
+        return numeric if np.isfinite(numeric) else None
+
     def median_metric(rows: list[dict[str, object]], key: str) -> float | None:
         values = [
-            float(row[key])
-            for row in rows
-            if row.get(key) is not None and np.isfinite(float(row[key]))
+            value for row in rows
+            if (value := finite_metric(row, key)) is not None
         ]
         return float(np.median(values)) if values else None
 
@@ -740,20 +749,20 @@ def _validation_summary(candidates: list[dict[str, object]]) -> dict[str, object
             "candidate_count": len(rows),
             "passed_candidates": window_pass_counts[index],
             "nonpositive_expectancy_count": sum(
-                row.get("expectancy_r") is None or float(row["expectancy_r"]) <= 0
+                (value := finite_metric(row, "expectancy_r")) is None or value <= 0
                 for row in rows
             ),
             "profit_factor_not_above_one_count": sum(
-                row.get("profit_factor") is None or float(row["profit_factor"]) <= 1
+                (value := finite_metric(row, "profit_factor")) is None or value <= 1
                 for row in rows
             ),
             "drawdown_above_20_pct_count": sum(
-                row.get("max_realized_drawdown_pct") is not None
-                and float(row["max_realized_drawdown_pct"]) > 0.20
+                (value := finite_metric(row, "max_realized_drawdown_pct")) is not None
+                and value > 0.20
                 for row in rows
             ),
             "missing_drawdown_count": sum(
-                row.get("max_realized_drawdown_pct") is None
+                finite_metric(row, "max_realized_drawdown_pct") is None
                 for row in rows
             ),
             "median_trades": median_metric(rows, "trades"),
