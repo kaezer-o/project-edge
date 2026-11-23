@@ -380,6 +380,7 @@ def _validation_check(
         union_events = baseline_events | stressed_events
         expectancy = finite_number(stressed_metrics.get("expectancy_r"))
         profit_factor = finite_number(stressed_metrics.get("profit_factor"))
+        drawdown = finite_number(stressed_metrics.get("max_realized_drawdown_pct"))
         baseline_expectancy = finite_number(full_metrics.get("expectancy_r"))
         baseline_profit_factor = finite_number(full_metrics.get("profit_factor"))
         cost_stress.append({
@@ -407,6 +408,7 @@ def _validation_check(
             "pass": bool(
                 expectancy is not None and expectancy > 0
                 and profit_factor is not None and profit_factor > 1.0
+                and drawdown is not None and drawdown <= 0.20
             ),
         })
     passed_windows = sum(bool(row["passed"]) for row in windows)
