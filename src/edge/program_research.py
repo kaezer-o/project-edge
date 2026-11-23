@@ -270,6 +270,15 @@ def _validation_check(
             "events": sorted(events),
         }
 
+    def finite_number(value: object) -> float | None:
+        if value is None:
+            return None
+        try:
+            numeric = float(value)
+        except (TypeError, ValueError, OverflowError):
+            return None
+        return numeric if np.isfinite(numeric) else None
+
     chunks = np.array_split(np.arange(len(frame)), 3)
     windows = []
     for i, positions in enumerate(chunks, start=1):
@@ -279,14 +288,14 @@ def _validation_check(
             pip_size=pip_size, price_basis=price_basis,
         )
         trades = int(metrics.get("trades") or 0)
-        exp = metrics.get("expectancy_r")
-        pf = metrics.get("profit_factor")
-        dd = metrics.get("max_realized_drawdown_pct")
+        exp = finite_number(metrics.get("expectancy_r"))
+        pf = finite_number(metrics.get("profit_factor"))
+        dd = finite_number(metrics.get("max_realized_drawdown_pct"))
         passed = (
             trades >= min_trades
-            and exp is not None and float(exp) > 0
-            and pf is not None and float(pf) > 1.0
-            and dd is not None and float(dd) <= 0.20
+            and exp is not None and exp > 0
+            and pf is not None and pf > 1.0
+            and dd is not None and dd <= 0.20
         )
         windows.append({
             "window": i,
@@ -329,10 +338,10 @@ def _validation_check(
         )
         stressed_events = entry_events(stressed_trades)
         union_events = baseline_events | stressed_events
-        expectancy = stressed_metrics.get("expectancy_r")
-        profit_factor = stressed_metrics.get("profit_factor")
-        baseline_expectancy = full_metrics.get("expectancy_r")
-        baseline_profit_factor = full_metrics.get("profit_factor")
+        expectancy = finite_number(stressed_metrics.get("expectancy_r"))
+        profit_factor = finite_number(stressed_metrics.get("profit_factor"))
+        baseline_expectancy = finite_number(full_metrics.get("expectancy_r"))
+        baseline_profit_factor = finite_number(full_metrics.get("profit_factor"))
         cost_stress.append({
             "cost_multiplier": multiplier,
             "metrics": stressed_metrics,
@@ -347,17 +356,17 @@ def _validation_check(
                     if union_events else 1.0
                 ),
                 "expectancy_delta_r": (
-                    float(expectancy) - float(baseline_expectancy)
+                    expectancy - baseline_expectancy
                     if expectancy is not None and baseline_expectancy is not None else None
                 ),
                 "profit_factor_delta": (
-                    float(profit_factor) - float(baseline_profit_factor)
+                    profit_factor - baseline_profit_factor
                     if profit_factor is not None and baseline_profit_factor is not None else None
                 ),
             },
             "pass": bool(
-                expectancy is not None and float(expectancy) > 0
-                and profit_factor is not None and float(profit_factor) > 1.0
+                expectancy is not None and expectancy > 0
+                and profit_factor is not None and profit_factor > 1.0
             ),
         })
     passed_windows = sum(bool(row["passed"]) for row in windows)
