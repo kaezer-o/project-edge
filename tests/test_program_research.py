@@ -276,8 +276,12 @@ def test_training_fitness_keeps_non_finite_profit_factor_out_of_score():
     from edge.program import Expr, StrategyProgram
 
     program = StrategyProgram(
-        long_entry=Expr("const", value=True),
-        short_entry=Expr("const", value=False),
+        long_entry=Expr(
+            "gt", (Expr("feature", value="ema_gap_atr"), Expr("const", value=0.0))
+        ),
+        short_entry=Expr(
+            "lt", (Expr("feature", value="rsi_14"), Expr("const", value=30.0))
+        ),
     )
     base = {
         "trades": 30,
@@ -295,8 +299,12 @@ def test_training_fitness_rejects_non_finite_core_metrics():
     from edge.program import Expr, StrategyProgram
 
     program = StrategyProgram(
-        long_entry=Expr("const", value=True),
-        short_entry=Expr("const", value=False),
+        long_entry=Expr(
+            "gt", (Expr("feature", value="ema_gap_atr"), Expr("const", value=0.0))
+        ),
+        short_entry=Expr(
+            "lt", (Expr("feature", value="rsi_14"), Expr("const", value=30.0))
+        ),
     )
     for key in ("trades", "expectancy_r", "max_realized_drawdown_pct"):
         metrics = {
