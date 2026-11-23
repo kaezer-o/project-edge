@@ -412,6 +412,7 @@ def test_validation_summary_reports_pass_breadth_without_changing_gate():
                 "window": 1, "candidate_count": 3, "passed_candidates": 2,
                 "nonpositive_expectancy_count": 1,
                 "profit_factor_not_above_one_count": 1,
+                "drawdown_above_20_pct_count": 1,
                 "median_trades": 40.0, "median_expectancy_r": 0.2,
                 "median_profit_factor": 1.2,
                 "median_max_realized_drawdown_pct": 0.1,
@@ -428,12 +429,14 @@ def test_validation_summary_reports_pass_breadth_without_changing_gate():
                 "window": 3, "candidate_count": 3, "passed_candidates": 1,
                 "nonpositive_expectancy_count": 2,
                 "profit_factor_not_above_one_count": 2,
+                "drawdown_above_20_pct_count": 3,
                 "median_trades": 60.0, "median_expectancy_r": -0.1,
                 "median_profit_factor": 0.9,
                 "median_max_realized_drawdown_pct": 0.3,
             },
         ],
         "one_and_half_x_cost_pass_count": 2,
+        "two_x_cost_pass_count": 0,
         "validation_gate_unchanged": True,
     }
 
