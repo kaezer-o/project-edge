@@ -504,4 +504,4 @@ def test_cost_stress_rejects_drawdown_above_validation_limit(monkeypatch):
     assert result["cost_stress"][1]["pass"] is True
     assert result["one_and_half_x_cost_pass"] is False
     assert result["pass"] is False
-\n
+
