@@ -361,6 +361,6 @@ untouched.
 
 ### Configurable island-program finalist limit
 
-`evolve-program-islands` accepts `--finalist-limit` (default `20`) to control the maximum training-ranked shortlist size. The same limit is applied before optional training-only diversity filtering. Structural diversity can make the actual pool smaller than the requested limit when fewer unique rule structures are available.
+`evolve-program-islands` accepts `--finalist-limit` (default `50`) to control the maximum training-ranked shortlist size. The default of 50 is provisional, based on the seed-2044 finalist-limit benchmark; use an explicit value when reproducing older experiments. The same limit is applied before optional training-only diversity filtering. Structural diversity can make the actual pool smaller than the requested limit when fewer unique rule structures are available.
 
 Before ranking finalists, the trainer now applies the existing three-era training eligibility gate. A candidate must have eligible trade counts in all three chronological training windows and a finite training fitness above the ineligible sentinel. This removes candidates that already failed the training robustness requirements before they consume finalist slots or trigger validation backtests. The report records evaluated, eligible and rejected counts with reasons. This gate uses training data only; validation and final-test partitions remain excluded from finalist selection.
