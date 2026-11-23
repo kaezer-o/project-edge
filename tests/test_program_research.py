@@ -53,6 +53,8 @@ def test_program_research_runs_evolution_and_writes_reproducible_report(tmp_path
     path = tmp_path / "program_evolution_report.json"
     assert path.exists()
     saved = json.loads(path.read_text(encoding="utf-8"))
+    # Reject non-standard NaN/Infinity tokens in the complete research report.
+    json.dumps(saved, allow_nan=False)
     assert saved["engine"] == "open_ended_expression_program_evolution"
     assert saved["evolution"]["population_size"] == 8
     assert len(saved["evolution"]["generation_history"]) == 2
