@@ -911,13 +911,15 @@ def test_validation_check_rejects_non_finite_expectancy_and_profit_factor(monkey
         "profit_factor": float("inf"),
         "max_realized_drawdown_pct": 0.10,
     }
+    import edge.program_research as program_research
+
     monkeypatch.setattr(
-        island_program_research,
+        program_research,
         "_evaluate",
         lambda *_args, **_kwargs: (metrics, pd.DataFrame()),
     )
 
-    result = island_program_research._validation_check(
+    result = program_research._validation_check(
         pd.DataFrame(index=pd.date_range(
             "2024-01-01", periods=9, freq="h", tz="UTC"
         )),
